@@ -50,8 +50,11 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            grossAnnualTurnoverReadonly(year) ||
-                                            year.locked
+                                            !editingFromProposalPage &&
+                                            (grossAnnualTurnoverReadonly(
+                                                year
+                                            ) ||
+                                                year.locked)
                                         "
                                         @change="
                                             grossAnnualTurnoverChanged(
@@ -128,7 +131,9 @@
                                             grossQuarterlyTurnoverReadonly(
                                                 year.financial_year,
                                                 quarter.quarter
-                                            ) || year.locked
+                                            ) ||
+                                            (!editingFromProposalPage &&
+                                                year.locked)
                                         "
                                     />
                                     <span class="input-group-text">AUD</span>
@@ -184,10 +189,10 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            grossQuarterlyTurnoverReadonly(
-                                                year.financial_year,
-                                                month.quarter
-                                            ) || year.locked
+                                            grossMonthlyTurnoverReadonly(
+                                                month.year,
+                                                month.month
+                                            ) || month.locked
                                         "
                                     />
                                     <span class="input-group-text">AUD</span>
@@ -306,6 +311,12 @@ export default {
         this.populateFinancialYearsArray(financialYearsIncluded);
     },
     methods: {
+        editingFromProposalPage: function () {
+            return (
+                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
+                this.proposalProcessingStatusId
+            );
+        },
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
             // Gross turnover is readonly if the financial year hasn't passed
             // or if the proposal is being edited from the proposal details page
@@ -313,10 +324,7 @@ export default {
             return (
                 !this.financialYearHasPassed(
                     grossTurnoverPercentage.financial_year
-                ) ||
-                !this.allQuartersEntered(grossTurnoverPercentage) ||
-                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
-                    this.proposalProcessingStatusId
+                ) || !this.allQuartersEntered(grossTurnoverPercentage)
             );
         },
         grossQuarterlyTurnoverReadonly: function (
@@ -325,14 +333,14 @@ export default {
         ) {
             // Gross turnover is readonly if the financial quarter hasn't passed
             // or if the proposal is being edited from the proposal details page
-            return (
-                !this.helpers.financialQuarterHasPassed(
-                    financialYear,
-                    financialQuarter
-                ) ||
-                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
-                    this.proposalProcessingStatusId
+            return !this.helpers.financialQuarterHasPassed(
+                financialYear,
+                financialQuarter
             );
+        },
+        grossMonthlyTurnoverReadonly: function (year, month) {
+            // Gross turnover is readonly if the month hasn't passed
+            return !this.helpers.monthHasPassed(year, month);
         },
         allQuartersEntered: function (grossTurnoverPercentage) {
             // Returns true if all the quarterly figures have been entered
@@ -412,6 +420,9 @@ export default {
                         .grossTurnoverPercentagesComputed[i]
                         ? this.grossTurnoverPercentagesComputed[i]
                         : financialYear;
+                    if (!grossTurnoverPercentage.quarters) {
+                        grossTurnoverPercentage.quarters = [];
+                    }
                     grossTurnoverPercentage.months = [];
                     for (let j = 0; j < 4; j++) {
                         if (
@@ -425,10 +436,16 @@ export default {
                             continue;
                         }
                         if (!grossTurnoverPercentage.quarters[j]) {
-                            grossTurnoverPercentage.quarters.push({
-                                quarter: j + 1,
-                                gross_turnover: null,
-                            });
+                            if (
+                                !grossTurnoverPercentage.quarters.find(
+                                    (x) => x.quarter == j + 1
+                                )
+                            ) {
+                                grossTurnoverPercentage.quarters.push({
+                                    quarter: j + 1,
+                                    gross_turnover: null,
+                                });
+                            }
                         }
                     }
                 } else {
@@ -439,6 +456,9 @@ export default {
                         .grossTurnoverPercentagesComputed[i]
                         ? this.grossTurnoverPercentagesComputed[i]
                         : financialYear;
+                    if (!grossTurnoverPercentage.months) {
+                        grossTurnoverPercentage.months = [];
+                    }
                     grossTurnoverPercentage.quarters = [];
                     for (let j = 0; j < financialMonths.length; j++) {
                         let year = financialMonths[j].year;

@@ -498,6 +498,11 @@ module.exports = {
         const endOfFinancialQuarter = new Date(year, month + 1, 0);
         return new Date() > endOfFinancialQuarter;
     },
+    monthHasPassed: function (year, month) {
+        // Month is 1 indexed in this function
+        const endOfMonth = new Date(year, month, 0);
+        return new Date() > endOfMonth;
+    },
     getStartMonthForFinancialQuarter: function (financialQuarter) {
         return [6, 9, 0, 3][financialQuarter - 1];
     },

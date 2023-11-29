@@ -146,12 +146,27 @@ def financial_quarters_included_in_range(start_date, end_date):
                 calendar_year = year
             else:
                 calendar_year = year + 1
-            if (
-                not datetime.date(calendar_year, month_for_quarter, start_date.day)
-                >= start_date
-                or not datetime.date(calendar_year, month_for_quarter, end_date.day)
-                <= end_date
-            ):
+            try:
+                compare_date_1 = datetime.date(
+                    calendar_year, month_for_quarter, start_date.day
+                )
+            except ValueError:
+                compare_date_1 = datetime.date(
+                    calendar_year,
+                    month_for_quarter,
+                    calendar.monthrange(calendar_year, month_for_quarter)[1],
+                )
+            try:
+                compare_date_2 = datetime.date(
+                    calendar_year, month_for_quarter, end_date.day
+                )
+            except ValueError:
+                compare_date_2 = datetime.date(
+                    calendar_year,
+                    month_for_quarter,
+                    calendar.monthrange(calendar_year, month_for_quarter)[1],
+                )
+            if not compare_date_1 >= start_date or not compare_date_2 <= end_date:
                 continue
             financial_quarters.append(
                 (quarter, f"Q{quarter}", calendar_year, financial_year)
@@ -159,18 +174,41 @@ def financial_quarters_included_in_range(start_date, end_date):
     return financial_quarters
 
 
-def months_included_in_range(start_date, end_date):
+def months_included_in_range(
+    start_date: datetime.date,
+    end_date: datetime.date,
+) -> list:
     """Returns a list of months included in the date range provided.
     The date range is inclusive of the start date and end date.
     """
+
+    if start_date >= end_date:
+        logger.warning(
+            f"Start date {start_date} is after end date {end_date} (or the same date)"
+        )
+        return []
+
     months = []
     for year in range(start_date.year, end_date.year + 1):
         for month_index in range(1, 13):
-            if (
-                not datetime.date(year, month_index, start_date.day) >= start_date
-                or not datetime.date(year, month_index, end_date.day) <= end_date
-            ):
+            logger.debug(f"Month index: {month_index}")
+            try:
+                compare_date_1 = datetime.date(year, month_index, start_date.day)
+            except ValueError:
+                compare_date_1 = datetime.date(
+                    year, month_index, calendar.monthrange(year, month_index)[1]
+                )
+            try:
+                compare_date_2 = datetime.date(year, month_index, end_date.day)
+            except ValueError:
+                compare_date_2 = datetime.date(
+                    year, month_index, calendar.monthrange(year, month_index)[1]
+                )
+
+            if not compare_date_1 >= start_date or not compare_date_2 <= end_date:
                 continue
+
+            logger.debug(f"Month included: {month_index}")
 
             months.append(datetime.date(year, month_index, 1))
     return months

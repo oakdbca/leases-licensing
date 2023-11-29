@@ -32,8 +32,9 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            hasGrossTurnoverEntries(year) ||
-                                            year.locked
+                                            hasGrossTurnoverEntry(year) ||
+                                            (!editingFromProposalPage &&
+                                                year.locked)
                                         "
                                         @change="$emit('onChangePercentage')"
                                         @keyup="$emit('onChangePercentage')"
@@ -54,12 +55,21 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            year.locked ||
-                                            (context == 'Approval' &&
-                                                index == 0)
+                                            financialYearHasPassed(
+                                                year.financial_year
+                                            ) ||
+                                            (!editingFromProposalPage &&
+                                                year.locked)
                                         "
                                         :required="
                                             context == 'Proposal' && index == 0
+                                        "
+                                        :placeholder="
+                                            financialYearHasPassed(
+                                                year.financial_year
+                                            )
+                                                ? 'Enter Actual'
+                                                : ''
                                         "
                                         @change="
                                             $emit(
@@ -86,13 +96,22 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            grossAnnualTurnoverReadonly(year) ||
-                                            year.locked
+                                            !financialYearHasPassed(
+                                                year.financial_year
+                                            ) ||
+                                            (!editingFromProposalPage &&
+                                                year.locked)
                                         "
                                         @change="
                                             grossAnnualTurnoverChanged(
-                                                $event,
-                                                year
+                                                year,
+                                                index
+                                            )
+                                        "
+                                        @keyup="
+                                            grossAnnualTurnoverChanged(
+                                                year,
+                                                index
                                             )
                                         "
                                     />
@@ -174,6 +193,7 @@ export default {
         'updateGrossTurnoverPercentages',
         'onChangePercentage',
         'onChangeGrossTurnoverEstimate',
+        'onChangeGrossTurnoverActual',
     ],
     data: function () {
         return {
@@ -205,70 +225,38 @@ export default {
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
             // Gross turnover is readonly if the financial year hasn't passed
             // or if the proposal is being edited from the proposal details page
-            // Todo: Only allow entry of the annual figure if all the quarterly figures are already entered
+            return !this.financialYearHasPassed(
+                grossTurnoverPercentage.financial_year
+            );
+        },
+        editingFromProposalPage: function () {
             return (
-                !this.financialYearHasPassed(
-                    grossTurnoverPercentage.financial_year
-                ) ||
-                !this.allQuartersEntered(grossTurnoverPercentage) ||
                 constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
-                    this.proposalProcessingStatusId
+                this.proposalProcessingStatusId
             );
         },
-        grossQuarterlyTurnoverReadonly: function (
-            financialYear,
-            financialQuarter
-        ) {
-            // Gross turnover is readonly if the financial quarter hasn't passed
-            // or if the proposal is being edited from the proposal details page
-            return (
-                !this.helpers.financialQuarterHasPassed(
-                    financialYear,
-                    financialQuarter
-                ) ||
-                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
-                    this.proposalProcessingStatusId
-            );
+        hasGrossTurnoverEntry: function (year) {
+            return year.gross_turnover != null && year.gross_turnover != '';
         },
-        grossMonthlyTurnoverReadonly: function (year, month) {
-            // Gross turnover is readonly if the month hasn't passed
-            // or if the proposal is being edited from the proposal details page
-            return (
-                new Date() < moment(new Date(year, month - 1, 1)).endOf('month')
-            );
-        },
-        allQuartersEntered: function (grossTurnoverPercentage) {
-            // Returns true if all the quarterly figures have been entered
-
-            for (let i = 0; i < grossTurnoverPercentage.quarters.length; i++) {
-                if (
-                    grossTurnoverPercentage.quarters[i].gross_turnover ==
-                        null ||
-                    grossTurnoverPercentage.quarters[i].gross_turnover == ''
-                ) {
-                    return false;
-                }
-            }
-            return true;
-        },
-        grossAnnualTurnoverEstimateChanged: function (event, year) {
+        grossAnnualTurnoverEstimateChanged: function (year) {
             // Todo populate the next years estimate with this years actual
             console.log('grossAnnualTurnoverEstimateChanged', event, year);
         },
-        grossAnnualTurnoverChanged: function (event, year) {
+        grossAnnualTurnoverChanged: function (year, index) {
             // Todo populate the next years estimate with this years actual
-            console.log('grossAnnualTurnoverChanged', event, year);
-        },
-        hasGrossTurnoverEntries: function (year) {
-            for (let i = 0; i < year.quarters.length; i++) {
-                if (
-                    year.quarters[i].gross_turnover != null &&
-                    year.quarters[i].gross_turnover != ''
-                ) {
-                    return true;
-                }
+            // If there is a next year and it hasn't passed then populate it with this years actual
+            if (
+                this.grossTurnoverPercentagesComputed[index + 1] &&
+                !this.financialYearHasPassed(
+                    this.grossTurnoverPercentagesComputed[index + 1]
+                        .financial_year
+                )
+            ) {
+                this.grossTurnoverPercentagesComputed[
+                    index + 1
+                ].estimated_gross_turnover = year.gross_turnover;
             }
-            return false;
+            this.$emit('onChangeGrossTurnoverActual', year.gross_turnover);
         },
         populateFinancialYearsArray: function (financialYearsIncluded) {
             var financialYear = null;
@@ -301,12 +289,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.quarter {
-    width: 142px;
-}
-.form-control-quarter {
-    width: 50px;
-}
-</style>

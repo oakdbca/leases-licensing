@@ -665,7 +665,9 @@ class InvoicingDetails(BaseModel):
             self.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
         ):
-            return self.get_amount_for_gross_turnover_invoice(end_date, amount_object)
+            return self.get_amount_for_gross_turnover_in_arrears_invoice(
+                end_date, amount_object
+            )
 
         if (
             self.charge_method.key
@@ -687,15 +689,18 @@ class InvoicingDetails(BaseModel):
         if days == 366:
             days = 365
 
-        # Caculate the base fee for this period i.e. days of period * cost per day
-        # Todo: I think they want to calculate each period as a division of the year rather than the days in the period
-        base_fee_amount = days * (base_fee_amount / 365)
+        # Modify the base fee based on the invoicing repetition type
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
+            base_fee_amount = base_fee_amount / 4
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
+            base_fee_amount = base_fee_amount / 12
+
         base_fee_amount = base_fee_amount.quantize(Decimal("0.01"))
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
 
-            # If the start date is before the issue date, use the issue date to calculate the cpi for that period
+            # If the start date is before the issue date, use the start date to calculate the cpi for that period
             # This is to cover the case of backdated invoices where using the issue date could yield a cpi figure
             # for a totally unrelated period.
             cpi_date = start_date if start_date < issue_date else issue_date
@@ -710,7 +715,7 @@ class InvoicingDetails(BaseModel):
             else:
                 amount_object["amount"] = base_fee_amount
                 amount_object["suffix"] = " + CPI (NYA)"
-                return amount_object
+            return amount_object
 
         year_sequence_index = self.get_year_sequence_index(index)
         if (
@@ -795,7 +800,7 @@ class InvoicingDetails(BaseModel):
 
         return amount_object
 
-    def get_amount_for_gross_turnover_invoice(self, end_date, amount_object):
+    def get_amount_for_gross_turnover_in_arrears_invoice(self, end_date, amount_object):
         amount_object["prefix"] = ""
         amount_object["amount"] = None
         end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
@@ -822,7 +827,7 @@ class InvoicingDetails(BaseModel):
         if not self.gross_turnover_percentages.filter(
             estimated_gross_turnover__isnull=False
         ).exists():
-            amount_object["suffix"] = "No initial turnover estimate found"
+            amount_object["suffix"] = "No initial turnover estimate entered"
             return amount_object
 
         start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -1059,6 +1064,8 @@ class PercentageOfGrossTurnover(BaseModel):
     def save(self, *args, **kwargs):
         if self.gross_turnover:
             self.locked = True
+        if self.locked and not self.gross_turnover:
+            self.locked = False
         super().save(*args, **kwargs)
 
     @property

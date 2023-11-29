@@ -227,6 +227,7 @@
                     updateGrossTurnoverPercentages
                 "
                 @on-change-percentage="updatePreviewInvoices"
+                @on-change-gross-turnover-estimate="updatePreviewInvoices"
             />
         </div>
         <div v-if="show_percentage_of_gross_turnover_advance">
@@ -244,6 +245,7 @@
                 "
                 @on-change-percentage="updatePreviewInvoices"
                 @on-change-gross-turnover-estimate="updatePreviewInvoices"
+                @on-change-gross-turnover-actual="updatePreviewInvoices"
             />
         </div>
         <div
@@ -952,7 +954,9 @@ export default {
                     vm.invoicingDetailsComputed.cpi_calculation_method == null
                 ) {
                     vm.invoicingDetailsComputed.cpi_calculation_method =
-                        cpi_calculation_methods[0].id;
+                        cpi_calculation_methods.find(
+                            (x) => x.name == 'latest_sep_qtr'
+                        ).id;
                 }
             } catch (err) {
                 console.error({ err });
