@@ -665,7 +665,9 @@ class InvoicingDetails(BaseModel):
             self.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
         ):
-            return self.get_amount_for_gross_turnover_invoice(end_date, amount_object)
+            return self.get_amount_for_gross_turnover_in_arrears_invoice(
+                end_date, amount_object
+            )
 
         if (
             self.charge_method.key
@@ -795,7 +797,7 @@ class InvoicingDetails(BaseModel):
 
         return amount_object
 
-    def get_amount_for_gross_turnover_invoice(self, end_date, amount_object):
+    def get_amount_for_gross_turnover_in_arrears_invoice(self, end_date, amount_object):
         amount_object["prefix"] = ""
         amount_object["amount"] = None
         end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
