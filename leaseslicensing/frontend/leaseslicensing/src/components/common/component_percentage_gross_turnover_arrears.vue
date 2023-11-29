@@ -184,10 +184,10 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            grossQuarterlyTurnoverReadonly(
-                                                year.financial_year,
-                                                month.quarter
-                                            ) || year.locked
+                                            grossMonthlyTurnoverReadonly(
+                                                month.year,
+                                                month.month
+                                            ) || month.locked
                                         "
                                     />
                                     <span class="input-group-text">AUD</span>
@@ -334,6 +334,10 @@ export default {
                     this.proposalProcessingStatusId
             );
         },
+        grossMonthlyTurnoverReadonly: function (year, month) {
+            // Gross turnover is readonly if the month hasn't passed
+            return !this.helpers.monthHasPassed(year, month);
+        },
         allQuartersEntered: function (grossTurnoverPercentage) {
             // Returns true if all the quarterly figures have been entered
 
@@ -412,6 +416,9 @@ export default {
                         .grossTurnoverPercentagesComputed[i]
                         ? this.grossTurnoverPercentagesComputed[i]
                         : financialYear;
+                    if (!grossTurnoverPercentage.quarters) {
+                        grossTurnoverPercentage.quarters = [];
+                    }
                     grossTurnoverPercentage.months = [];
                     for (let j = 0; j < 4; j++) {
                         if (
@@ -426,11 +433,9 @@ export default {
                         }
                         if (!grossTurnoverPercentage.quarters[j]) {
                             if (
-                                !this.grossTurnoverPercentagesComputed
-                                    .quarters ||
-                                this.grossTurnoverPercentagesComputed.quarters.filter(
+                                !grossTurnoverPercentage.quarters.find(
                                     (x) => x.quarter == j + 1
-                                ).length == 0
+                                )
                             ) {
                                 grossTurnoverPercentage.quarters.push({
                                     quarter: j + 1,
@@ -447,6 +452,9 @@ export default {
                         .grossTurnoverPercentagesComputed[i]
                         ? this.grossTurnoverPercentagesComputed[i]
                         : financialYear;
+                    if (!grossTurnoverPercentage.months) {
+                        grossTurnoverPercentage.months = [];
+                    }
                     grossTurnoverPercentage.quarters = [];
                     for (let j = 0; j < financialMonths.length; j++) {
                         let year = financialMonths[j].year;
@@ -467,7 +475,6 @@ export default {
                             continue;
                         }
                         if (
-                            !grossTurnoverPercentage.months ||
                             !grossTurnoverPercentage.months.find(
                                 (x) => x.month == month && x.year == year
                             )
