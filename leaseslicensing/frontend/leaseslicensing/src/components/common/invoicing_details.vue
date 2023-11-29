@@ -952,7 +952,9 @@ export default {
                     vm.invoicingDetailsComputed.cpi_calculation_method == null
                 ) {
                     vm.invoicingDetailsComputed.cpi_calculation_method =
-                        cpi_calculation_methods[0].id;
+                        cpi_calculation_methods.find(
+                            (x) => x.name == 'latest_sep_qtr'
+                        ).id;
                 }
             } catch (err) {
                 console.error({ err });
