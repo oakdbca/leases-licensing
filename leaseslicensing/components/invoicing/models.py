@@ -630,7 +630,10 @@ class InvoicingDetails(BaseModel):
             else:
                 month = utils.month_string_from_date(end_date)
                 text = f"{month} {end_date.year}"
-            return f"On receipt of {text} financial statement"
+            if utils.financial_year_has_passed(financial_year):
+                return f"On entry of annual gross turnover from FY {financial_year} audited financial statement)"
+
+            return f"On entry of gross turnover from {text} audited financial statement"
 
         return issue_date_now_or_future.strftime("%d/%m/%Y")
 
