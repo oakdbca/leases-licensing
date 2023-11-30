@@ -624,9 +624,7 @@ class InvoicingDetails(BaseModel):
         ):
             end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
             q = utils.financial_quarter_from_date(end_date)
-            financial_year = (
-                f"{original_issue_date.year - 1}-{original_issue_date.year}"
-            )
+            financial_year = utils.financial_year_from_date(original_issue_date)
             if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
                 text = f"Q{q} {financial_year}"
             else:
