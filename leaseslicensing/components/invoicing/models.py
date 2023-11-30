@@ -466,7 +466,9 @@ class InvoicingDetails(BaseModel):
                             "%d/%m/%Y"
                         ),  # This is the issue date before it is changed to today if it is in the past
                         "issue_date": self.get_issue_date(
-                            issue_date_now_or_future, invoicing_period["end_date"]
+                            issue_date,
+                            issue_date_now_or_future,
+                            invoicing_period["end_date"],
                         ),
                         "due_date": self.get_due_date(due_date),
                         "time_period": invoicing_period["label"],
@@ -615,14 +617,16 @@ class InvoicingDetails(BaseModel):
 
         return first_issue_date
 
-    def get_issue_date(self, issue_date, end_date):
+    def get_issue_date(self, original_issue_date, issue_date_now_or_future, end_date):
         if (
             self.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
         ):
             end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
             q = utils.financial_quarter_from_date(end_date)
-            financial_year = f"{issue_date.year - 1}-{issue_date.year}"
+            financial_year = (
+                f"{original_issue_date.year - 1}-{original_issue_date.year}"
+            )
             if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
                 text = f"Q{q} {financial_year}"
             else:
@@ -630,7 +634,7 @@ class InvoicingDetails(BaseModel):
                 text = f"{month} {end_date.year}"
             return f"On receipt of {text} financial statement"
 
-        return issue_date.strftime("%d/%m/%Y")
+        return issue_date_now_or_future.strftime("%d/%m/%Y")
 
     def get_due_date(self, due_date):
         if (
