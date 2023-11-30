@@ -219,9 +219,7 @@ LEDGER_DEFAULT_LINE_STATUS = 1
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
 
-CRON_CLASSES = [
-    "leaseslicensing.cron.OracleIntegrationCronJob",
-]
+CRON_CLASSES = []
 
 PROTECTED_MEDIA_ROOT = env(
     "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")
