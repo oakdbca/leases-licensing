@@ -1836,6 +1836,7 @@ export default {
             let previewInvoices =
                 this.$refs.approval_screen.$refs.invoicing_details
                     .previewInvoices;
+
             if (
                 [
                     constants.CHARGE_METHODS
@@ -1844,12 +1845,16 @@ export default {
                         .BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE.ID,
                     constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM.ID,
                     constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI.ID,
+                    constants.CHARGE_METHODS
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID,
                 ].includes(chargeType) &&
                 previewInvoices.find(
                     (invoice) => invoice.start_date_has_passed == true
                 ) &&
-                !this.proposal.proposal_type.code ==
+                !(
+                    this.proposal.proposal_type.code ==
                     constants.PROPOSAL_TYPE.MIGRATION.code
+                )
             ) {
                 let immediateInvoicesHtml =
                     '<p>Based on the information you have entered, the following invoice records will be generated:</p>';
@@ -1860,7 +1865,11 @@ export default {
 
                 for (let i = 0; i < previewInvoices.length; i++) {
                     let invoice = previewInvoices[i];
-                    if (invoice.start_date_has_passed) {
+                    if (
+                        invoice.start_date_has_passed &&
+                        invoice.amount_object.amount != null
+                    ) {
+                        console.log(JSON.stringify(invoice));
                         immediateInvoicesHtml += '<tr>';
                         immediateInvoicesHtml += `<td>${invoice.number}</td>`;
                         immediateInvoicesHtml += `<td>${invoice.issue_date}</td>`;
