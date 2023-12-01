@@ -3560,7 +3560,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
         ]:
             # Generate requirements for the proponent to submit quarterly (or monthly) and annual financial statements
-            self.generate_gross_turnover_requirements(approval, request)
+            self.generate_gross_turnover_requirements()
 
             # Generate compliances from the requirements
             self.generate_compliances(
