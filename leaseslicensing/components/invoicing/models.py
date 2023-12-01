@@ -467,6 +467,7 @@ class InvoicingDetails(BaseModel):
                             "%d/%m/%Y"
                         ),  # This is the issue date before it is changed to today if it is in the past
                         "issue_date": self.get_issue_date(
+                            amount_object,
                             issue_date,
                             issue_date_now_or_future,
                             invoicing_period["end_date"],
@@ -618,10 +619,13 @@ class InvoicingDetails(BaseModel):
 
         return first_issue_date
 
-    def get_issue_date(self, original_issue_date, issue_date_now_or_future, end_date):
+    def get_issue_date(
+        self, amount_object, original_issue_date, issue_date_now_or_future, end_date
+    ):
         if (
             self.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+            and amount_object["amount"] is None
         ):
             end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
             q = utils.financial_quarter_from_date(end_date)
@@ -817,6 +821,15 @@ class InvoicingDetails(BaseModel):
         )
         if not gross_turnover_percentage:
             amount_object["suffix"] = "???"
+            return amount_object
+
+        if gross_turnover_percentage.gross_turnover:
+            amount_object["prefix"] = "$"
+            amount_object["amount"] = Decimal(
+                gross_turnover_percentage.gross_turnover
+                * gross_turnover_percentage.percentage
+                / 100
+            ).quantize(Decimal("0.01"))
             return amount_object
 
         amount_object[
