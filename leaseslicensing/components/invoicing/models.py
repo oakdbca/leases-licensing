@@ -9,9 +9,10 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import F, Sum, Window
+from django.db.models import F, Q, Sum, Window
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from rest_framework import serializers
 
 from leaseslicensing import helpers
 from leaseslicensing.components.invoicing import utils
@@ -830,9 +831,11 @@ class InvoicingDetails(BaseModel):
         amount_object["amount"] = None
 
         if not self.gross_turnover_percentages.filter(
-            estimated_gross_turnover__isnull=False
+            Q(estimated_gross_turnover__isnull=False) | Q(gross_turnover__isnull=False)
         ).exists():
-            amount_object["suffix"] = "No initial turnover estimate entered"
+            amount_object[
+                "suffix"
+            ] = "No gross turnover estimate or gross turnover actual entered"
             return amount_object
 
         start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -842,24 +845,33 @@ class InvoicingDetails(BaseModel):
         gross_turnover_percentage = self.gross_turnover_percentages.filter(
             year=year
         ).first()
-        estimated_gross_turnover = gross_turnover_percentage.estimated_gross_turnover
-        if not estimated_gross_turnover:
-            # No estimate for this year, so use the most recent estimate
-            estimated_gross_turnover = (
-                self.gross_turnover_percentages.filter(
-                    estimated_gross_turnover__isnull=False,
-                )
-                .last()
-                .estimated_gross_turnover
+
+        if not gross_turnover_percentage:
+            logger.error(f"No gross turnover percentage found for year {year}")
+            raise serializers.ValidationError(
+                f"No gross turnover percentage found for year {year}"
             )
+
+        estimated_or_actual_gross_turnover = (
+            gross_turnover_percentage.gross_turnover
+            if gross_turnover_percentage.gross_turnover
+            else gross_turnover_percentage.estimated_gross_turnover
+        )
+
+        if not estimated_or_actual_gross_turnover:
+            amount_object["suffix"] = (
+                "No estimated gross turnover or actual gross turnover entered "
+                "(Enter at a later date to generate an invoice)"
+            )
+            return amount_object
 
         percentage = gross_turnover_percentage.percentage
         if not percentage:
             percentage = Decimal("0.00")
 
-        invoice_amount = Decimal(estimated_gross_turnover * percentage / 100).quantize(
-            Decimal("0.01")
-        )
+        invoice_amount = Decimal(
+            estimated_or_actual_gross_turnover * percentage / 100
+        ).quantize(Decimal("0.01"))
 
         amount_object["prefix"] = "$"
 
