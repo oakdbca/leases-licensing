@@ -270,7 +270,13 @@
         <div class="col">
             <BootstrapAlert v-if="context == 'Proposal'" class="py-2 mb-0">
                 The system will generate compliances to ask for an audited
-                financial statement for each financial quarter and year
+                financial statement for each
+                {{
+                    invoicingRepetitionTypeKey == 'quarterly'
+                        ? 'quarter'
+                        : 'month'
+                }}
+                and financial year
             </BootstrapAlert>
         </div>
     </div>
