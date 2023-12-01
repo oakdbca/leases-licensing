@@ -147,7 +147,11 @@ module.exports = {
         },
         PERCENTAGE_OF_GROSS_TURNOVER: {
             ID: 'percentage_of_gross_turnover',
-            TEXT: 'Percentage of Gross Turnover',
+            TEXT: 'Percentage of Gross Turnover (Arrears)',
+        },
+        PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE: {
+            ID: 'percentage_of_gross_turnover_in_advance',
+            TEXT: 'Percentage of Gross Turnover (Advance)',
         },
     },
     APPROVAL_DECISIONS: {
