@@ -2924,6 +2924,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             invoicing_details.invoicing_repetition_type.key
             == settings.REPETITION_TYPE_QUARTERLY
         ):
+            # prs = ProposalRequirement.objects.filter(
+            #     proposal=self,
+            #     standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+            #     is_deleted=False,
+            # )
+            # for pr in prs:
+            #     logger.debug(pr.__dict__)
             (
                 quarterly_gross_turnover_requirement,
                 created,
@@ -2969,8 +2976,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             deleted = Compliance.objects.filter(
                 proposal=self,
                 requirement__standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
-                due_date__gt=timezone.now().date(),
-                processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+                # Todo: If we end up supporting changing charge methods mid cycle
+                # then we need to come up with a solution here so that we don't delete any past compliances
+                # that were submitted. Otherwise this comment block can be removed.
+                # due_date__gt=timezone.now().date(),
+                # processing_status=Compliance.PROCESSING_STATUS_FUTURE,
             ).delete()
             if deleted[0] > 0:
                 logger.info(
@@ -3027,8 +3037,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             deleted = Compliance.objects.filter(
                 proposal=self,
                 requirement__standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
-                due_date__gt=timezone.now().date(),
-                processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+                # Todo: If we end up supporting changing charge methods mid cycle
+                # then we need to come up with a solution here so that we don't delete any past compliances
+                # that were submitted. Otherwise this comment block can be removed.
+                # due_date__gt=timezone.now().date(),
+                # processing_status=Compliance.PROCESSING_STATUS_FUTURE,
             ).delete()
             if deleted[0] > 0:
                 logger.info(
@@ -3102,6 +3115,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY}"
                 )
                 raise
+            prs = ProposalRequirement.objects.filter(
+                proposal=self,
+                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+                is_deleted=False,
+            )
+            for pr in prs:
+                logger.debug(pr.__dict__)
             (
                 quarterly_financial_statement_requirement,
                 created,
@@ -3114,6 +3134,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 recurrence_pattern=2,  # Monthly
                 recurrence_schedule=3,  # Every 3 months
             )
+            prs = ProposalRequirement.objects.filter(
+                proposal=self,
+                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+                is_deleted=False,
+            )
+            for pr in prs:
+                logger.debug(pr.__dict__)
             if created:
                 logger.info(
                     "New Quarterly Financial Statement Proposal Requirement: "
