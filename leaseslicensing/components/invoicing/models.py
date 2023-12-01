@@ -497,6 +497,14 @@ class InvoicingDetails(BaseModel):
 
     def generate_invoice_schedule(self, invoiced_up_to=None):
         """Generate scheduled invoices for any invoicing periods"""
+        if self.charge_method.key in [
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+        ]:
+            return
+
         future_invoices = []
         for preview_invoice in self.preview_invoices:
             start_date = datetime.strptime(
@@ -581,12 +589,22 @@ class InvoicingDetails(BaseModel):
         This should only be run once when the finance officer has just finished "editing invoicing" on the
         application.
         """
+        gross_turnover_based_invoicing = self.charge_method.key in [
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
+        ]
         immediate_invoices = []
         for preview_invoice in self.preview_invoices:
-            if preview_invoice["start_date_has_passed"]:
+            amount_object = preview_invoice["amount_object"]
+            if (
+                gross_turnover_based_invoicing and not amount_object["amount"] is None
+            ) or preview_invoice["start_date_has_passed"]:
                 immediate_invoices.append(preview_invoice)
+
         if len(immediate_invoices) == 0:
             return
+
+        logger.info(immediate_invoices)
 
         gst_free = self.approval.approval_type.gst_free
 
