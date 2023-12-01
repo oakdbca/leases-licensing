@@ -1847,6 +1847,7 @@ export default {
                     constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI.ID,
                     constants.CHARGE_METHODS
                         .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID,
+                    constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER.ID,
                 ].includes(chargeType) &&
                 previewInvoices.find(
                     (invoice) => invoice.start_date_has_passed == true
