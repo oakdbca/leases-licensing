@@ -597,31 +597,35 @@ class InvoicingDetails(BaseModel):
         for preview_invoice in self.preview_invoices:
             amount_object = preview_invoice["amount_object"]
             if (
-                gross_turnover_based_invoicing and not amount_object["amount"] is None
-            ) or preview_invoice["start_date_has_passed"]:
+                gross_turnover_based_invoicing and amount_object["amount"] is not None
+            ) or (
+                not gross_turnover_based_invoicing
+                and preview_invoice["start_date_has_passed"]
+            ):
                 immediate_invoices.append(preview_invoice)
 
         if len(immediate_invoices) == 0:
             return
 
-        logger.info(immediate_invoices)
-
         gst_free = self.approval.approval_type.gst_free
 
         for invoice_record in immediate_invoices:
-            invoice, created = Invoice.objects.get_or_create(
+            invoice = Invoice.objects.create(
                 approval=self.approval,
                 amount=invoice_record["amount_object"]["amount"],
                 gst_free=gst_free,
                 # Add status and datetime_created to avoid creating duplicate records
                 # the datetime value will be ignored when creating as it's an auto_now_add field
                 status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
-                datetime_created__date=timezone.now().date(),
             )
-            if created:
-                logger.info(f"Immediate invoice created: {invoice}")
+
+            logger.info(f"Immediate invoice created: {invoice}")
 
             # send to the finance group so they can take action
+            # Todo: create a version of this email function that takes a list of invoices
+            # and just sends one email with the list of invoices as the request is blocked
+            # and it can take quite some time to send all the emails in the case of back dated
+            # leases / licences.
             send_new_invoice_raised_internal_notification(invoice)
 
     def get_first_issue_date(self):
