@@ -1993,7 +1993,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             try:
                 document = self.documents.get(input_name=str(approval_level_document))
             except ProposalDocument.DoesNotExist:
-                document = self.documents.get_or_create(
+                document, created = self.documents.get_or_create(
                     input_name=str(approval_level_document),
                     name=str(approval_level_document),
                 )[0]
@@ -2883,16 +2883,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             return
 
         # All proposal that have gross turnover requirements require annual financial statements
-        try:
-            annual_gross_turnover_requirement = ProposalRequirement.objects.get(
-                proposal=self,
-                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY,
-                is_deleted=False,
-            )
-        except ProposalRequirement.DoesNotExist:
-            logger.warning(
-                f"Annual gross turnover requirement not found for Proposal: {self}"
-            )
+        (
+            annual_gross_turnover_requirement,
+            created,
+        ) = ProposalRequirement.objects.get_or_create(
+            proposal=self,
+            standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY,
+            is_deleted=False,
+        )
 
         financial_years_included = invoicing_utils.financial_years_included_in_range(
             self.approval.start_date, self.approval.expiry_date
@@ -2907,7 +2905,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             compliance, created = Compliance.objects.get_or_create(
                 proposal=self,
                 approval=self.approval,
-                requirement=annual_gross_turnover_requirement,
+                requirement_id=annual_gross_turnover_requirement.id,
                 due_date=due_date,
                 processing_status=Compliance.PROCESSING_STATUS_FUTURE,
             )
@@ -2926,51 +2924,46 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             invoicing_details.invoicing_repetition_type.key
             == settings.REPETITION_TYPE_QUARTERLY
         ):
-            try:
-                quarterly_gross_turnover_requirement = ProposalRequirement.objects.get(
+            (
+                quarterly_gross_turnover_requirement,
+                created,
+            ) = ProposalRequirement.objects.get_or_create(
+                proposal=self,
+                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+                is_deleted=False,
+            )
+            financial_quarters_included = (
+                invoicing_utils.financial_quarters_included_in_range(
+                    self.approval.start_date, self.approval.expiry_date
+                )
+            )
+            logger.debug(f"Financial Quarters Included: {financial_quarters_included}")
+            for financial_quarter in financial_quarters_included:
+                if only_future and invoicing_utils.financial_quarter_has_passed(
+                    financial_quarter
+                ):
+                    continue
+
+                year = int(financial_quarter[3].split("-")[1])
+                quarter = int(financial_quarter[0])
+                month = invoicing_utils.month_from_quarter(quarter)
+                due_date = datetime.date(year, month, 1) + relativedelta(months=4)
+                compliance, created = Compliance.objects.get_or_create(
                     proposal=self,
-                    standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
-                    is_deleted=False,
+                    approval=self.approval,
+                    requirement=quarterly_gross_turnover_requirement,
+                    due_date=due_date,
+                    processing_status=Compliance.PROCESSING_STATUS_FUTURE,
                 )
-                financial_quarters_included = (
-                    invoicing_utils.financial_quarters_included_in_range(
-                        self.approval.start_date, self.approval.expiry_date
+                if created:
+                    logger.info(
+                        f"Compliance created: {compliance} for Proposal: {self}"
                     )
-                )
-                logger.debug(
-                    f"Financial Quarters Included: {financial_quarters_included}"
-                )
-                for financial_quarter in financial_quarters_included:
-                    if only_future and invoicing_utils.financial_quarter_has_passed(
-                        financial_quarter
-                    ):
-                        continue
-
-                    year = int(financial_quarter[3].split("-")[1])
-                    quarter = int(financial_quarter[0])
-                    month = invoicing_utils.month_from_quarter(quarter)
-                    due_date = datetime.date(year, month, 1) + relativedelta(months=4)
-                    compliance, created = Compliance.objects.get_or_create(
-                        proposal=self,
-                        approval=self.approval,
-                        requirement=quarterly_gross_turnover_requirement,
-                        due_date=due_date,
-                        processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+                    compliance.text = (
+                        "Please enter the gross turnover and upload an audited "
+                        f"financial statement for {financial_quarter[1]} {financial_quarter[3]}"
                     )
-                    if created:
-                        logger.info(
-                            f"Compliance created: {compliance} for Proposal: {self}"
-                        )
-                        compliance.text = (
-                            "Please enter the gross turnover and upload an audited "
-                            f"financial statement for {financial_quarter[1]} {financial_quarter[3]}"
-                        )
-                        compliance.save()
-
-            except ProposalRequirement.DoesNotExist:
-                logger.warning(
-                    f"Quarterly gross turnover requirement not found for Proposal: {self}"
-                )
+                    compliance.save()
 
             # Delete any future monthly gross turnvoer compliances
             deleted = Compliance.objects.filter(
@@ -2989,50 +2982,46 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             invoicing_details.invoicing_repetition_type.key
             == settings.REPETITION_TYPE_MONTHLY
         ):
-            try:
-                monthly_gross_turnover_requirement = ProposalRequirement.objects.get(
-                    proposal=self,
-                    standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
-                    is_deleted=False,
+            (
+                monthly_gross_turnover_requirement,
+                created,
+            ) = ProposalRequirement.objects.get_or_create(
+                proposal=self,
+                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
+                is_deleted=False,
+            )
+            logger.debug(
+                f"Monthly Gross Turnover Requirement: {monthly_gross_turnover_requirement}"
+            )
+            months_included = invoicing_utils.months_included_in_range(
+                self.approval.start_date, self.approval.expiry_date
+            )
+            for month in months_included:
+                due_date = month + relativedelta(months=2)
+                end_of_month = (
+                    month.replace(day=calendar.monthrange(month.year, month.month)[1])
+                    < timezone.now().date()
                 )
-                logger.debug(
-                    f"Monthly Gross Turnover Requirement: {monthly_gross_turnover_requirement}"
-                )
-                months_included = invoicing_utils.months_included_in_range(
-                    self.approval.start_date, self.approval.expiry_date
-                )
-                for month in months_included:
-                    due_date = month + relativedelta(months=2)
-                    end_of_month = (
-                        month.replace(
-                            day=calendar.monthrange(month.year, month.month)[1]
-                        )
-                        < timezone.now().date()
-                    )
-                    if only_future and timezone.now().date() > end_of_month:
-                        continue
+                if only_future and timezone.now().date() > end_of_month:
+                    continue
 
-                    compliance, created = Compliance.objects.get_or_create(
-                        proposal=self,
-                        approval=self.approval,
-                        requirement=monthly_gross_turnover_requirement,
-                        due_date=due_date,
-                        processing_status=Compliance.PROCESSING_STATUS_FUTURE,
-                    )
-                    logger.debug(f"Compliance: {compliance}")
-                    if created:
-                        logger.info(
-                            f"Compliance created: {compliance} for Proposal: {self}"
-                        )
-                        compliance.text = (
-                            "Please enter the gross turnover and upload an audited "
-                            f"financial statement for {month.strftime('%b').upper()} {month.year}"
-                        )
-                        compliance.save()
-            except ProposalRequirement.DoesNotExist:
-                logger.warning(
-                    f"Quarterly gross turnover requirement not found for Proposal: {self}"
+                compliance, created = Compliance.objects.get_or_create(
+                    proposal=self,
+                    approval=self.approval,
+                    requirement=monthly_gross_turnover_requirement,
+                    due_date=due_date,
+                    processing_status=Compliance.PROCESSING_STATUS_FUTURE,
                 )
+                logger.debug(f"Compliance: {compliance}")
+                if created:
+                    logger.info(
+                        f"Compliance created: {compliance} for Proposal: {self}"
+                    )
+                    compliance.text = (
+                        "Please enter the gross turnover and upload an audited "
+                        f"financial statement for {month.strftime('%b').upper()} {month.year}"
+                    )
+                    compliance.save()
 
             # Delete any future quarterly gross turnover compliances
             deleted = Compliance.objects.filter(
@@ -3564,7 +3553,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             # Generate compliances from the requirements
             self.generate_compliances(
-                approval, request, future_only=is_migration_proposal
+                approval, request, only_future=is_migration_proposal
             )
             return
 
@@ -4781,7 +4770,7 @@ class Referral(RevisionedMixin):
                         input_name=str(referral_document)
                     )
                 except ReferralDocument.DoesNotExist:
-                    document = self.referral_documents.get_or_create(
+                    document, created = self.referral_documents.get_or_create(
                         input_name=str(referral_document),
                         name=str(referral_document),
                     )[0]
