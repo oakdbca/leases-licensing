@@ -483,8 +483,8 @@ export default {
         },
         getGrossTurnoverChanges: function () {
             if (
-                constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER.ID !=
-                this.approval.invoicing_details.charge_method_key
+                constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+                    .ID != this.approval.invoicing_details.charge_method_key
             ) {
                 return [];
             }
