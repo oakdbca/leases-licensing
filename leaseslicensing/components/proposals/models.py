@@ -2924,19 +2924,24 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             invoicing_details.invoicing_repetition_type.key
             == settings.REPETITION_TYPE_QUARTERLY
         ):
-            # prs = ProposalRequirement.objects.filter(
-            #     proposal=self,
-            #     standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
-            #     is_deleted=False,
-            # )
-            # for pr in prs:
-            #     logger.debug(pr.__dict__)
+            try:
+                quarterly_standard_requirement = (
+                    ProposalStandardRequirement.objects.get(
+                        code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY
+                    )
+                )
+            except ProposalStandardRequirement.DoesNotExist:
+                logger.error(
+                    f"ProposalStandardRequirement not found: "
+                    f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY}"
+                )
+                raise
             (
                 quarterly_gross_turnover_requirement,
                 created,
             ) = ProposalRequirement.objects.get_or_create(
                 proposal=self,
-                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+                standard_requirement=quarterly_standard_requirement,
                 is_deleted=False,
             )
             financial_quarters_included = (
@@ -2944,7 +2949,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     self.approval.start_date, self.approval.expiry_date
                 )
             )
-            logger.debug(f"Financial Quarters Included: {financial_quarters_included}")
+
             for financial_quarter in financial_quarters_included:
                 if only_future and invoicing_utils.financial_quarter_has_passed(
                     financial_quarter
@@ -2992,12 +2997,22 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             invoicing_details.invoicing_repetition_type.key
             == settings.REPETITION_TYPE_MONTHLY
         ):
+            try:
+                monthly_standard_requirement = ProposalStandardRequirement.objects.get(
+                    code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY
+                )
+            except ProposalStandardRequirement.DoesNotExist:
+                logger.error(
+                    f"ProposalStandardRequirement not found: "
+                    f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY}"
+                )
+                raise
             (
                 monthly_gross_turnover_requirement,
                 created,
             ) = ProposalRequirement.objects.get_or_create(
                 proposal=self,
-                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
+                standard_requirement=monthly_standard_requirement,
                 is_deleted=False,
             )
             logger.debug(
@@ -3078,6 +3093,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             recurrence=True,
             recurrence_pattern=3,  # Annualy
             recurrence_schedule=1,  # Every 1 year
+            is_deleted=False,
         )
         if created:
             logger.info(
@@ -3115,13 +3131,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY}"
                 )
                 raise
-            prs = ProposalRequirement.objects.filter(
-                proposal=self,
-                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
-                is_deleted=False,
-            )
-            for pr in prs:
-                logger.debug(pr.__dict__)
+
             (
                 quarterly_financial_statement_requirement,
                 created,
@@ -3133,19 +3143,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 recurrence=True,
                 recurrence_pattern=2,  # Monthly
                 recurrence_schedule=3,  # Every 3 months
-            )
-            prs = ProposalRequirement.objects.filter(
-                proposal=self,
-                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
                 is_deleted=False,
             )
-            for pr in prs:
-                logger.debug(pr.__dict__)
-            if created:
-                logger.info(
-                    "New Quarterly Financial Statement Proposal Requirement: "
-                    f"{quarterly_financial_statement_requirement} created for {self}"
-                )
 
             # Remove any monthly gross turnover requirements as they are not needed when
             # invoicing quarterly
@@ -3582,7 +3581,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             self.generate_compliances(
                 approval, request, only_future=is_migration_proposal
             )
-            return
 
         # For all other charge methods, there may be one or more invoice records that need to be
         # generated immediately (any past periods and any current period i.e. that has started but not yet finished)
