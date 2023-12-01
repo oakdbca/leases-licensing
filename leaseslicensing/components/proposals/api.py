@@ -602,7 +602,6 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = ListProposalMinimalSerializer(
             qs, context={"request": request}, many=True
         )
-        logger.debug(f"query: {qs.query}")
         return Response(serializer.data)
 
     @detail_route(
