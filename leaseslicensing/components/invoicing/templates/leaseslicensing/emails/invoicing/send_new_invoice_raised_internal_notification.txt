@@ -13,5 +13,6 @@
 
     View Invoice Records:
 
-    {{url}}
+    {{internal_invoices_url}}
+
 {%  endblock %}
