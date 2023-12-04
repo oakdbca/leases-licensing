@@ -2882,13 +2882,45 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         ):
             return
 
+        try:
+            annual_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                f"ProposalStandardRequirement not found: code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY}"
+            )
+            raise
+
+        try:
+            quarterly_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                f"ProposalStandardRequirement not found: "
+                f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY}"
+            )
+            raise
+
+        try:
+            monthly_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                f"ProposalStandardRequirement not found: "
+                f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY}"
+            )
+            raise
+
         # All proposal that have gross turnover requirements require annual financial statements
         (
             annual_gross_turnover_requirement,
             created,
         ) = ProposalRequirement.objects.get_or_create(
             proposal=self,
-            standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY,
+            standard_requirement=annual_standard_requirement,
             is_deleted=False,
         )
 
@@ -2905,7 +2937,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             compliance, created = Compliance.objects.get_or_create(
                 proposal=self,
                 approval=self.approval,
-                requirement_id=annual_gross_turnover_requirement.id,
+                requirement=annual_gross_turnover_requirement,
                 due_date=due_date,
                 processing_status=Compliance.PROCESSING_STATUS_FUTURE,
             )
@@ -2919,23 +2951,23 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         invoicing_details = self.approval.current_proposal.invoicing_details
 
+        if (
+            invoicing_details.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            # Don't generate quarterly or monthly compliances for percentage of gross turnover advance invoicing
+            # Remove any such compliances
+            self.compliances.filter(
+                Q(requirement__standard_requirement=quarterly_standard_requirement)
+                | Q(requirement__standard_requirement=monthly_standard_requirement)
+            ).delete()
+            return
+
         # If invoicing quarterly, generate quarterly financial statement compliances
         if (
             invoicing_details.invoicing_repetition_type.key
             == settings.REPETITION_TYPE_QUARTERLY
         ):
-            try:
-                quarterly_standard_requirement = (
-                    ProposalStandardRequirement.objects.get(
-                        code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY
-                    )
-                )
-            except ProposalStandardRequirement.DoesNotExist:
-                logger.error(
-                    f"ProposalStandardRequirement not found: "
-                    f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY}"
-                )
-                raise
             (
                 quarterly_gross_turnover_requirement,
                 created,
@@ -2955,10 +2987,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     financial_quarter
                 ):
                     continue
-
-                year = int(financial_quarter[3].split("-")[1])
+                year = int(financial_quarter[2])
                 quarter = int(financial_quarter[0])
-                month = invoicing_utils.month_from_quarter(quarter)
+                month = invoicing_utils.month_from_quarter(quarter - 1)
+                # This will make the compliance due date 1 month after the end of that financial quarter
                 due_date = datetime.date(year, month, 1) + relativedelta(months=4)
                 compliance, created = Compliance.objects.get_or_create(
                     proposal=self,
@@ -2980,7 +3012,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             # Delete any future monthly gross turnvoer compliances
             deleted = Compliance.objects.filter(
                 proposal=self,
-                requirement__standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
+                requirement__standard_requirement=monthly_standard_requirement,
                 # Todo: If we end up supporting changing charge methods mid cycle
                 # then we need to come up with a solution here so that we don't delete any past compliances
                 # that were submitted. Otherwise this comment block can be removed.
@@ -2993,20 +3025,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 )
 
         # If invoicing monthly, generate monthly financial statement compliances
-        if (
+        elif (
             invoicing_details.invoicing_repetition_type.key
             == settings.REPETITION_TYPE_MONTHLY
         ):
-            try:
-                monthly_standard_requirement = ProposalStandardRequirement.objects.get(
-                    code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY
-                )
-            except ProposalStandardRequirement.DoesNotExist:
-                logger.error(
-                    f"ProposalStandardRequirement not found: "
-                    f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY}"
-                )
-                raise
             (
                 monthly_gross_turnover_requirement,
                 created,
@@ -3051,7 +3073,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             # Delete any future quarterly gross turnover compliances
             deleted = Compliance.objects.filter(
                 proposal=self,
-                requirement__standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+                requirement__standard_requirement=quarterly_standard_requirement,
                 # Todo: If we end up supporting changing charge methods mid cycle
                 # then we need to come up with a solution here so that we don't delete any past compliances
                 # that were submitted. Otherwise this comment block can be removed.
@@ -3082,6 +3104,29 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 f"ProposalStandardRequirement not found: code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY}"
             )
             raise
+
+        try:
+            quarterly_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                "ProposalStandardRequirement not found: "
+                f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY}"
+            )
+            raise
+
+        try:
+            monthly_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                "ProposalStandardRequirement not found: "
+                f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY}"
+            )
+            raise
+
         (
             annual_financial_statement_requirement,
             created,
@@ -3106,6 +3151,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
         ):
             # Don't generate quarterly or monthly requirements for percentage of gross turnover advance invoicing
+            # Remove any such requirements
+            self.requirements.filter(
+                Q(standard_requirement=quarterly_standard_requirement)
+                | Q(standard_requirement=monthly_standard_requirement)
+            ).delete()
             return
 
         if (
@@ -3118,19 +3168,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             first_quarterly_due_date = end_of_first_financial_quarter + relativedelta(
                 days=30
             )
-
-            try:
-                quarterly_standard_requirement = (
-                    ProposalStandardRequirement.objects.get(
-                        code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY
-                    )
-                )
-            except ProposalStandardRequirement.DoesNotExist:
-                logger.error(
-                    "ProposalStandardRequirement not found: "
-                    f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY}"
-                )
-                raise
 
             (
                 quarterly_financial_statement_requirement,
@@ -3160,16 +3197,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             end_of_first_month = approval.start_date + relativedelta(day=31)
             first_monthly_due_date = end_of_first_month + relativedelta(months=1)
 
-            try:
-                monthly_standard_requirement = ProposalStandardRequirement.objects.get(
-                    code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY
-                )
-            except ProposalStandardRequirement.DoesNotExist:
-                logger.error(
-                    "ProposalStandardRequirement not found: "
-                    f"code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY}"
-                )
-                raise
             (
                 monthly_financial_statement_requirement,
                 created,
@@ -3213,12 +3240,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             gross_turnover_requirements = ProposalStandardRequirement.objects.filter(
                 gross_turnover_required=True
             )
-            ProposalRequirement.objects.filter(
+            self.requirements.filter(
                 standard_requirement__in=gross_turnover_requirements,
-                proposal=invoicing_details.approval.current_proposal,
             ).update(is_deleted=True)
-            # Todo: Delete any future gross turnover compliances except for the first upcoming
-            # compliances ???
+            self.compliances.filter(
+                requirement__standard_requirement__in=gross_turnover_requirements
+            ).delete()
             return
 
         if (
