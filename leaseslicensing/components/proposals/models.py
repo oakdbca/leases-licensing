@@ -3233,7 +3233,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             ).update(is_deleted=True)
 
     def update_gross_turnover_requirements(self):
-        """Called when the finance user is editing the invoicing details from the approval details page
+        """Called when the finance user is editing the invoicing details
         and changes the charge method or invoicing repetition type.
 
         This method ensures the necessary proposal requirements are created or deleted based on the
