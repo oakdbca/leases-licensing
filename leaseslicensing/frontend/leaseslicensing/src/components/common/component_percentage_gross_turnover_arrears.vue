@@ -1,6 +1,12 @@
 <template>
     <div class="row mb-3">
         <div class="col">
+            <div v-if="context == 'Proposal'">
+                <BootstrapAlert>
+                    Enter the percentage of gross turnover to charge for each
+                    financial year
+                </BootstrapAlert>
+            </div>
             <template
                 v-for="year in grossTurnoverPercentagesComputed"
                 :key="year.year"
@@ -41,8 +47,10 @@
                                     <span class="input-group-text">%</span>
                                 </div>
                             </label>
-                            <div class="pe-3">Gross Turnover</div>
-                            <div class="col-sm-3">
+                            <div v-if="context == 'Approval'" class="pe-3">
+                                Gross Turnover
+                            </div>
+                            <div v-if="context == 'Approval'" class="col-sm-3">
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
                                     <input
@@ -104,6 +112,7 @@
                     </div>
                     <div
                         v-if="
+                            context == 'Approval' &&
                             invoicingReptitionQuarterly &&
                             (!editingFromProposalPage ||
                                 !financialYearHasPassed(year.financial_year))
@@ -186,6 +195,7 @@
                     </div>
                     <div
                         v-if="
+                            context == 'Approval' &&
                             !invoicingReptitionQuarterly &&
                             (!editingFromProposalPage ||
                                 !financialYearHasPassed(year.financial_year))
