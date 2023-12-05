@@ -154,6 +154,11 @@ module.exports = {
             TEXT: 'Percentage of Gross Turnover (Advance)',
         },
     },
+    INVOICING_REPETITON_TYPES: {
+        MONTHLY: { ID: 'monthly', TEXT: 'Monthly' },
+        QUARTERLY: { ID: 'quarterly', TEXT: 'Quarterly' },
+        ANNUALLY: { ID: 'annually', TEXT: 'Annually' },
+    },
     APPROVAL_DECISIONS: {
         APPROVE_LEASE_LICENCE: 'approve_lease_licence',
         APPROVE_COMPETITIVE_PROCESS: 'approve_competitive_process',
