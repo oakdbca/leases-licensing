@@ -3130,15 +3130,17 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         (
             annual_financial_statement_requirement,
             created,
-        ) = ProposalRequirement.objects.get_or_create(
+        ) = ProposalRequirement.objects.update_or_create(
             proposal=self,
             standard_requirement=annual_standard_requirement,
-            due_date=first_annual_due_date,
-            reminder_date=end_of_first_financial_year + relativedelta(days=1),
-            recurrence=True,
-            recurrence_pattern=3,  # Annualy
-            recurrence_schedule=1,  # Every 1 year
             is_deleted=False,
+            defaults={
+                "due_date": first_annual_due_date,
+                "reminder_date": end_of_first_financial_year + relativedelta(days=1),
+                "recurrence": True,
+                "recurrence_pattern": 3,  # Yearly
+                "recurrence_schedule": 1,  # Every 1 year
+            },
         )
         if created:
             logger.info(
@@ -3172,15 +3174,18 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             (
                 quarterly_financial_statement_requirement,
                 created,
-            ) = ProposalRequirement.objects.get_or_create(
+            ) = ProposalRequirement.objects.update_or_create(
                 proposal=self,
                 standard_requirement=quarterly_standard_requirement,
-                due_date=first_quarterly_due_date,
-                reminder_date=end_of_first_financial_year + relativedelta(days=1),
-                recurrence=True,
-                recurrence_pattern=2,  # Monthly
-                recurrence_schedule=3,  # Every 3 months
                 is_deleted=False,
+                defaults={
+                    "due_date": first_quarterly_due_date,
+                    "reminder_date": end_of_first_financial_year
+                    + relativedelta(days=1),
+                    "recurrence": True,
+                    "recurrence_pattern": 2,  # Monthly
+                    "recurrence_schedule": 3,  # Every 3 months
+                },
             )
 
             # Remove any monthly gross turnover requirements as they are not needed when
@@ -3200,15 +3205,20 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             (
                 monthly_financial_statement_requirement,
                 created,
-            ) = ProposalRequirement.objects.get_or_create(
+            ) = ProposalRequirement.objects.update_or_create(
                 proposal=self,
                 standard_requirement=monthly_standard_requirement,
-                due_date=first_monthly_due_date,
-                reminder_date=end_of_first_financial_year + relativedelta(days=1),
-                recurrence=True,
-                recurrence_pattern=2,  # Monthly
-                recurrence_schedule=1,  # Every 1 month
+                is_deleted=False,
+                defaults={
+                    "due_date": first_monthly_due_date,
+                    "reminder_date": end_of_first_financial_year
+                    + relativedelta(days=1),
+                    "recurrence": True,
+                    "recurrence_pattern": 2,  # Monthly
+                    "recurrence_schedule": 1,  # Every 1 month
+                },
             )
+
             if created:
                 logger.info(
                     "New Monthly Financial Statement Proposal Requirement: "
@@ -3290,6 +3300,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 ) = ProposalRequirement.objects.get_or_create(
                     proposal=self,
                     standard_requirement=quarterly_turnover_requirement,
+                    is_deleted=False,
                 )
                 if not created:
                     annual_financial_statement_requirement.is_deleted = False
@@ -3317,6 +3328,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 ) = ProposalRequirement.objects.get_or_create(
                     proposal=self,
                     standard_requirement=monthly_turnover_requirement,
+                    is_deleted=False,
                 )
                 if not created:
                     annual_financial_statement_requirement.is_deleted = False
