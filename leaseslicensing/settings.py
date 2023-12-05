@@ -285,12 +285,13 @@ if DEBUG:
             "verbose": {
                 "format": "%(levelname)s %(asctime)s %(name)s [Line:%(lineno)s][%(funcName)s] %(message)s"
             },
+            "simple": {"format": "%(levelname)s %(message)s"},
         },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
                 "level": "DEBUG",
-                "formatter": "verbose",
+                "formatter": "simple",
             },
             "leaseslicensing_rotating_file": {
                 "level": "INFO",
