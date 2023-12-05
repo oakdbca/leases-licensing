@@ -1122,10 +1122,6 @@ class PercentageOfGrossTurnover(BaseModel):
         return f"{self.year}: {self.percentage}%"
 
     def save(self, *args, **kwargs):
-        if self.gross_turnover:
-            self.locked = True
-        if self.locked and not self.gross_turnover:
-            self.locked = False
         super().save(*args, **kwargs)
 
     @property
