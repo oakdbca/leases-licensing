@@ -589,6 +589,11 @@ class InvoicingDetails(BaseModel):
         This should only be run once when the finance officer has just finished "editing invoicing" on the
         application.
         """
+        if self.charge_method.key in [
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+        ]:
+            # Don't generate immediate invoices for
+            return
         gross_turnover_based_invoicing = self.charge_method.key in [
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
