@@ -246,6 +246,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     custom_cpi_years = CustomCPIYearSerializer(many=True, required=False)
     comment_text = serializers.CharField(required=False)
     context = serializers.CharField(required=False)
+    invoicing_repetition_type_key = serializers.CharField(
+        source="invoicing_repetition_type.key", read_only=True
+    )
 
     class Meta:
         model = InvoicingDetails
@@ -259,6 +262,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "review_repetition_type",  # FK
             "invoicing_once_every",
             "invoicing_repetition_type",  # FK
+            "invoicing_repetition_type_key",  # FK
             "invoicing_month_of_year",
             "invoicing_day_of_month",
             "invoicing_quarters_start_month",
@@ -489,9 +493,10 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         # Update local and FK fields
         instance.save()
 
-        # If the user is editing the invoicing details from the approval details page
+        # If the user has changed the charge method of invoicing repetition type
         # update the invoicing schedule and compliances as required
         if charge_method_changed or invoicing_repetition_type_changed:
+            # instance.reset
             instance.update_invoice_schedule()
             instance.proposal.update_gross_turnover_requirements()
             instance.proposal.generate_compliances(
