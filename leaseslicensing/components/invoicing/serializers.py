@@ -489,15 +489,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         # Update local and FK fields
         instance.save()
 
-        context = validated_data.get("context")
-
         # If the user is editing the invoicing details from the approval details page
         # update the invoicing schedule and compliances as required
-        if (
-            context == "Approval"
-            and charge_method_changed
-            or invoicing_repetition_type_changed
-        ):
+        if charge_method_changed or invoicing_repetition_type_changed:
             instance.update_invoice_schedule()
             instance.proposal.update_gross_turnover_requirements()
             instance.proposal.generate_compliances(

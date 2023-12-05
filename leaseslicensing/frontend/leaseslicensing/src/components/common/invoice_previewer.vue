@@ -9,8 +9,8 @@
             v-if="context == 'Approval'"
             type="warning"
             icon="exclamation-triangle-fill"
-            >Invoices with the issue date as today's date will usually be
-            generated the next day.</BootstrapAlert
+            >Invoices with the issue date as today will be generated at 8am
+            (which will often be the next day)</BootstrapAlert
         >
         <BootstrapAlert
             v-if="chargeMethodKey == 'percentage_of_gross_turnover'"

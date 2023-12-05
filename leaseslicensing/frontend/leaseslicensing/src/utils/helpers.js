@@ -501,7 +501,7 @@ module.exports = {
     monthHasPassed: function (year, month) {
         // Month is 1 indexed in this function
         const endOfMonth = new Date(year, month, 0);
-        return new Date() > endOfMonth;
+        return new Date(new Date().toDateString()) > endOfMonth;
     },
     getStartMonthForFinancialQuarter: function (financialQuarter) {
         return [6, 9, 0, 3][financialQuarter - 1];

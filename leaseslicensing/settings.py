@@ -219,9 +219,7 @@ LEDGER_DEFAULT_LINE_STATUS = 1
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
 
-CRON_CLASSES = [
-    "leaseslicensing.cron.OracleIntegrationCronJob",
-]
+CRON_CLASSES = []
 
 PROTECTED_MEDIA_ROOT = env(
     "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")
@@ -287,12 +285,13 @@ if DEBUG:
             "verbose": {
                 "format": "%(levelname)s %(asctime)s %(name)s [Line:%(lineno)s][%(funcName)s] %(message)s"
             },
+            "simple": {"format": "%(levelname)s %(message)s"},
         },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
                 "level": "DEBUG",
-                "formatter": "verbose",
+                "formatter": "simple",
             },
             "leaseslicensing_rotating_file": {
                 "level": "INFO",

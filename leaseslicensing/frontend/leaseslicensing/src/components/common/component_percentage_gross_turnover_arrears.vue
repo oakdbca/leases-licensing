@@ -1,7 +1,12 @@
 <template>
-    <!-- <pre>{{ $filters.pretty(grossTurnoverPercentagesComputed) }}</pre> -->
     <div class="row mb-3">
         <div class="col">
+            <div v-if="context == 'Proposal'">
+                <BootstrapAlert>
+                    Enter the percentage of gross turnover to charge for each
+                    financial year
+                </BootstrapAlert>
+            </div>
             <template
                 v-for="year in grossTurnoverPercentagesComputed"
                 :key="year.year"
@@ -32,8 +37,9 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            hasGrossTurnoverEntries(year) ||
-                                            year.locked
+                                            !editingFromProposalPage &&
+                                            (hasGrossTurnoverEntries(year) ||
+                                                year.locked)
                                         "
                                         @change="$emit('onChangePercentage')"
                                         @keyup="$emit('onChangePercentage')"
@@ -41,8 +47,10 @@
                                     <span class="input-group-text">%</span>
                                 </div>
                             </label>
-                            <div class="pe-3">Gross Turnover</div>
-                            <div class="col-sm-3">
+                            <div v-if="context == 'Approval'" class="pe-3">
+                                Gross Turnover
+                            </div>
+                            <div v-if="context == 'Approval'" class="col-sm-3">
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
                                     <input
@@ -50,13 +58,15 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            !editingFromProposalPage &&
-                                            (grossAnnualTurnoverReadonly(
-                                                year
-                                            ) ||
-                                                year.locked)
+                                            grossAnnualTurnoverReadonly(year)
                                         "
                                         @change="
+                                            grossAnnualTurnoverChanged(
+                                                $event,
+                                                year
+                                            )
+                                        "
+                                        @keyup="
                                             grossAnnualTurnoverChanged(
                                                 $event,
                                                 year
@@ -69,7 +79,12 @@
                         </div>
                     </div>
                     <div
-                        v-if="year.gross_turnover && year.discrepency"
+                        v-if="
+                            (!editingFromProposalPage ||
+                                !financialYearHasPassed(year.financial_year)) &&
+                            year.gross_turnover &&
+                            year.discrepency
+                        "
                         class="card-body"
                     >
                         <BootstrapAlert>
@@ -96,7 +111,12 @@
                         </BootstrapAlert>
                     </div>
                     <div
-                        v-if="invoicingReptitionQuarterly"
+                        v-if="
+                            context == 'Approval' &&
+                            invoicingReptitionQuarterly &&
+                            (!editingFromProposalPage ||
+                                !financialYearHasPassed(year.financial_year))
+                        "
                         class="card-body py-3"
                     >
                         <div
@@ -135,6 +155,16 @@
                                             (!editingFromProposalPage &&
                                                 year.locked)
                                         "
+                                        @change="
+                                            $emit(
+                                                'onChangeQuarterlyGrossTurnover'
+                                            )
+                                        "
+                                        @keyup="
+                                            $emit(
+                                                'onChangeQuarterlyGrossTurnover'
+                                            )
+                                        "
                                     />
                                     <span class="input-group-text">AUD</span>
                                 </div>
@@ -163,7 +193,15 @@
                             </div>
                         </div>
                     </div>
-                    <div v-else class="card-body py-3">
+                    <div
+                        v-if="
+                            context == 'Approval' &&
+                            !invoicingReptitionQuarterly &&
+                            (!editingFromProposalPage ||
+                                !financialYearHasPassed(year.financial_year))
+                        "
+                        class="card-body py-3"
+                    >
                         <div
                             v-for="month in year.months"
                             :key="month.year + month.month"
@@ -192,7 +230,19 @@
                                             grossMonthlyTurnoverReadonly(
                                                 month.year,
                                                 month.month
-                                            ) || month.locked
+                                            ) ||
+                                            (!editingFromProposalPage &&
+                                                month.locked)
+                                        "
+                                        @change="
+                                            $emit(
+                                                'onChangeMonthlyGrossTurnover'
+                                            )
+                                        "
+                                        @keyup="
+                                            $emit(
+                                                'onChangeMonthlyGrossTurnover'
+                                            )
                                         "
                                     />
                                     <span class="input-group-text">AUD</span>
@@ -230,7 +280,13 @@
         <div class="col">
             <BootstrapAlert v-if="context == 'Proposal'" class="py-2 mb-0">
                 The system will generate compliances to ask for an audited
-                financial statement for each financial quarter and year
+                financial statement for each
+                {{
+                    invoicingRepetitionTypeKey == 'quarterly'
+                        ? 'quarter'
+                        : 'month'
+                }}
+                and financial year
             </BootstrapAlert>
         </div>
     </div>
@@ -259,6 +315,10 @@ export default {
             type: Number,
             required: true,
         },
+        invoicingRepetitionTypeKey: {
+            type: String,
+            required: true,
+        },
         proposalProcessingStatusId: {
             type: String,
             required: true,
@@ -268,7 +328,13 @@ export default {
             required: true,
         },
     },
-    emits: ['updateGrossTurnoverPercentages', 'onChangePercentage'],
+    emits: [
+        'updateGrossTurnoverPercentages',
+        'onChangePercentage',
+        'onChangeAnnualGrossTurnover',
+        'onChangeQuarterlyGrossTurnover',
+        'onChangeMonthlyGrossTurnover',
+    ],
     data: function () {
         return {
             originalAnnualTurnover: null,
@@ -288,6 +354,7 @@ export default {
             },
         },
         invoicingReptitionQuarterly: function () {
+            // Todo: Relying on ids like this is dangerous - need to use the key property instead
             return this.invoicingRepetitionType == 2;
         },
     },
@@ -324,7 +391,9 @@ export default {
             return (
                 !this.financialYearHasPassed(
                     grossTurnoverPercentage.financial_year
-                ) || !this.allQuartersEntered(grossTurnoverPercentage)
+                ) ||
+                (!this.editingFromProposalPage &&
+                    !this.allQuartersEntered(grossTurnoverPercentage))
             );
         },
         grossQuarterlyTurnoverReadonly: function (
@@ -383,17 +452,37 @@ export default {
             } else {
                 year.discrepency = 0;
             }
+            this.$emit('onChangeAnnualGrossTurnover');
+        },
+        getPeriods: function (year) {
+            if (this.invoicingReptitionQuarterly) {
+                return year.quarters;
+            }
+            return year.months;
         },
         hasGrossTurnoverEntries: function (year) {
-            for (let i = 0; i < year.quarters.length; i++) {
+            var periods = this.getPeriods(year);
+            for (let i = 0; i < periods.length; i++) {
                 if (
-                    year.quarters[i].gross_turnover != null &&
-                    year.quarters[i].gross_turnover != ''
+                    periods[i].gross_turnover != null &&
+                    periods[i].gross_turnover != ''
                 ) {
                     return true;
                 }
             }
             return false;
+        },
+        hasAllGrossTurnoverEntries: function (year) {
+            var periods = this.getPeriods(year);
+            for (let i = 0; i < periods.length; i++) {
+                if (
+                    periods[i].gross_turnover == null ||
+                    periods[i].gross_turnover == ''
+                ) {
+                    return false;
+                }
+            }
+            return true;
         },
         populateFinancialYearsArray: function (financialYearsIncluded) {
             var financialYear = null;

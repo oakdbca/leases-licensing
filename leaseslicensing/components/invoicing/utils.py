@@ -138,39 +138,28 @@ def financial_quarters_included_in_range(start_date, end_date):
     The date range is inclusive of the start date and end date.
     """
     financial_quarters = []
-    for year in range(start_date.year, end_date.year + 1):
-        for quarter in range(1, 5):
-            financial_year = f"{year}-{year + 1}"
-            month_for_quarter = month_from_quarter(quarter - 1)  # 0 indexed
-            if quarter in [1, 2]:
-                calendar_year = year
-            else:
-                calendar_year = year + 1
-            try:
-                compare_date_1 = datetime.date(
-                    calendar_year, month_for_quarter, start_date.day
-                )
-            except ValueError:
-                compare_date_1 = datetime.date(
-                    calendar_year,
-                    month_for_quarter,
-                    calendar.monthrange(calendar_year, month_for_quarter)[1],
-                )
-            try:
-                compare_date_2 = datetime.date(
-                    calendar_year, month_for_quarter, end_date.day
-                )
-            except ValueError:
-                compare_date_2 = datetime.date(
-                    calendar_year,
-                    month_for_quarter,
-                    calendar.monthrange(calendar_year, month_for_quarter)[1],
-                )
-            if not compare_date_1 >= start_date or not compare_date_2 <= end_date:
-                continue
-            financial_quarters.append(
-                (quarter, f"Q{quarter}", calendar_year, financial_year)
-            )
+    current_date = start_date
+
+    while current_date <= end_date:
+        if 7 <= current_date.month <= 9:
+            quarter = 1
+        elif 10 <= current_date.month <= 12:
+            quarter = 2
+        elif 1 <= current_date.month <= 3:
+            quarter = 3
+        else:
+            quarter = 4
+        financial_year = financial_year_from_date(current_date)
+        financial_quarter = (
+            quarter,
+            f"Q{quarter}",
+            current_date.year,
+            financial_year,
+        )
+        if financial_quarter not in financial_quarters:
+            financial_quarters.append(financial_quarter)
+        current_date += relativedelta(months=1)
+
     return financial_quarters
 
 

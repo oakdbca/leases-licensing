@@ -145,9 +145,13 @@ module.exports = {
             ID: 'base_fee_plus_annual_cpi_custom',
             TEXT: 'Base Fee Plus Annual CPI (ABS)',
         },
-        PERCENTAGE_OF_GROSS_TURNOVER: {
+        PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS: {
             ID: 'percentage_of_gross_turnover',
-            TEXT: 'Percentage of Gross Turnover',
+            TEXT: 'Percentage of Gross Turnover (Arrears)',
+        },
+        PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE: {
+            ID: 'percentage_of_gross_turnover_in_advance',
+            TEXT: 'Percentage of Gross Turnover (Advance)',
         },
     },
     APPROVAL_DECISIONS: {

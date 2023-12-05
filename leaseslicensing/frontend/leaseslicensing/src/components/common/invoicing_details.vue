@@ -20,6 +20,11 @@
                             name="charge_method"
                             :value="charge_method.id"
                             required
+                            :disabled="
+                                context == 'Approval' &&
+                                charge_method.id !=
+                                    invoicingDetailsComputed.charge_method
+                            "
                             @change="onChargeMethodChange"
                         />
                         <label
@@ -210,44 +215,6 @@
                 </div>
             </div>
         </div>
-        <div v-if="show_percentage_of_gross_turnover_arrears">
-            <PercentageTurnoverArrears
-                v-if="invoicingDetailsComputed"
-                :start-date="startDate"
-                :expiry-date="expiryDate"
-                :gross-turnover-percentages="
-                    invoicingDetailsComputed.gross_turnover_percentages
-                "
-                :invoicing-repetition-type="
-                    invoicingDetailsComputed.invoicing_repetition_type
-                "
-                :proposal-processing-status-id="proposalProcessingStatusId"
-                :context="context"
-                @update-gross-turnover-percentages="
-                    updateGrossTurnoverPercentages
-                "
-                @on-change-percentage="updatePreviewInvoices"
-                @on-change-gross-turnover-estimate="updatePreviewInvoices"
-            />
-        </div>
-        <div v-if="show_percentage_of_gross_turnover_advance">
-            <PercentageTurnoverAdvance
-                v-if="invoicingDetailsComputed"
-                :start-date="startDate"
-                :expiry-date="expiryDate"
-                :gross-turnover-percentages="
-                    invoicingDetailsComputed.gross_turnover_percentages
-                "
-                :proposal-processing-status-id="proposalProcessingStatusId"
-                :context="context"
-                @update-gross-turnover-percentages="
-                    updateGrossTurnoverPercentages
-                "
-                @on-change-percentage="updatePreviewInvoices"
-                @on-change-gross-turnover-estimate="updatePreviewInvoices"
-                @on-change-gross-turnover-actual="updatePreviewInvoices"
-            />
-        </div>
         <div
             v-if="show_invoicing_frequency"
             class="row mb-3 pb-3 border-bottom"
@@ -309,6 +276,7 @@
                             v-model="
                                 invoicingDetailsComputed.invoicing_quarters_start_month
                             "
+                            :disabled="invoicing_quarters_start_month_disabled"
                             class="form-select"
                             @change="updatePreviewInvoices"
                         >
@@ -344,6 +312,52 @@
                 </div>
             </div>
         </div>
+        <div v-if="show_percentage_of_gross_turnover_arrears">
+            <PercentageTurnoverArrears
+                v-if="invoicingDetailsComputed"
+                :start-date="startDate"
+                :expiry-date="expiryDate"
+                :gross-turnover-percentages="
+                    invoicingDetailsComputed.gross_turnover_percentages
+                "
+                :invoicing-repetition-type="
+                    invoicingDetailsComputed.invoicing_repetition_type
+                "
+                :invoicing-repetition-type-key="
+                    getInvoicingRepetitionTypeKeyById(
+                        invoicingDetailsComputed.invoicing_repetition_type
+                    )
+                "
+                :proposal-processing-status-id="proposalProcessingStatusId"
+                :context="context"
+                @update-gross-turnover-percentages="
+                    updateGrossTurnoverPercentages
+                "
+                @on-change-percentage="updatePreviewInvoices"
+                @on-change-annual-gross-turnover="updatePreviewInvoices"
+                @on-change-quarterly-gross-turnover="updatePreviewInvoices"
+                @on-change-monthly-gross-turnover="updatePreviewInvoices"
+            />
+        </div>
+        <div v-if="show_percentage_of_gross_turnover_advance">
+            <PercentageTurnoverAdvance
+                v-if="invoicingDetailsComputed"
+                :start-date="startDate"
+                :expiry-date="expiryDate"
+                :gross-turnover-percentages="
+                    invoicingDetailsComputed.gross_turnover_percentages
+                "
+                :proposal-processing-status-id="proposalProcessingStatusId"
+                :context="context"
+                @update-gross-turnover-percentages="
+                    updateGrossTurnoverPercentages
+                "
+                @on-change-percentage="updatePreviewInvoices"
+                @on-change-gross-turnover-estimate="updatePreviewInvoices"
+                @on-change-gross-turnover-actual="updatePreviewInvoices"
+            />
+        </div>
+
         <div v-if="show_fixed_annual_increment">
             <AnnualIncrement
                 v-if="invoicingDetailsComputed"
@@ -667,7 +681,10 @@ export default {
             return this.context != 'Proposal';
         },
         invoicing_repetition_type_disabled: function () {
-            return false; // this.context != 'Proposal';
+            return this.context != 'Proposal';
+        },
+        invoicing_quarters_start_month_disabled: function () {
+            return this.context != 'Proposal';
         },
         invoicing_schedule_disabled: function () {
             return this.context != 'Proposal';
@@ -889,12 +906,12 @@ export default {
             if (charge_method) return charge_method.key;
             else return '';
         },
-        getInvoicingRepetitionTypeByKey: function (key) {
-            let charge_method = this.charge_methods.find(
-                (charge_method) => charge_method.key === key
+        getInvoicingRepetitionTypeKeyById: function (id) {
+            let repetition_type = this.repetition_types.find(
+                (repetition_type) => repetition_type.id === id
             );
-            if (charge_method) return charge_method.id;
-            else return 0;
+            if (repetition_type) return repetition_type.key;
+            else return '';
         },
         fetchChargeMethods: async function () {
             let vm = this;

@@ -9,9 +9,10 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import F, Sum, Window
+from django.db.models import F, Q, Sum, Window
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from rest_framework import serializers
 
 from leaseslicensing import helpers
 from leaseslicensing.components.invoicing import utils
@@ -466,7 +467,10 @@ class InvoicingDetails(BaseModel):
                             "%d/%m/%Y"
                         ),  # This is the issue date before it is changed to today if it is in the past
                         "issue_date": self.get_issue_date(
-                            issue_date_now_or_future, invoicing_period["end_date"]
+                            amount_object,
+                            issue_date,
+                            issue_date_now_or_future,
+                            invoicing_period["end_date"],
                         ),
                         "due_date": self.get_due_date(due_date),
                         "time_period": invoicing_period["label"],
@@ -493,6 +497,14 @@ class InvoicingDetails(BaseModel):
 
     def generate_invoice_schedule(self, invoiced_up_to=None):
         """Generate scheduled invoices for any invoicing periods"""
+        if self.charge_method.key in [
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+        ]:
+            return
+
         future_invoices = []
         for preview_invoice in self.preview_invoices:
             start_date = datetime.strptime(
@@ -577,29 +589,48 @@ class InvoicingDetails(BaseModel):
         This should only be run once when the finance officer has just finished "editing invoicing" on the
         application.
         """
+        if self.charge_method.key in [
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+        ]:
+            # Don't generate immediate invoices for
+            return
+        gross_turnover_based_invoicing = self.charge_method.key in [
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
+        ]
         immediate_invoices = []
         for preview_invoice in self.preview_invoices:
-            if preview_invoice["start_date_has_passed"]:
+            amount_object = preview_invoice["amount_object"]
+            if (
+                gross_turnover_based_invoicing and amount_object["amount"] is not None
+            ) or (
+                not gross_turnover_based_invoicing
+                and preview_invoice["start_date_has_passed"]
+            ):
                 immediate_invoices.append(preview_invoice)
+
         if len(immediate_invoices) == 0:
             return
 
         gst_free = self.approval.approval_type.gst_free
 
         for invoice_record in immediate_invoices:
-            invoice, created = Invoice.objects.get_or_create(
+            invoice = Invoice.objects.create(
                 approval=self.approval,
                 amount=invoice_record["amount_object"]["amount"],
                 gst_free=gst_free,
                 # Add status and datetime_created to avoid creating duplicate records
                 # the datetime value will be ignored when creating as it's an auto_now_add field
                 status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
-                datetime_created__date=timezone.now().date(),
             )
-            if created:
-                logger.info(f"Immediate invoice created: {invoice}")
+
+            logger.info(f"Immediate invoice created: {invoice}")
 
             # send to the finance group so they can take action
+            # Todo: create a version of this email function that takes a list of invoices
+            # and just sends one email with the list of invoices as the request is blocked
+            # and it can take quite some time to send all the emails in the case of back dated
+            # leases / licences.
             send_new_invoice_raised_internal_notification(invoice)
 
     def get_first_issue_date(self):
@@ -615,22 +646,28 @@ class InvoicingDetails(BaseModel):
 
         return first_issue_date
 
-    def get_issue_date(self, issue_date, end_date):
+    def get_issue_date(
+        self, amount_object, original_issue_date, issue_date_now_or_future, end_date
+    ):
         if (
             self.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+            and amount_object["amount"] is None
         ):
             end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
             q = utils.financial_quarter_from_date(end_date)
-            financial_year = f"{issue_date.year - 1}-{issue_date.year}"
+            financial_year = utils.financial_year_from_date(original_issue_date)
             if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
                 text = f"Q{q} {financial_year}"
             else:
                 month = utils.month_string_from_date(end_date)
                 text = f"{month} {end_date.year}"
-            return f"On receipt of {text} financial statement"
+            if utils.financial_year_has_passed(financial_year):
+                return f"On entry of annual gross turnover from FY {financial_year} audited financial statement)"
 
-        return issue_date.strftime("%d/%m/%Y")
+            return f"On entry of gross turnover from {text} audited financial statement"
+
+        return issue_date_now_or_future.strftime("%d/%m/%Y")
 
     def get_due_date(self, due_date):
         if (
@@ -813,6 +850,15 @@ class InvoicingDetails(BaseModel):
             amount_object["suffix"] = "???"
             return amount_object
 
+        if gross_turnover_percentage.gross_turnover:
+            amount_object["prefix"] = "$"
+            amount_object["amount"] = Decimal(
+                gross_turnover_percentage.gross_turnover
+                * gross_turnover_percentage.percentage
+                / 100
+            ).quantize(Decimal("0.01"))
+            return amount_object
+
         amount_object[
             "suffix"
         ] = f"{gross_turnover_percentage.percentage}% of Gross Turnover"
@@ -825,9 +871,11 @@ class InvoicingDetails(BaseModel):
         amount_object["amount"] = None
 
         if not self.gross_turnover_percentages.filter(
-            estimated_gross_turnover__isnull=False
+            Q(estimated_gross_turnover__isnull=False) | Q(gross_turnover__isnull=False)
         ).exists():
-            amount_object["suffix"] = "No initial turnover estimate entered"
+            amount_object[
+                "suffix"
+            ] = "No gross turnover estimate or gross turnover actual entered"
             return amount_object
 
         start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -837,24 +885,33 @@ class InvoicingDetails(BaseModel):
         gross_turnover_percentage = self.gross_turnover_percentages.filter(
             year=year
         ).first()
-        estimated_gross_turnover = gross_turnover_percentage.estimated_gross_turnover
-        if not estimated_gross_turnover:
-            # No estimate for this year, so use the most recent estimate
-            estimated_gross_turnover = (
-                self.gross_turnover_percentages.filter(
-                    estimated_gross_turnover__isnull=False,
-                )
-                .last()
-                .estimated_gross_turnover
+
+        if not gross_turnover_percentage:
+            logger.error(f"No gross turnover percentage found for year {year}")
+            raise serializers.ValidationError(
+                f"No gross turnover percentage found for year {year}"
             )
+
+        estimated_or_actual_gross_turnover = (
+            gross_turnover_percentage.gross_turnover
+            if gross_turnover_percentage.gross_turnover
+            else gross_turnover_percentage.estimated_gross_turnover
+        )
+
+        if not estimated_or_actual_gross_turnover:
+            amount_object["suffix"] = (
+                "No estimated gross turnover or actual gross turnover entered "
+                "(Enter at a later date to generate an invoice)"
+            )
+            return amount_object
 
         percentage = gross_turnover_percentage.percentage
         if not percentage:
             percentage = Decimal("0.00")
 
-        invoice_amount = Decimal(estimated_gross_turnover * percentage / 100).quantize(
-            Decimal("0.01")
-        )
+        invoice_amount = Decimal(
+            estimated_or_actual_gross_turnover * percentage / 100
+        ).quantize(Decimal("0.01"))
 
         amount_object["prefix"] = "$"
 
