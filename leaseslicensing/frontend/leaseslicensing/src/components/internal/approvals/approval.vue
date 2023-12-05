@@ -483,12 +483,6 @@ export default {
         },
         getGrossTurnoverChanges: function () {
             if (
-                constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
-                    .ID != this.approval.invoicing_details.charge_method_key
-            ) {
-                return [];
-            }
-            if (
                 this.original_invoicing_details ==
                 this.approval.invoicing_details
             ) {
@@ -641,9 +635,15 @@ export default {
             changesHtml +=
                 '<thead><tr><th>Financial Year</th><th>Quarter</th><th>Percentage</th><th>Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
             for (let i = 0; i < turnoverChanges.length; i++) {
-                let invoice_amount = currency(
-                    turnoverChanges[i].gross_turnover
-                ).multiply(turnoverChanges[i].percentage / 100);
+                let invoice_amount =
+                    currency(turnoverChanges[i].gross_turnover).multiply(
+                        turnoverChanges[i].percentage / 100
+                    ) / currency(this.approval.invoicing_details.repetition);
+                invoice_amount = helpers.amountByRepetitionType(
+                    invoice_amount,
+                    this.approval.invoicing_details
+                        .invoicing_repetition_type_key
+                );
                 changesHtml += `<tr><td>${turnoverChanges[i].year - 1}-${
                     turnoverChanges[i].year
                 }</td><td>Q${turnoverChanges[i].quarter}</td><td>${
