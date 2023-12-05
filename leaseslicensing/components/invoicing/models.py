@@ -510,10 +510,7 @@ class InvoicingDetails(BaseModel):
             start_date = datetime.strptime(
                 preview_invoice["start_date"], "%Y-%m-%d"
             ).date()
-            if invoiced_up_to and start_date > invoiced_up_to:
-                future_invoices.append(preview_invoice)
-
-            elif not preview_invoice["start_date_has_passed"]:
+            if not preview_invoice["start_date_has_passed"]:
                 future_invoices.append(preview_invoice)
 
         if len(future_invoices) == 0:
@@ -542,15 +539,16 @@ class InvoicingDetails(BaseModel):
             date_to_generate__gte=helpers.today(),
         ).delete()
 
-        # Generate new future scheduled invoices
-        if self.charge_method.key not in [
+        if self.charge_method.key in [
             settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
             settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
-            # Gross turnover in arrears are generated on receipt of
-            # audited financial statements so don't need generating
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
         ]:
-            self.generate_invoice_schedule(invoiced_up_to=self.invoiced_up_to)
+            return
+
+        # Regenerate an invoice schedule for any future invoicing periods
+        self.generate_invoice_schedule(invoiced_up_to=self.invoiced_up_to)
 
     def generate_current_invoice(self):
         """Generates only one invoice for the current invoicing period
@@ -685,6 +683,15 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
             return math.floor(index / 12)
 
+    def get_amount_by_repetition_type(self, amount):
+        # Modify the base fee based on the invoicing repetition type
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
+            amount = amount / 4
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
+            amount = amount / 12
+
+        return amount.quantize(Decimal("0.01"))
+
     def get_amount_for_invoice(self, issue_date, start_date, end_date, days, index):
         amount_object = {
             "prefix": "$",
@@ -726,13 +733,7 @@ class InvoicingDetails(BaseModel):
         if days == 366:
             days = 365
 
-        # Modify the base fee based on the invoicing repetition type
-        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
-            base_fee_amount = base_fee_amount / 4
-        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
-            base_fee_amount = base_fee_amount / 12
-
-        base_fee_amount = base_fee_amount.quantize(Decimal("0.01"))
+        base_fee_amount = self.get_amount_by_repetition_type(base_fee_amount)
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -851,12 +852,14 @@ class InvoicingDetails(BaseModel):
             return amount_object
 
         if gross_turnover_percentage.gross_turnover:
-            amount_object["prefix"] = "$"
-            amount_object["amount"] = Decimal(
+            amount = Decimal(
                 gross_turnover_percentage.gross_turnover
                 * gross_turnover_percentage.percentage
                 / 100
-            ).quantize(Decimal("0.01"))
+            )
+            amount = self.get_amount_by_repetition_type(amount)
+            amount_object["prefix"] = "$"
+            amount_object["amount"] = amount
             return amount_object
 
         amount_object[
