@@ -36,6 +36,7 @@
                                             (!editingFromProposalPage &&
                                                 year.locked)
                                         "
+                                        required
                                         @change="$emit('onChangePercentage')"
                                         @keyup="$emit('onChangePercentage')"
                                     />
@@ -55,21 +56,8 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            financialYearHasPassed(
-                                                year.financial_year
-                                            ) ||
-                                            (!editingFromProposalPage &&
-                                                year.locked)
-                                        "
-                                        :required="
-                                            context == 'Proposal' && index == 0
-                                        "
-                                        :placeholder="
-                                            financialYearHasPassed(
-                                                year.financial_year
-                                            )
-                                                ? 'Enter Actual'
-                                                : ''
+                                            !editingFromProposalPage &&
+                                            year.locked
                                         "
                                         @change="
                                             $emit(
@@ -87,8 +75,10 @@
                                     <span class="input-group-text">AUD</span>
                                 </div>
                             </div>
-                            <div class="pe-4">Gross Turnover Actual</div>
-                            <div class="col-sm-4">
+                            <div v-if="context == 'Approval'" class="pe-4">
+                                Gross Turnover Actual
+                            </div>
+                            <div v-if="context == 'Approval'" class="col-sm-4">
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
                                     <input
