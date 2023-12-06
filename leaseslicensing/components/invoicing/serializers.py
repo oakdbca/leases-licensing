@@ -121,6 +121,12 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
     to_be_deleted = serializers.SerializerMethodField()
     quarters = FinancialQuarterSerializer(many=True, required=False)
     months = FinancialMonthSerializer(many=True, required=False)
+    discrepency = serializers.DecimalField(
+        read_only=True,
+        allow_null=True,
+        max_digits=9,
+        decimal_places=2,
+    )
 
     class Meta:
         model = PercentageOfGrossTurnover
@@ -135,6 +141,7 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "to_be_deleted",
             "quarters",
             "months",
+            "discrepency",
         )
         extra_kwargs = {
             "id": {
