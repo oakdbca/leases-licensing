@@ -593,7 +593,6 @@ class InvoicingDetails(BaseModel):
             # Don't generate immediate invoices for
             return
         gross_turnover_based_invoicing = self.charge_method.key in [
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
         ]
         immediate_invoices = []
