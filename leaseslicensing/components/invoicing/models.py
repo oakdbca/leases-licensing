@@ -1165,6 +1165,7 @@ class PercentageOfGrossTurnover(BaseModel):
         on_delete=models.CASCADE,
         related_name="gross_turnover_percentages",
     )
+    estimate_locked = models.BooleanField(default=False)
     locked = models.BooleanField(default=False)
 
     class Meta:
