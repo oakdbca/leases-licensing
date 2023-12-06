@@ -8,7 +8,7 @@ from typing import Union
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import F, Q, Sum, Window
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -975,6 +975,66 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
             return issue_date + relativedelta(months=1)
 
+    @transaction.atomic
+    def process_gross_turnover_invoices(self):
+        """Select any annual, quarterly or monthly gross turnover amounts that are not locked
+        create an invoice for them and then lock them so they are not processed again.
+        """
+
+        gst_free = self.approval.approval_type.gst_free
+
+        gross_turnover_percentages = self.gross_turnover_percentages.filter(
+            locked=False
+        )
+        for gross_turnover_percentage in gross_turnover_percentages:
+            if gross_turnover_percentage.gross_turnover:
+                if gross_turnover_percentage.discrepency:
+                    invoice = Invoice.objects.create(
+                        approval=self.approval,
+                        amount=gross_turnover_percentage.discrepency,
+                        gst_free=gst_free,
+                    )
+
+                    # Send email to notify finance group users
+                    send_new_invoice_raised_internal_notification(invoice)
+
+                gross_turnover_percentage.locked = True
+                gross_turnover_percentage.save()
+
+            if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
+                quarters = gross_turnover_percentage.quarters.filter(
+                    gross_turnover__isnull=False, locked=False
+                )
+                for quarter in quarters:
+                    amount = quarter.gross_turnover * (
+                        gross_turnover_percentage.percentage / 100
+                    )
+                    invoice = Invoice.objects.create(
+                        approval=self.approval, amount=amount, gst_free=gst_free
+                    )
+
+                    # Send email to notify finance group users
+                    send_new_invoice_raised_internal_notification(invoice)
+
+                quarters.update(locked=True)
+
+            if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
+                months = gross_turnover_percentage.months.filter(
+                    gross_turnover__isnull=False, locked=False
+                )
+                for month in months:
+                    amount = month.gross_turnover * (
+                        gross_turnover_percentage.percentage / 100
+                    )
+                    invoice = Invoice.objects.create(
+                        approval=self.approval, amount=amount, gst_free=gst_free
+                    )
+
+                    # Send email to notify finance group users
+                    send_new_invoice_raised_internal_notification(invoice)
+
+                months.update(locked=True)
+
 
 class ScheduledInvoice(BaseModel):
     """
@@ -1128,6 +1188,34 @@ class PercentageOfGrossTurnover(BaseModel):
     def financial_year(self):
         return f"{self.year-1}-{self.year}"
 
+    @property
+    def discrepency(self):
+        if not self.gross_turnover:
+            return None
+
+        if (
+            self.invoicing_details.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+        ):
+            sum_of_quarters = self.quarters.aggregate(sum=Sum("gross_turnover"))["sum"]
+            if not sum_of_quarters:
+                # For back dated financial years, there are no quarters entered so there will not be a discrepency
+                sum_of_quarters = Decimal("0.00")
+            discrepency = abs(sum_of_quarters - self.gross_turnover)
+        if (
+            self.invoicing_details.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            if not self.estimated_gross_turnover:
+                return None
+
+            discrepency = abs(self.estimated_gross_turnover - self.gross_turnover)
+
+        discrepency = discrepency * (self.percentage / 100)
+        logger.debug(f"Discrepency Amount: {discrepency}")
+
+        return discrepency.quantize(Decimal("0.01"))
+
 
 class FinancialQuarter(BaseModel):
     year = models.ForeignKey(
@@ -1154,8 +1242,6 @@ class FinancialQuarter(BaseModel):
         return f"Q{self.quarter} {self.year}: Gross Turnover: {self.gross_turnover or 'Not yet entered'}"
 
     def save(self, *args, **kwargs):
-        if not self.locked and self.gross_turnover:
-            self.locked = True
         super().save(*args, **kwargs)
 
 
@@ -1195,8 +1281,6 @@ class FinancialMonth(BaseModel):
         return f"{self.month_name} {self.year}: Gross Turnover: {self.gross_turnover or 'Not yet entered'}"
 
     def save(self, *args, **kwargs):
-        if not self.locked and self.gross_turnover:
-            self.locked = True
         super().save(*args, **kwargs)
 
 
