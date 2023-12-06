@@ -36,10 +36,10 @@
                                         max="100"
                                         type="number"
                                         class="form-control"
-                                        :readonly="
-                                            !editingFromProposalPage &&
-                                            (hasGrossTurnoverEntries(year) ||
-                                                year.locked)
+                                        :disabled="
+                                            year.gross_turnover ||
+                                            hasGrossTurnoverEntries(year) ||
+                                            year.locked
                                         "
                                         @change="$emit('onChangePercentage')"
                                         @keyup="$emit('onChangePercentage')"
@@ -57,8 +57,12 @@
                                         v-model="year.gross_turnover"
                                         type="number"
                                         class="form-control"
-                                        :readonly="
-                                            grossAnnualTurnoverReadonly(year)
+                                        :disabled="
+                                            year.locked ||
+                                            (!financialYearHasPassed(
+                                                year.financial_year
+                                            ) &&
+                                                !allQuartersEntered(year))
                                         "
                                         @change="
                                             grossAnnualTurnoverChanged(
@@ -151,9 +155,7 @@
                                             grossQuarterlyTurnoverReadonly(
                                                 year.financial_year,
                                                 quarter.quarter
-                                            ) ||
-                                            (!editingFromProposalPage &&
-                                                year.locked)
+                                            ) || quarter.locked
                                         "
                                         @change="
                                             $emit(
@@ -230,9 +232,7 @@
                                             grossMonthlyTurnoverReadonly(
                                                 month.year,
                                                 month.month
-                                            ) ||
-                                            (!editingFromProposalPage &&
-                                                month.locked)
+                                            ) || month.locked
                                         "
                                         @change="
                                             $emit(
@@ -379,10 +379,7 @@ export default {
     },
     methods: {
         editingFromProposalPage: function () {
-            return (
-                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
-                this.proposalProcessingStatusId
-            );
+            return this.context == 'Proposal';
         },
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
             // Gross turnover is readonly if the financial year hasn't passed
@@ -401,7 +398,6 @@ export default {
             financialQuarter
         ) {
             // Gross turnover is readonly if the financial quarter hasn't passed
-            // or if the proposal is being edited from the proposal details page
             return !this.helpers.financialQuarterHasPassed(
                 financialYear,
                 financialQuarter
