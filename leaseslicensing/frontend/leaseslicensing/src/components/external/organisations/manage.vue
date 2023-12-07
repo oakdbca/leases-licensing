@@ -408,7 +408,7 @@
                     </FormSection>
 
                     <FormSection
-                        :form-collapse="true"
+                        :form-collapse="false"
                         label="Contact Details"
                         index="contact-details"
                     >
@@ -1081,25 +1081,27 @@ export default {
                         let name = $(e.target).data('name');
                         let email = $(e.target).data('email');
                         let id = $(e.target).data('id');
-                        swal({
-                            title: 'Delete Contact',
+                        swal.fire({
+                            title: 'Remove Contact',
                             text:
                                 'Are you sure you want to remove ' +
                                 name +
                                 '(' +
                                 email +
                                 ') as a contact  ?',
-                            type: 'error',
+                            icon: 'question',
                             showCancelButton: true,
-                            confirmButtonText: 'Accept',
-                        }).then(
-                            () => {
-                                vm.deleteContact(id);
-                            },
-                            (error) => {
+                            confirmButtonText: 'Remove Contact',
+                            reverseButtons: true,
+                        })
+                            .then(async (result) => {
+                                if (result.isConfirmed) {
+                                    vm.deleteContact(id);
+                                }
+                            })
+                            .catch((error) => {
                                 console.error(error);
-                            }
-                        );
+                            });
                     }
                 );
 
@@ -1119,7 +1121,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Contact Accept',
                             text:
                                 'Are you sure you want to accept contact request ' +
@@ -1145,13 +1147,13 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Contact Accept',
                                                     text:
                                                         'You have successfully accepted ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1163,7 +1165,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Contact Accept',
                                                     'There was an error accepting ' +
                                                         name +
@@ -1197,7 +1199,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Contact Accept (Previously Declined)',
                             text:
                                 'Are you sure you want to accept the previously declined contact request for ' +
@@ -1224,13 +1226,13 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Contact Accept (Previously Declined)',
                                                     text:
                                                         'You have successfully accepted ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1242,7 +1244,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Contact Accept (Previously Declined)',
                                                     'There was an error accepting ' +
                                                         name +
@@ -1276,60 +1278,61 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
-                            title: 'Contact Decline',
+                        swal.fire({
+                            title: 'Decline Linking Request',
                             text:
-                                'Are you sure you want to decline the contact request for ' +
+                                'Are you sure you want to decline the linking request from ' +
                                 name +
                                 ' (' +
                                 email +
                                 ')?',
                             showCancelButton: true,
-                            confirmButtonText: 'Accept',
+                            confirmButtonText: 'Decline Linking Request',
+                            reverseButtons: true,
                         }).then(
                             (result) => {
-                                if (result) {
-                                    vm.$http
-                                        .post(
-                                            helpers.add_endpoint_json(
-                                                api_endpoints.organisations,
-                                                vm.org.id + '/decline_user'
+                                if (result.isConfirmed) {
+                                    fetch(
+                                        helpers.add_endpoint_json(
+                                            api_endpoints.organisations,
+                                            vm.org.id + '/decline_user'
+                                        ),
+                                        {
+                                            body: JSON.stringify(
+                                                vm.contact_user
                                             ),
-                                            JSON.stringify(vm.contact_user),
-                                            {
-                                                emulateJSON: true,
-                                            }
-                                        )
-                                        .then(
-                                            () => {
-                                                swal({
-                                                    title: 'Contact Decline',
-                                                    text:
-                                                        'You have successfully declined ' +
-                                                        name +
-                                                        '.',
-                                                    type: 'success',
-                                                    confirmButtonText: 'OK',
-                                                }).then(
-                                                    () => {
-                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                                    },
-                                                    (error) => {
-                                                        console.error(error);
-                                                    }
+                                            emulateJSON: true,
+                                            method: 'POST',
+                                        }
+                                    )
+                                        .then(async (response) => {
+                                            await response.json();
+                                            if (!response.ok) {
+                                                throw new Error(
+                                                    response.statusText
                                                 );
-                                            },
-                                            (error) => {
-                                                swal(
-                                                    'Contact Decline',
-                                                    'There was an error declining ' +
-                                                        name +
-                                                        '.',
-                                                    'error'
-                                                );
-                                                console.error(error);
                                             }
-                                        );
+                                            swal.fire({
+                                                title: 'Linking Request Declined',
+                                                text:
+                                                    'You have successfully declined the linking request from ' +
+                                                    name +
+                                                    '.',
+                                                icon: 'success',
+                                                confirmButtonText: 'OK',
+                                            });
+                                            vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                        })
+                                        .catch((error) => {
+                                            swal.fire(
+                                                'Contact Decline',
+                                                'There was an error declining ' +
+                                                    name +
+                                                    '.',
+                                                'error'
+                                            );
+                                            console.error(error);
+                                        });
                                 }
                             },
                             (error) => {
@@ -1354,7 +1357,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Unlink',
                             text:
                                 'Are you sure you want to unlink ' +
@@ -1380,13 +1383,13 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Unlink',
                                                     text:
                                                         'You have successfully unlinked ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1399,13 +1402,13 @@ export default {
                                             },
                                             (error) => {
                                                 if (error.status == 500) {
-                                                    swal(
+                                                    swal.fire(
                                                         'Unlink',
                                                         'Last Organisation Admin can not be unlinked.',
                                                         'error'
                                                     );
                                                 } else {
-                                                    swal(
+                                                    swal.fire(
                                                         'Unlink',
                                                         'There was an error unlinking this user ' +
                                                             error,
@@ -1438,7 +1441,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Organisation Admin',
                             text:
                                 'Are you sure you want to make ' +
@@ -1464,13 +1467,13 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Organisation Admin',
                                                     text:
                                                         'You have successfully made ' +
                                                         name +
                                                         ' an Organisation Admin.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1482,7 +1485,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Organisation Admin',
                                                     'There was an error making ' +
                                                         name +
@@ -1516,7 +1519,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Organisation User',
                             text:
                                 'Are you sure you want to make ' +
@@ -1542,13 +1545,13 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Organisation User',
                                                     text:
                                                         'You have successfully made ' +
                                                         name +
                                                         ' an Organisation User.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1565,7 +1568,7 @@ export default {
                                                     helpers.apiVueResourceError(
                                                         error
                                                     );
-                                                swal(
+                                                swal.fire(
                                                     'Company Admin',
                                                     'There was an error making ' +
                                                         name +
@@ -1599,7 +1602,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Suspend User',
                             text:
                                 'Are you sure you want to Suspend  ' +
@@ -1625,13 +1628,13 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Suspend User',
                                                     text:
                                                         'You have successfully suspended ' +
                                                         name +
                                                         ' as a User.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1643,7 +1646,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Suspend User',
                                                     'There was an error suspending ' +
                                                         name +
@@ -1677,7 +1680,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Reinstate User',
                             text:
                                 'Are you sure you want to Reinstate  ' +
@@ -1703,13 +1706,13 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Reinstate User',
                                                     text:
                                                         'You have successfully reinstated ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1721,7 +1724,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Reinstate User',
                                                     'There was an error reinstating ' +
                                                         name +
@@ -1755,7 +1758,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Relink User',
                             text:
                                 'Are you sure you want to Relink  ' +
@@ -1781,13 +1784,13 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Relink User',
                                                     text:
                                                         'You have successfully relinked ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1799,7 +1802,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Relink User',
                                                     'There was an error relink ' +
                                                         name +
@@ -1911,7 +1914,7 @@ export default {
         },
         addedContact: function () {
             let vm = this;
-            swal(
+            swal.fire(
                 'Added',
                 'The contact has been successfully added.',
                 'success'
@@ -1921,35 +1924,38 @@ export default {
         deleteContact: function (id) {
             let vm = this;
 
-            vm.$http
-                .delete(
-                    helpers.add_endpoint_json(
-                        api_endpoints.organisation_contacts,
-                        id
-                    ),
-                    {
-                        emulateJSON: true,
-                    }
-                )
-                .then(
-                    () => {
-                        swal(
-                            'Contact Deleted',
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisation_contacts,
+                    id
+                ),
+                {
+                    method: 'DELETE',
+                    emulateJSON: true,
+                }
+            )
+                .then(async (response) => {
+                    await response.text();
+                    if (response.ok) {
+                        swal.fire(
+                            'Contact Removed',
                             'The contact was successfully deleted',
                             'success'
                         );
                         vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-                    },
-                    (error) => {
-                        console.error(error);
-                        swal(
-                            'Contact Deleted',
-                            'The contact could not be deleted because of the following error ' +
-                                error,
-                            'error'
-                        );
+                    } else {
+                        throw new Error(response.text());
                     }
-                );
+                })
+                .catch((error) => {
+                    console.error(error);
+                    swal.fire(
+                        'Remove Contact Failed',
+                        'The contact could not be deleted because of the following error ' +
+                            error,
+                        'error'
+                    );
+                });
         },
         updateAddress: function () {
             let vm = this;
@@ -2017,7 +2023,7 @@ export default {
             let org = vm.org;
             let org_name = org.name;
             let person = helpers.copyObject(d);
-            swal({
+            swal.fire({
                 title: 'Unlink From Organisation',
                 text:
                     'Are you sure you want to unlink ' +
@@ -2027,7 +2033,7 @@ export default {
                     ' from ' +
                     org.name +
                     ' ?',
-                type: 'question',
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Accept',
             }).then(
@@ -2052,7 +2058,7 @@ export default {
                                 if (vm.org.billing_address == null) {
                                     vm.org.billing_address = {};
                                 }
-                                swal(
+                                swal.fire(
                                     'Unlink',
                                     'You have successfully unlinked ' +
                                         person.name +
@@ -2063,7 +2069,7 @@ export default {
                                 );
                             },
                             (error) => {
-                                swal(
+                                swal.fire(
                                     'Unlink',
                                     'There was an error unlinking ' +
                                         person.name +

@@ -32,8 +32,8 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            hasGrossTurnoverEntry(year) ||
-                                            (!editingFromProposalPage &&
+                                            !editingFromProposalPage() &&
+                                            (year.estimate_locked ||
                                                 year.locked)
                                         "
                                         required
@@ -55,10 +55,7 @@
                                         v-model="year.estimated_gross_turnover"
                                         type="number"
                                         class="form-control"
-                                        :readonly="
-                                            !editingFromProposalPage &&
-                                            year.locked
-                                        "
+                                        :readonly="year.estimate_locked"
                                         @change="
                                             $emit(
                                                 'onChangeGrossTurnoverEstimate',
@@ -88,9 +85,7 @@
                                         :readonly="
                                             !financialYearHasPassed(
                                                 year.financial_year
-                                            ) ||
-                                            (!editingFromProposalPage &&
-                                                year.locked)
+                                            ) || year.locked
                                         "
                                         @change="
                                             grossAnnualTurnoverChanged(
@@ -220,10 +215,7 @@ export default {
             );
         },
         editingFromProposalPage: function () {
-            return (
-                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
-                this.proposalProcessingStatusId
-            );
+            return this.context == 'Proposal';
         },
         hasGrossTurnoverEntry: function (year) {
             return year.gross_turnover != null && year.gross_turnover != '';

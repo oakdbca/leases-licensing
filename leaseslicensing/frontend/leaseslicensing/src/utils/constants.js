@@ -75,13 +75,17 @@ module.exports = {
             ID: 'current_base_fee_review',
             TEXT: 'Current (base fee review)',
         },
-        APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW: {
+        CURRENT_PENDING_RENEWAL_REVIEW: {
             ID: 'current_pending_renewal_review',
             TEXT: 'Current (Pending Renewal Review)',
         },
         CURRENT_EDITING_INVOICING: {
             ID: 'current_editing_invoicing',
             TEXT: 'Current (Editing Invoicing)',
+        },
+        CURRENT_PENDING_RENEWAL: {
+            ID: 'current_pending_renewal',
+            TEXT: 'Current (Pending Renewal)',
         },
         CANCELLED: { ID: 'cancelled', TEXT: 'Cancelled' },
         SURRENDERED: { ID: 'surrendered', TEXT: 'Surrendered' },
@@ -153,6 +157,11 @@ module.exports = {
             ID: 'percentage_of_gross_turnover_in_advance',
             TEXT: 'Percentage of Gross Turnover (Advance)',
         },
+    },
+    INVOICING_REPETITON_TYPES: {
+        MONTHLY: { ID: 'monthly', TEXT: 'Monthly' },
+        QUARTERLY: { ID: 'quarterly', TEXT: 'Quarterly' },
+        ANNUALLY: { ID: 'annually', TEXT: 'Annually' },
     },
     APPROVAL_DECISIONS: {
         APPROVE_LEASE_LICENCE: 'approve_lease_licence',

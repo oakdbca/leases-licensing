@@ -1,4 +1,6 @@
-module.exports = {
+import currency from 'currency.js';
+import { constants } from '@/utils/hooks';
+export default {
     // Handle fetch get and post requests by stringifying JSON input and returning a JSON object
     fetchWrapper: async function (url, method, data) {
         let parsedMethod = null;
@@ -590,6 +592,28 @@ module.exports = {
     },
     yearsElapsedSinceStartDate: function (date) {
         return moment().diff(moment(date), 'years');
+    },
+    amountByRepetitionType: function (amount, repetitionTypeKey) {
+        if (amount == null || amount == undefined) {
+            throw 'amount must be defined';
+        }
+        if (repetitionTypeKey == null || repetitionTypeKey == undefined) {
+            throw 'repetitionTypeKey must be defined';
+        }
+        if (currency(amount) == currency(0.0)) {
+            return currency(0.0);
+        }
+        if (
+            repetitionTypeKey == constants.INVOICING_REPETITON_TYPES.MONTHLY.ID
+        ) {
+            return currency(amount).divide(12);
+        } else if (
+            repetitionTypeKey ==
+            constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+        ) {
+            return currency(amount).divide(3);
+        }
+        return currency(amount);
     },
     /**
      * Function-parsable tagged template

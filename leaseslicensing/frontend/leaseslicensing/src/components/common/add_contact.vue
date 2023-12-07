@@ -8,7 +8,9 @@
                 novalidate
             >
                 <div class="row">
-                    <alert v-model:show="showError" type="danger"
+                    <alert
+                        v-if="errorString && errorString.length > 0"
+                        type="danger"
                         ><strong>{{ errorString }}</strong></alert
                     >
                     <div class="col-lg-12 ps-5 pe-5">
@@ -154,17 +156,10 @@ export default {
             isModalOpen: false,
             form: null,
             contact: {},
-            errors: false,
             errorString: '',
             successString: '',
             success: false,
         };
-    },
-    computed: {
-        showError: function () {
-            var vm = this;
-            return vm.errors;
-        },
     },
     mounted: function () {
         let vm = this;
@@ -181,7 +176,7 @@ export default {
         close: function () {
             this.isModalOpen = false;
             this.contact = {};
-            this.errors = false;
+            this.errorString = '';
             this.form.reset();
             this.form.classList.remove('was-validated');
         },
@@ -212,7 +207,7 @@ export default {
         },
         sendData: function () {
             let vm = this;
-            vm.errors = false;
+            vm.errorsString = '';
             if (vm.contact.id) {
                 const requestOptions = {
                     method: 'POST',
@@ -232,7 +227,6 @@ export default {
                     },
                     (error) => {
                         console.error(error);
-                        vm.errors = true;
                         vm.errorString = helpers.apiVueResourceError(error);
                     }
                 );
@@ -244,17 +238,20 @@ export default {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(vm.contact),
                 };
-                fetch(api_endpoints.organisation_contacts, requestOptions).then(
-                    () => {
-                        vm.close();
+                fetch(api_endpoints.organisation_contacts, requestOptions)
+                    .then(async (response) => {
+                        if (!response.ok) {
+                            const json = await response.json();
+                            vm.errorString = json.errors[0].detail;
+                            return;
+                        }
                         vm.$parent.addedContact();
-                    },
-                    (error) => {
+                        vm.close();
+                    })
+                    .catch((error) => {
                         console.error(error);
-                        vm.errors = true;
                         vm.errorString = helpers.apiVueResourceError(error);
-                    }
-                );
+                    });
             }
         },
     },

@@ -302,12 +302,12 @@ class Organisation(models.Model):
             org_contact = OrganisationContact.objects.get(
                 organisation=self, email=user.email
             )
-            org_contact.user_status = "declined"
+            org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_DECLINED
             org_contact.save()
         except OrganisationContact.DoesNotExist:
             pass
         OrganisationContactDeclinedDetails.objects.create(
-            officer=request.user, request=org_contact
+            officer=request.user.id, request=org_contact
         )
 
         # log linking
@@ -726,7 +726,7 @@ class OrganisationContact(models.Model):
         (USER_STATUS_CHOICE_SUSPENDED, "Suspended"),
         (
             USER_STATUS_CHOICE_CONTACT_FORM,
-            "ContactForm",
+            "Contact Form",
         ),  # status 'contact_form' if org contact was added via 'Contact Details'
         # section in manage.vue (allows Org Contact to be distinguished from Org Delegate)
     )
@@ -775,7 +775,7 @@ class OrganisationContact(models.Model):
         ordering = ("organisation", "last_name", "first_name")
 
     def __str__(self):
-        return f"{self.last_name} {self.first_name}"
+        return f"{self.last_name} {self.first_name} ({self.organisation})"
 
     @property
     def is_admin(self):
@@ -1109,21 +1109,21 @@ class OrganisationRequest(models.Model):
             self.save()
             self.log_user_action(OrganisationRequestUserAction.ACTION_UNASSIGN, request)
 
+    @transaction.atomic
     def decline(self, reason, request):
-        with transaction.atomic():
-            self.status = "declined"
-            self.assigned_officer = None
-            self.save()
-            OrganisationRequestDeclinedDetails.objects.create(
-                officer=request.user.id, reason=reason, organisation_request=self
-            )
-            self.log_user_action(
-                OrganisationRequestUserAction.ACTION_DECLINE_REQUEST.format(
-                    self.lodgement_number
-                ),
-                request,
-            )
-            send_organisation_request_decline_email_notification(self, request)
+        self.status = OrganisationRequest.STATUS_CHOICE_DECLINED
+        self.assigned_officer = None
+        self.save()
+        OrganisationRequestDeclinedDetails.objects.create(
+            officer=request.user.id, reason=reason, organisation_request=self
+        )
+        self.log_user_action(
+            OrganisationRequestUserAction.ACTION_DECLINE_REQUEST.format(
+                self.lodgement_number
+            ),
+            request,
+        )
+        send_organisation_request_decline_email_notification(self, request)
 
     def send_organisation_request_email_notification(self, request):
         # user submits a new organisation request

@@ -326,7 +326,6 @@ export default {
                 'ml-authorised-users-datatable-' + vm._uid,
             loading: [],
             approval: null,
-            original_invoicing_details: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
             adBody: 'adBody' + vm._uid,
             pBody: 'pBody' + vm._uid,
@@ -387,9 +386,6 @@ export default {
         const resData = await response.json();
         this.approval = Object.assign({}, resData);
         this.approval.applicant_id = resData.applicant_id;
-        this.original_invoicing_details = _.cloneDeep(
-            this.approval.invoicing_details
-        );
         if (this.approval.submitter.postal_address == null) {
             this.approval.submitter.postal_address = {};
         }
@@ -483,52 +479,90 @@ export default {
         },
         getGrossTurnoverChanges: function () {
             if (
+                this.approval.invoicing_details.charge_method_key ==
+                constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+                    .ID
+            ) {
+                return this.getGrossTurnoverChangesAdvance();
+            } else if (
+                this.approval.invoicing_details.charge_method_key ==
                 constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
-                    .ID != this.approval.invoicing_details.charge_method_key
+                    .ID
             ) {
-                return [];
+                return this.getGrossTurnoverChangesArrears();
             }
-            if (
-                this.original_invoicing_details ==
-                this.approval.invoicing_details
+        },
+        getGrossTurnoverChangesAdvance: function () {
+            let annualTurnoverChanges = [];
+            for (
+                let i = 0;
+                i <
+                this.approval.invoicing_details.gross_turnover_percentages
+                    .length;
+                i++
             ) {
-                return [];
+                let financial_year_has_passed = helpers.financialYearHasPassed(
+                    this.approval.invoicing_details.gross_turnover_percentages[
+                        i
+                    ].financial_year
+                );
+                console.log(financial_year_has_passed);
+
+                if (
+                    financial_year_has_passed &&
+                    !this.approval.invoicing_details.gross_turnover_percentages[
+                        i
+                    ].estimate_locked &&
+                    this.approval.invoicing_details.gross_turnover_percentages[
+                        i
+                    ].estimated_gross_turnover != null
+                ) {
+                    let invoice_amount = currency(
+                        this.approval.invoicing_details
+                            .gross_turnover_percentages[i]
+                            .estimated_gross_turnover
+                    ).multiply(
+                        this.approval.invoicing_details
+                            .gross_turnover_percentages[i].percentage / 100
+                    );
+                    annualTurnoverChanges.push({
+                        year: this.approval.invoicing_details
+                            .gross_turnover_percentages[i].year,
+                        percentage:
+                            this.approval.invoicing_details
+                                .gross_turnover_percentages[i].percentage,
+                        estimated_gross_turnover:
+                            this.approval.invoicing_details
+                                .gross_turnover_percentages[i]
+                                .estimated_gross_turnover,
+                        invoice_amount: invoice_amount,
+                    });
+                }
             }
+            return {
+                annualTurnoverChanges: annualTurnoverChanges,
+                quarterlyTurnoverChanges: [],
+                count: annualTurnoverChanges.length,
+            };
+        },
+        getGrossTurnoverChangesArrears: function () {
             let annualTurnoverChanges = [];
             let quarterlyTurnoverChanges = [];
             for (
                 let i = 0;
                 i <
-                this.original_invoicing_details.gross_turnover_percentages
+                this.approval.invoicing_details.gross_turnover_percentages
                     .length;
                 i++
             ) {
                 if (
+                    !this.approval.invoicing_details.gross_turnover_percentages[
+                        i
+                    ].locked &&
                     this.approval.invoicing_details.gross_turnover_percentages[
                         i
-                    ].gross_turnover &&
-                    this.approval.invoicing_details.gross_turnover_percentages[
-                        i
-                    ].gross_turnover !=
-                        this.original_invoicing_details
-                            .gross_turnover_percentages[i].gross_turnover
+                    ].gross_turnover != null
                 ) {
-                    let totalOfFinancialQuarters =
-                        this.getTotalOfFinancialQuarters(
-                            this.approval.invoicing_details
-                                .gross_turnover_percentages[i].year
-                        );
-                    let difference =
-                        currency(totalOfFinancialQuarters) -
-                        currency(
-                            this.approval.invoicing_details
-                                .gross_turnover_percentages[i].gross_turnover
-                        );
-                    difference =
-                        difference *
-                        (this.approval.invoicing_details
-                            .gross_turnover_percentages[i].percentage /
-                            100);
                     annualTurnoverChanges.push({
                         year: this.approval.invoicing_details
                             .gross_turnover_percentages[i].year,
@@ -538,22 +572,19 @@ export default {
                         gross_turnover:
                             this.approval.invoicing_details
                                 .gross_turnover_percentages[i].gross_turnover,
-                        discrepency:
+                        invoice_amount:
                             this.approval.invoicing_details
                                 .gross_turnover_percentages[i].discrepency,
                     });
                 }
                 let quarters =
-                    this.original_invoicing_details.gross_turnover_percentages[
+                    this.approval.invoicing_details.gross_turnover_percentages[
                         i
                     ].quarters;
                 for (let j = 0; j < quarters.length; j++) {
-                    let new_quarter =
-                        this.approval.invoicing_details
-                            .gross_turnover_percentages[i].quarters[j];
                     if (
-                        new_quarter.gross_turnover &&
-                        quarters[j].gross_turnover != new_quarter.gross_turnover
+                        !quarters[j].locked &&
+                        quarters[j].gross_turnover != null
                     ) {
                         quarterlyTurnoverChanges.push({
                             year: this.approval.invoicing_details
@@ -644,6 +675,7 @@ export default {
                 let invoice_amount = currency(
                     turnoverChanges[i].gross_turnover
                 ).multiply(turnoverChanges[i].percentage / 100);
+
                 changesHtml += `<tr><td>${turnoverChanges[i].year - 1}-${
                     turnoverChanges[i].year
                 }</td><td>Q${turnoverChanges[i].quarter}</td><td>${
@@ -656,6 +688,45 @@ export default {
             return changesHtml;
         },
         getAnnualTurnoverChangesHtml: function (turnoverChanges) {
+            if (
+                this.approval.invoicing_details.charge_method_key ==
+                constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+                    .ID
+            ) {
+                return this.getAnnualTurnoverChangesAdvanceHtml(
+                    turnoverChanges
+                );
+            } else if (
+                this.approval.invoicing_details.charge_method_key ==
+                constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+                    .ID
+            ) {
+                return this.getAnnualTurnoverChangesArrearsHtml(
+                    turnoverChanges
+                );
+            }
+        },
+        getAnnualTurnoverChangesAdvanceHtml: function (turnoverChanges) {
+            if (turnoverChanges.length == 0) {
+                return '';
+            }
+
+            let changesHtml = '';
+            changesHtml = `<div class="mb-3 float-left">Annual Turnover Estimates</div>`;
+            changesHtml += '<table class="table table-sm table-striped">';
+            changesHtml +=
+                '<thead><tr><th>Financial Year</th><th>Percentage</th><th>Estimated Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
+            for (let i = 0; i < turnoverChanges.length; i++) {
+                changesHtml += `<tr><td>${turnoverChanges[i].year - 1}-${
+                    turnoverChanges[i].year
+                }</td><td>${turnoverChanges[i].percentage}%</td><td>$${currency(
+                    turnoverChanges[i].estimated_gross_turnover
+                )}</td><td>$${turnoverChanges[i].invoice_amount}</td></tr>`;
+            }
+            changesHtml += '</tbody></table>';
+            return changesHtml;
+        },
+        getAnnualTurnoverChangesArrearsHtml: function (turnoverChanges) {
             if (turnoverChanges.length == 0) {
                 return '';
             }
@@ -668,7 +739,7 @@ export default {
             for (let i = 0; i < turnoverChanges.length; i++) {
                 let suffix = 'Charge';
                 let discrepencyClass = 'danger';
-                if (turnoverChanges[i].discrepency < 0) {
+                if (turnoverChanges[i].invoice_amount < 0) {
                     suffix = 'Refund';
                     discrepencyClass = 'success';
                 }
@@ -677,7 +748,7 @@ export default {
                 }</td><td>${turnoverChanges[i].percentage}%</td><td>$${currency(
                     turnoverChanges[i].gross_turnover
                 )}</td><td class="text-${discrepencyClass}">$${Math.abs(
-                    turnoverChanges[i].discrepency
+                    turnoverChanges[i].invoice_amount
                 )} ${suffix}</td></tr>`;
             }
             changesHtml += '</tbody></table>';
@@ -709,7 +780,6 @@ export default {
                     requestOptions
                 )
                 .then((data) => {
-                    this.savingInvoicingDetails = false;
                     swal.fire({
                         title: 'Invoicing Details Saved',
                         text: 'The invoicing details have been saved.',
@@ -726,6 +796,9 @@ export default {
                         text: error,
                         icon: 'error',
                     });
+                })
+                .finally(() => {
+                    this.savingInvoicingDetails = false;
                 });
         },
         cancelEditingInvoicing: function () {

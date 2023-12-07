@@ -43,13 +43,9 @@ class Command(BaseCommand):
             Approval.APPROVAL_STATUS_CURRENT,
             Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
             Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL,
-            Approval.APPROVAL_STATUS_CURRENT_EDITING_INVOICING,
         ]
 
         approved_proposal_statuses = [
-            Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST,
-            Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS,
-            Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING,
             Proposal.PROCESSING_STATUS_APPROVED,
         ]
 

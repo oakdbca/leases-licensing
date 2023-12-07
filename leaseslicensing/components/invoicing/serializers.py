@@ -121,6 +121,12 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
     to_be_deleted = serializers.SerializerMethodField()
     quarters = FinancialQuarterSerializer(many=True, required=False)
     months = FinancialMonthSerializer(many=True, required=False)
+    discrepency = serializers.DecimalField(
+        read_only=True,
+        allow_null=True,
+        max_digits=9,
+        decimal_places=2,
+    )
 
     class Meta:
         model = PercentageOfGrossTurnover
@@ -131,10 +137,12 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "percentage",
             "estimated_gross_turnover",
             "gross_turnover",
+            "estimate_locked",
             "locked",
             "to_be_deleted",
             "quarters",
             "months",
+            "discrepency",
         )
         extra_kwargs = {
             "id": {
@@ -246,6 +254,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     custom_cpi_years = CustomCPIYearSerializer(many=True, required=False)
     comment_text = serializers.CharField(required=False)
     context = serializers.CharField(required=False)
+    invoicing_repetition_type_key = serializers.CharField(
+        source="invoicing_repetition_type.key", read_only=True
+    )
 
     class Meta:
         model = InvoicingDetails
@@ -259,6 +270,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "review_repetition_type",  # FK
             "invoicing_once_every",
             "invoicing_repetition_type",  # FK
+            "invoicing_repetition_type_key",  # FK
             "invoicing_month_of_year",
             "invoicing_day_of_month",
             "invoicing_quarters_start_month",
@@ -489,9 +501,10 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         # Update local and FK fields
         instance.save()
 
-        # If the user is editing the invoicing details from the approval details page
+        # If the user has changed the charge method of invoicing repetition type
         # update the invoicing schedule and compliances as required
         if charge_method_changed or invoicing_repetition_type_changed:
+            # instance.reset
             instance.update_invoice_schedule()
             instance.proposal.update_gross_turnover_requirements()
             instance.proposal.generate_compliances(

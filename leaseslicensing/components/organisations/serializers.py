@@ -1,6 +1,7 @@
 from django.conf import settings
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from leaseslicensing.components.main.serializers import CommunicationLogEntrySerializer
 from leaseslicensing.components.main.utils import get_secure_document_url
@@ -67,6 +68,13 @@ class OrganisationContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrganisationContact
         fields = "__all__"
+        validators = [
+            UniqueTogetherValidator(
+                queryset=OrganisationContact.objects.all(),
+                fields=["organisation", "email"],
+                message="This organisation already has a contact with this email address.",
+            )
+        ]
 
     def get_user_status(self, obj):
         return obj.get_user_status_display()
