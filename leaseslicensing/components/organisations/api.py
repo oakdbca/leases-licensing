@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Case, CharField, IntegerField, Q, Value, When
+from django.db.models import Case, CharField, IntegerField, Value, When
 from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroupPermission
@@ -60,7 +60,10 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationSerializer,
     OrgUserAcceptSerializer,
 )
-from leaseslicensing.components.organisations.utils import can_admin_org
+from leaseslicensing.components.organisations.utils import (
+    can_admin_org,
+    get_organisation_ids_for_user,
+)
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
 
@@ -983,10 +986,8 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             return OrganisationContact.objects.all()
         elif is_customer(self.request):
-            user_orgs = [
-                org.id for org in user.leaseslicensing_organisations.all()
-            ]  # FIXME: EmailUserRO doesn't have this attribute, but not fixing it now
-            return OrganisationContact.objects.filter(Q(organisation_id__in=user_orgs))
+            user_orgs = get_organisation_ids_for_user(user.id)
+            return OrganisationContact.objects.filter(organisation_id__in=user_orgs)
         return OrganisationContact.objects.none()
 
     def destroy(self, request, *args, **kwargs):
