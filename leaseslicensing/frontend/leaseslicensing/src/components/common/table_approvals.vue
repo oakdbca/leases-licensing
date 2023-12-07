@@ -691,8 +691,15 @@ export default {
                             }
                             // Todo: Not yet totally sure under which circumstances this action should be visible
                             if (
-                                constants.APPROVAL_STATUS.CURRENT.TEXT ==
-                                full.status
+                                [
+                                    constants.APPROVAL_STATUS.CURRENT.TEXT,
+                                    constants.APPROVAL_STATUS
+                                        .CURRENT_PENDING_RENEWAL.TEXT,
+                                    constants.APPROVAL_STATUS
+                                        .CURRENT_PENDING_RENEWAL_REVIEW.TEXT,
+                                ].includes(full.status) &&
+                                constants.PROPOSAL_STATUS.APPROVED.ID ==
+                                    full.current_proposal_processing_status
                             ) {
                                 links += `<a href='#${full.id}' data-review-invoice-detail-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoicing Details</a><br/>`;
                             }
