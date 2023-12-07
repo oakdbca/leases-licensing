@@ -408,7 +408,7 @@
                     </FormSection>
 
                     <FormSection
-                        :form-collapse="true"
+                        :form-collapse="false"
                         label="Contact Details"
                         index="contact-details"
                     >
@@ -1081,7 +1081,7 @@ export default {
                         let name = $(e.target).data('name');
                         let email = $(e.target).data('email');
                         let id = $(e.target).data('id');
-                        swal({
+                        swal.fire({
                             title: 'Delete Contact',
                             text:
                                 'Are you sure you want to remove ' +
@@ -1119,7 +1119,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Contact Accept',
                             text:
                                 'Are you sure you want to accept contact request ' +
@@ -1145,7 +1145,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Contact Accept',
                                                     text:
                                                         'You have successfully accepted ' +
@@ -1163,7 +1163,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Contact Accept',
                                                     'There was an error accepting ' +
                                                         name +
@@ -1197,7 +1197,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Contact Accept (Previously Declined)',
                             text:
                                 'Are you sure you want to accept the previously declined contact request for ' +
@@ -1224,7 +1224,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Contact Accept (Previously Declined)',
                                                     text:
                                                         'You have successfully accepted ' +
@@ -1242,7 +1242,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Contact Accept (Previously Declined)',
                                                     'There was an error accepting ' +
                                                         name +
@@ -1276,7 +1276,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Contact Decline',
                             text:
                                 'Are you sure you want to decline the contact request for ' +
@@ -1302,7 +1302,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Contact Decline',
                                                     text:
                                                         'You have successfully declined ' +
@@ -1320,7 +1320,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Contact Decline',
                                                     'There was an error declining ' +
                                                         name +
@@ -1354,7 +1354,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Unlink',
                             text:
                                 'Are you sure you want to unlink ' +
@@ -1380,7 +1380,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Unlink',
                                                     text:
                                                         'You have successfully unlinked ' +
@@ -1399,13 +1399,13 @@ export default {
                                             },
                                             (error) => {
                                                 if (error.status == 500) {
-                                                    swal(
+                                                    swal.fire(
                                                         'Unlink',
                                                         'Last Organisation Admin can not be unlinked.',
                                                         'error'
                                                     );
                                                 } else {
-                                                    swal(
+                                                    swal.fire(
                                                         'Unlink',
                                                         'There was an error unlinking this user ' +
                                                             error,
@@ -1438,7 +1438,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Organisation Admin',
                             text:
                                 'Are you sure you want to make ' +
@@ -1464,7 +1464,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Organisation Admin',
                                                     text:
                                                         'You have successfully made ' +
@@ -1482,7 +1482,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Organisation Admin',
                                                     'There was an error making ' +
                                                         name +
@@ -1516,7 +1516,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Organisation User',
                             text:
                                 'Are you sure you want to make ' +
@@ -1542,7 +1542,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Organisation User',
                                                     text:
                                                         'You have successfully made ' +
@@ -1565,7 +1565,7 @@ export default {
                                                     helpers.apiVueResourceError(
                                                         error
                                                     );
-                                                swal(
+                                                swal.fire(
                                                     'Company Admin',
                                                     'There was an error making ' +
                                                         name +
@@ -1599,7 +1599,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Suspend User',
                             text:
                                 'Are you sure you want to Suspend  ' +
@@ -1625,7 +1625,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Suspend User',
                                                     text:
                                                         'You have successfully suspended ' +
@@ -1643,7 +1643,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Suspend User',
                                                     'There was an error suspending ' +
                                                         name +
@@ -1677,7 +1677,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Reinstate User',
                             text:
                                 'Are you sure you want to Reinstate  ' +
@@ -1703,7 +1703,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Reinstate User',
                                                     text:
                                                         'You have successfully reinstated ' +
@@ -1721,7 +1721,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Reinstate User',
                                                     'There was an error reinstating ' +
                                                         name +
@@ -1755,7 +1755,7 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        swal({
+                        swal.fire({
                             title: 'Relink User',
                             text:
                                 'Are you sure you want to Relink  ' +
@@ -1781,7 +1781,7 @@ export default {
                                         )
                                         .then(
                                             () => {
-                                                swal({
+                                                swal.fire({
                                                     title: 'Relink User',
                                                     text:
                                                         'You have successfully relinked ' +
@@ -1799,7 +1799,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                swal(
+                                                swal.fire(
                                                     'Relink User',
                                                     'There was an error relink ' +
                                                         name +
@@ -1911,7 +1911,7 @@ export default {
         },
         addedContact: function () {
             let vm = this;
-            swal(
+            swal.fire(
                 'Added',
                 'The contact has been successfully added.',
                 'success'
@@ -1933,7 +1933,7 @@ export default {
                 )
                 .then(
                     () => {
-                        swal(
+                        swal.fire(
                             'Contact Deleted',
                             'The contact was successfully deleted',
                             'success'
@@ -1942,7 +1942,7 @@ export default {
                     },
                     (error) => {
                         console.error(error);
-                        swal(
+                        swal.fire(
                             'Contact Deleted',
                             'The contact could not be deleted because of the following error ' +
                                 error,
@@ -2017,7 +2017,7 @@ export default {
             let org = vm.org;
             let org_name = org.name;
             let person = helpers.copyObject(d);
-            swal({
+            swal.fire({
                 title: 'Unlink From Organisation',
                 text:
                     'Are you sure you want to unlink ' +
@@ -2052,7 +2052,7 @@ export default {
                                 if (vm.org.billing_address == null) {
                                     vm.org.billing_address = {};
                                 }
-                                swal(
+                                swal.fire(
                                     'Unlink',
                                     'You have successfully unlinked ' +
                                         person.name +
@@ -2063,7 +2063,7 @@ export default {
                                 );
                             },
                             (error) => {
-                                swal(
+                                swal.fire(
                                     'Unlink',
                                     'There was an error unlinking ' +
                                         person.name +
