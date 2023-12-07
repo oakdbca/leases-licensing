@@ -1089,17 +1089,18 @@ export default {
                                 '(' +
                                 email +
                                 ') as a contact  ?',
-                            type: 'error',
+                            icon: 'error',
                             showCancelButton: true,
                             confirmButtonText: 'Accept',
-                        }).then(
-                            () => {
-                                vm.deleteContact(id);
-                            },
-                            (error) => {
+                        })
+                            .then(async (result) => {
+                                if (result.isConfirmed) {
+                                    vm.deleteContact(id);
+                                }
+                            })
+                            .catch((error) => {
                                 console.error(error);
-                            }
-                        );
+                            });
                     }
                 );
 
@@ -1151,7 +1152,7 @@ export default {
                                                         'You have successfully accepted ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1230,7 +1231,7 @@ export default {
                                                         'You have successfully accepted ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1308,7 +1309,7 @@ export default {
                                                         'You have successfully declined ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1386,7 +1387,7 @@ export default {
                                                         'You have successfully unlinked ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1470,7 +1471,7 @@ export default {
                                                         'You have successfully made ' +
                                                         name +
                                                         ' an Organisation Admin.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1548,7 +1549,7 @@ export default {
                                                         'You have successfully made ' +
                                                         name +
                                                         ' an Organisation User.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1631,7 +1632,7 @@ export default {
                                                         'You have successfully suspended ' +
                                                         name +
                                                         ' as a User.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1709,7 +1710,7 @@ export default {
                                                         'You have successfully reinstated ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1787,7 +1788,7 @@ export default {
                                                         'You have successfully relinked ' +
                                                         name +
                                                         '.',
-                                                    type: 'success',
+                                                    icon: 'success',
                                                     confirmButtonText: 'OK',
                                                 }).then(
                                                     () => {
@@ -1921,35 +1922,34 @@ export default {
         deleteContact: function (id) {
             let vm = this;
 
-            vm.$http
-                .delete(
-                    helpers.add_endpoint_json(
-                        api_endpoints.organisation_contacts,
-                        id
-                    ),
-                    {
-                        emulateJSON: true,
-                    }
-                )
-                .then(
-                    () => {
-                        swal.fire(
-                            'Contact Deleted',
-                            'The contact was successfully deleted',
-                            'success'
-                        );
-                        vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-                    },
-                    (error) => {
-                        console.error(error);
-                        swal.fire(
-                            'Contact Deleted',
-                            'The contact could not be deleted because of the following error ' +
-                                error,
-                            'error'
-                        );
-                    }
-                );
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisation_contacts,
+                    id
+                ),
+                {
+                    method: 'DELETE',
+                    emulateJSON: true,
+                }
+            ).then(
+                () => {
+                    swal.fire(
+                        'Contact Deleted',
+                        'The contact was successfully deleted',
+                        'success'
+                    );
+                    vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
+                },
+                (error) => {
+                    console.error(error);
+                    swal.fire(
+                        'Contact Deleted',
+                        'The contact could not be deleted because of the following error ' +
+                            error,
+                        'error'
+                    );
+                }
+            );
         },
         updateAddress: function () {
             let vm = this;
@@ -2027,7 +2027,7 @@ export default {
                     ' from ' +
                     org.name +
                     ' ?',
-                type: 'question',
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Accept',
             }).then(
