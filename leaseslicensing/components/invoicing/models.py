@@ -500,7 +500,6 @@ class InvoicingDetails(BaseModel):
         if self.charge_method.key in [
             settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
             settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
         ]:
             return
@@ -587,23 +586,20 @@ class InvoicingDetails(BaseModel):
         This should only be run once when the finance officer has just finished "editing invoicing" on the
         application.
         """
-        if self.charge_method.key in [
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
-        ]:
-            # Don't generate immediate invoices for
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+        ):
             return
-        gross_turnover_based_invoicing = self.charge_method.key in [
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
-        ]
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            return self.generate_immediate_invoices_gross_turnover_advance()
+
         immediate_invoices = []
         for preview_invoice in self.preview_invoices:
-            amount_object = preview_invoice["amount_object"]
-            if (
-                gross_turnover_based_invoicing and amount_object["amount"] is not None
-            ) or (
-                not gross_turnover_based_invoicing
-                and preview_invoice["start_date_has_passed"]
-            ):
+            if preview_invoice["start_date_has_passed"]:
                 immediate_invoices.append(preview_invoice)
 
         if len(immediate_invoices) == 0:
@@ -616,8 +612,6 @@ class InvoicingDetails(BaseModel):
                 approval=self.approval,
                 amount=invoice_record["amount_object"]["amount"],
                 gst_free=gst_free,
-                # Add status and datetime_created to avoid creating duplicate records
-                # the datetime value will be ignored when creating as it's an auto_now_add field
                 status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
             )
 
@@ -629,6 +623,44 @@ class InvoicingDetails(BaseModel):
             # and it can take quite some time to send all the emails in the case of back dated
             # leases / licences.
             send_new_invoice_raised_internal_notification(invoice)
+
+    def generate_immediate_invoices_gross_turnover_advance(self):
+        """Select any annual gross turnover estimate amounts that are not locked
+        create an invoice for them and then lock them so they are not processed again.
+        """
+
+        immediate_invoices = []
+        for preview_invoice in self.preview_invoices:
+            amount_object = preview_invoice["amount_object"]
+            if (
+                amount_object["amount"] is not None
+                and preview_invoice["start_date_has_passed"]
+            ):
+                immediate_invoices.append(preview_invoice)
+
+        gst_free = self.approval.approval_type.gst_free
+
+        for invoice_record in immediate_invoices:
+            invoice = Invoice.objects.create(
+                approval=self.approval,
+                amount=invoice_record["amount_object"]["amount"],
+                gst_free=gst_free,
+                status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+            )
+
+            logger.info(f"Immediate invoice created: {invoice}")
+
+            # send to the finance group so they can take action
+            # Todo: create a version of this email function that takes a list of invoices
+            # and just sends one email with the list of invoices as the request is blocked
+            # and it can take quite some time to send all the emails in the case of back dated
+            # leases / licences.
+            send_new_invoice_raised_internal_notification(invoice)
+
+        # Lock the gross turnover estimates so they are not processed again
+        self.gross_turnover_percentages.filter(
+            estimated_gross_turnover__isnull=False, estimate_locked=False
+        ).update(estimate_locked=True)
 
     def get_first_issue_date(self):
         first_issue_date = self.approval.start_date
@@ -976,10 +1008,23 @@ class InvoicingDetails(BaseModel):
 
     @transaction.atomic
     def process_gross_turnover_invoices(self):
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+        ):
+            return self.process_gross_turnover_invoices_arrears()
+        elif (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            return self.process_gross_turnover_invoices_advance()
+        else:
+            return
+
+    def process_gross_turnover_invoices_arrears(self):
         """Select any annual, quarterly or monthly gross turnover amounts that are not locked
         create an invoice for them and then lock them so they are not processed again.
         """
-
         gst_free = self.approval.approval_type.gst_free
 
         gross_turnover_percentages = self.gross_turnover_percentages.filter(
@@ -1033,6 +1078,53 @@ class InvoicingDetails(BaseModel):
                     send_new_invoice_raised_internal_notification(invoice)
 
                 months.update(locked=True)
+
+    def process_gross_turnover_invoices_advance(self):
+        gst_free = self.approval.approval_type.gst_free
+
+        gross_turnover_percentages = self.gross_turnover_percentages.filter(
+            estimated_gross_turnover__isnull=False, estimate_locked=False
+        )
+        logger.debug(
+            f"Found {gross_turnover_percentages.count()} gross turnover estimates"
+        )
+        for gross_turnover_percentage in gross_turnover_percentages:
+            if not utils.financial_year_has_passed(
+                gross_turnover_percentage.financial_year
+            ):
+                # Future invoices will be generated by the scheduled invoice process
+                # on a quarterly on monthly basis
+                continue
+
+            # Deal with cases where just an estimate has been entered
+            amount = gross_turnover_percentage.estimated_gross_turnover * (
+                gross_turnover_percentage.percentage / 100
+            )
+            invoice = Invoice.objects.create(
+                approval=self.approval, amount=amount, gst_free=gst_free
+            )
+
+            # Send email to notify finance group users
+            send_new_invoice_raised_internal_notification(invoice)
+
+        gross_turnover_percentages.update(estimate_locked=True)
+
+        gross_turnover_percentages = self.gross_turnover_percentages.filter(
+            gross_turnover__isnull=False, locked=False
+        )
+        for gross_turnover_percentage in gross_turnover_percentages:
+            # Deal with cases where an estimate and actual have been entered
+            if gross_turnover_percentage.discrepency:
+                invoice = Invoice.objects.create(
+                    approval=self.approval,
+                    amount=gross_turnover_percentage.discrepency,
+                    gst_free=gst_free,
+                )
+
+                # Send email to notify finance group users
+                send_new_invoice_raised_internal_notification(invoice)
+
+        gross_turnover_percentages.update(locked=True)
 
 
 class ScheduledInvoice(BaseModel):
