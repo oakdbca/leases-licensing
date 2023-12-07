@@ -1082,16 +1082,17 @@ export default {
                         let email = $(e.target).data('email');
                         let id = $(e.target).data('id');
                         swal.fire({
-                            title: 'Delete Contact',
+                            title: 'Remove Contact',
                             text:
                                 'Are you sure you want to remove ' +
                                 name +
                                 '(' +
                                 email +
                                 ') as a contact  ?',
-                            icon: 'error',
+                            icon: 'question',
                             showCancelButton: true,
-                            confirmButtonText: 'Accept',
+                            confirmButtonText: 'Remove Contact',
+                            reverseButtons: true,
                         })
                             .then(async (result) => {
                                 if (result.isConfirmed) {
@@ -1931,25 +1932,29 @@ export default {
                     method: 'DELETE',
                     emulateJSON: true,
                 }
-            ).then(
-                () => {
-                    swal.fire(
-                        'Contact Deleted',
-                        'The contact was successfully deleted',
-                        'success'
-                    );
-                    vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-                },
-                (error) => {
+            )
+                .then(async (response) => {
+                    await response.text();
+                    if (response.ok) {
+                        swal.fire(
+                            'Contact Removed',
+                            'The contact was successfully deleted',
+                            'success'
+                        );
+                        vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
+                    } else {
+                        throw new Error(response.text());
+                    }
+                })
+                .catch((error) => {
                     console.error(error);
                     swal.fire(
-                        'Contact Deleted',
+                        'Remove Contact Failed',
                         'The contact could not be deleted because of the following error ' +
                             error,
                         'error'
                     );
-                }
-            );
+                });
         },
         updateAddress: function () {
             let vm = this;
