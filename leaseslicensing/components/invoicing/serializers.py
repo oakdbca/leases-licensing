@@ -137,6 +137,7 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "percentage",
             "estimated_gross_turnover",
             "gross_turnover",
+            "estimate_locked",
             "locked",
             "to_be_deleted",
             "quarters",
