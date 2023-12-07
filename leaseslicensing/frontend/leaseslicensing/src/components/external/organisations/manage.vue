@@ -1279,59 +1279,60 @@ export default {
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
                         swal.fire({
-                            title: 'Contact Decline',
+                            title: 'Decline Linking Request',
                             text:
-                                'Are you sure you want to decline the contact request for ' +
+                                'Are you sure you want to decline the linking request from ' +
                                 name +
                                 ' (' +
                                 email +
                                 ')?',
                             showCancelButton: true,
-                            confirmButtonText: 'Accept',
+                            confirmButtonText: 'Decline Linking Request',
+                            reverseButtons: true,
                         }).then(
                             (result) => {
-                                if (result) {
-                                    vm.$http
-                                        .post(
-                                            helpers.add_endpoint_json(
-                                                api_endpoints.organisations,
-                                                vm.org.id + '/decline_user'
+                                if (result.isConfirmed) {
+                                    fetch(
+                                        helpers.add_endpoint_json(
+                                            api_endpoints.organisations,
+                                            vm.org.id + '/decline_user'
+                                        ),
+                                        {
+                                            body: JSON.stringify(
+                                                vm.contact_user
                                             ),
-                                            JSON.stringify(vm.contact_user),
-                                            {
-                                                emulateJSON: true,
-                                            }
-                                        )
-                                        .then(
-                                            () => {
-                                                swal.fire({
-                                                    title: 'Contact Decline',
-                                                    text:
-                                                        'You have successfully declined ' +
-                                                        name +
-                                                        '.',
-                                                    icon: 'success',
-                                                    confirmButtonText: 'OK',
-                                                }).then(
-                                                    () => {
-                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                                    },
-                                                    (error) => {
-                                                        console.error(error);
-                                                    }
+                                            emulateJSON: true,
+                                            method: 'POST',
+                                        }
+                                    )
+                                        .then(async (response) => {
+                                            await response.json();
+                                            if (!response.ok) {
+                                                throw new Error(
+                                                    response.statusText
                                                 );
-                                            },
-                                            (error) => {
-                                                swal.fire(
-                                                    'Contact Decline',
-                                                    'There was an error declining ' +
-                                                        name +
-                                                        '.',
-                                                    'error'
-                                                );
-                                                console.error(error);
                                             }
-                                        );
+                                            swal.fire({
+                                                title: 'Linking Request Declined',
+                                                text:
+                                                    'You have successfully declined the linking request from ' +
+                                                    name +
+                                                    '.',
+                                                icon: 'success',
+                                                confirmButtonText: 'OK',
+                                            });
+                                            vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                        })
+                                        .catch((error) => {
+                                            swal.fire(
+                                                'Contact Decline',
+                                                'There was an error declining ' +
+                                                    name +
+                                                    '.',
+                                                'error'
+                                            );
+                                            console.error(error);
+                                        });
                                 }
                             },
                             (error) => {

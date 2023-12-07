@@ -265,7 +265,7 @@ def send_organisation_contact_decline_email_notification(
             all_ccs = [cc_list]
     msg = email.send(user_contact.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, organisation, user_contact, sender=sender)
+    _log_org_email(msg, organisation, user_contact.id, sender=sender)
 
 
 def send_organisation_contact_user_email_notification(
