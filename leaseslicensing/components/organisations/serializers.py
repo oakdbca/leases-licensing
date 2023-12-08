@@ -64,6 +64,7 @@ class OrganisationContactSerializer(serializers.ModelSerializer):
     user_status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
     full_name = serializers.ReadOnlyField()
+    admin_user_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = OrganisationContact
@@ -75,6 +76,7 @@ class OrganisationContactSerializer(serializers.ModelSerializer):
                 message="This organisation already has a contact with this email address.",
             )
         ]
+        datatables_always_serialize = ("admin_user_count",)
 
     def get_user_status(self, obj):
         return obj.get_user_status_display()
@@ -84,12 +86,12 @@ class OrganisationContactSerializer(serializers.ModelSerializer):
 
 
 class OrganisationContactAdminCountSerializer(OrganisationContactSerializer):
-    admin_count = serializers.IntegerField(allow_null=True, read_only=True)
+    admin_user_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = OrganisationContact
         fields = "__all__"
-        datatables_always_serialize = ("admin_count",)
+        datatables_always_serialize = ("admin_user_count",)
 
 
 class BasicUserDelegationSerializer(serializers.ModelSerializer):

@@ -733,6 +733,7 @@ export default {
             logsTable: null,
             myorgperms: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
+            last_admin_message: `<i class="ps-2 fa-solid fa-lock text-secondary"></i><span class="text-secondary ps-2">Can't remove last active admin user</span>`,
             logsDtOptions: {
                 language: {
                     processing: constants.DATATABLE_PROCESSING_HTML,
@@ -928,7 +929,17 @@ export default {
                         mRender: function (data, type, full) {
                             let links = '';
                             let name = full.first_name + ' ' + full.last_name;
-                            links += `<a data-email='${full.email}' data-name='${name}' data-id='${full.id}' class="remove-contact">Remove</a><br/>`;
+                            if (
+                                full.admin_user_count == 1 &&
+                                full.user_role == 'Organisation Admin'
+                            ) {
+                                return vm.last_admin_message.replace(
+                                    'user',
+                                    'contact'
+                                );
+                            } else {
+                                links += `<a data-email='${full.email}' data-name='${name}' data-id='${full.id}' class="remove-contact">Remove</a><br/>`;
+                            }
                             return links;
                         },
                     },
@@ -964,18 +975,28 @@ export default {
                         mRender: function (data, type, full) {
                             let links = '';
                             if (vm.myorgperms.is_admin) {
+                                if (
+                                    full.user_role == 'Organisation Admin' &&
+                                    full.admin_user_count == 1
+                                ) {
+                                    return vm.last_admin_message;
+                                }
                                 if (full.user_status == 'Pending') {
                                     links += `<a data-email='${full.email}' data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="accept_contact">Accept</a><br/>`;
                                     links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="decline_contact">Decline</a><br/>`;
                                 } else if (full.user_status == 'Suspended') {
                                     links += `<a data-email='${full.email}' data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="reinstate_contact">Reinstate</a><br/>`;
                                 } else if (full.user_status == 'Active') {
-                                    links += `<a data-email='${full.email}' data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="unlink_contact">Unlink</a><br/>`;
-                                    links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="suspend_contact">Suspend</a><br/>`;
+                                    if (full.admin_user_count > 1) {
+                                        links += `<a data-email='${full.email}' data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="unlink_contact">Unlink</a><br/>`;
+                                        links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="suspend_contact">Suspend</a><br/>`;
+                                    }
                                     if (full.user_role == 'Organisation User') {
                                         links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_admin_contact">Make Organisation Admin</a><br/>`;
                                     } else {
-                                        links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_user_contact">Make Organisation User</a><br/>`;
+                                        if (full.admin_user_count > 1) {
+                                            links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_user_contact">Make Organisation User</a><br/>`;
+                                        }
                                     }
                                 } else if (full.user_status == 'Unlinked') {
                                     links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="relink_contact">Reinstate</a><br/>`;
@@ -1611,7 +1632,8 @@ export default {
                                 email +
                                 ')?',
                             showCancelButton: true,
-                            confirmButtonText: 'Accept',
+                            confirmButtonText: 'Suspend User',
+                            reserseButtons: true,
                         }).then(
                             (result) => {
                                 if (result) {
