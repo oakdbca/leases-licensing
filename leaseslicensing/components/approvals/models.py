@@ -462,9 +462,9 @@ class Approval(LicensingModelVersioned):
     @property
     def can_reinstate(self):
         return (
-            self.status == "cancelled"
-            or self.status == "suspended"
-            or self.status == "surrendered"
+            self.status == Approval.APPROVAL_STATUS_CANCELLED
+            or self.status == Approval.APPROVAL_STATUS_SUSPENDED
+            or self.status == Approval.APPROVAL_STATUS_SURRENDERED
         ) and self.can_action
 
     @property
@@ -839,8 +839,8 @@ class Approval(LicensingModelVersioned):
             )
             from_date = from_date.date()
             if from_date <= today:
-                if not self.status == "suspended":
-                    self.status = "suspended"
+                if not self.status == Approval.APPROVAL_STATUS_SUSPENDED:
+                    self.status = Approval.APPROVAL_STATUS_SUSPENDED
                     self.set_to_suspend = False
                     self.save()
                     send_approval_suspend_email_notification(self)
@@ -872,12 +872,12 @@ class Approval(LicensingModelVersioned):
             if not self.can_reinstate and self.expiry_date >= today:
                 # if not self.status == 'suspended' and self.expiry_date >= today:
                 raise ValidationError("You cannot reinstate approval at this stage")
-            if self.status == "cancelled":
+            if self.status == Approval.APPROVAL_STATUS_CANCELLED:
                 self.cancellation_details = ""
                 self.cancellation_date = None
-            if self.status == "surrendered":
+            if self.status == Approval.APPROVAL_STATUS_SURRENDERED:
                 self.surrender_details = {}
-            if self.status == "suspended":
+            if self.status == Approval.APPROVAL_STATUS_SUSPENDED:
                 self.suspension_details = {}
 
             self.status = "current"
