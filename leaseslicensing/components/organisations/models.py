@@ -590,7 +590,9 @@ class Organisation(models.Model):
                 org_contact = OrganisationContact.objects.get(
                     organisation=self, email=delegate.user.email
                 )
-                org_contact.user_status = "suspended"
+                org_contact.user_status = (
+                    OrganisationContact.USER_STATUS_CHOICE_SUSPENDED
+                )
                 org_contact.save()
             except OrganisationContact.DoesNotExist:
                 pass
