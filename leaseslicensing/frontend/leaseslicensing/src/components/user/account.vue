@@ -311,17 +311,6 @@
                                     "
                                 >
                                     <div>
-                                        <a
-                                            :href="
-                                                '/external/organisations/manage/' +
-                                                organisation_request.organisation
-                                            "
-                                            class="btn btn-primary btn-sm btn-status me-1"
-                                            role="button"
-                                        >
-                                            <i class="fa fa-pencil-square"></i>
-                                            update</a
-                                        >
                                         <button
                                             class="btn btn-danger btn-sm btn-status"
                                         >
