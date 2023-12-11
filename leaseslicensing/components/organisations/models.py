@@ -269,24 +269,30 @@ class Organisation(models.Model):
 
     @transaction.atomic
     def accept_user(self, user, request):
-        delegate = UserDelegation.objects.get_or_create(organisation=self, user=user)
+        delegate, created = UserDelegation.objects.get_or_create(
+            organisation=self, user=user.id
+        )
+        if created:
+            logger.info(f"Created User Delegation: {delegate}")
 
         try:
             org_contact = OrganisationContact.objects.get(
-                organisation=self, email=delegate.user.email
+                organisation=self, email=user.email
             )
             org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_ACTIVE
             org_contact.save()
         except OrganisationContact.DoesNotExist:
-            pass
+            raise ValidationError(
+                f"Organisation Contact with for {self} with email {user.email} does not exist."
+            )
 
         # log linking
         self.log_user_action(
             OrganisationAction.ACTION_LINK.format(
                 "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
+                    org_contact.first_name,
+                    org_contact.last_name,
+                    org_contact.email,
                 )
             ),
             request,
@@ -321,19 +327,11 @@ class Organisation(models.Model):
 
     @transaction.atomic
     def link_user(self, user, request):
-        try:
-            UserDelegation.objects.get(organisation=self, user=user)
-            raise ValidationError(
-                "This user has already been linked to {}".format(
-                    str(self.ledger_organisation_id)
-                )
-            )
-        except UserDelegation.DoesNotExist:
-            delegate = UserDelegation.objects.create(organisation=self, user=user)
-        if self.first_five_admin:
-            role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
-        else:
-            role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
+        user_delegation, created = UserDelegation.objects.get_or_create(
+            organisation=self, user=user.id
+        )
+        if created:
+            logger.info(f"Created User Delegation: {user_delegation}")
 
         # Create contact person
         OrganisationContact.objects.get_or_create(
@@ -344,7 +342,7 @@ class Organisation(models.Model):
             phone_number=user.phone_number,
             fax_number=user.fax_number,
             email=user.email,
-            user_role=role,
+            user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
             user_status=OrganisationContact.USER_STATUS_CHOICE_PENDING,
         )
 
@@ -352,9 +350,9 @@ class Organisation(models.Model):
         self.log_user_action(
             OrganisationAction.ACTION_LINK.format(
                 "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
+                    user.first_name,
+                    user.last_name,
+                    user.email,
                 )
             ),
             request,
@@ -365,38 +363,35 @@ class Organisation(models.Model):
 
     @transaction.atomic
     def accept_declined_user(self, user, request):
-        try:
-            UserDelegation.objects.get(organisation=self, user=user)
-            raise ValidationError(
-                "This user has already been linked to {}".format(
-                    str(self.ledger_organisation_id)
-                )
-            )
-        except UserDelegation.DoesNotExist:
-            delegate = UserDelegation.objects.create(organisation=self, user=user)
-        if self.first_five_admin:
-            role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
-        else:
-            role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
+        user_delegation, created = UserDelegation.objects.get_or_create(
+            organisation=self, user=user.id
+        )
+        if created:
+            logger.info(f"Created User Delegation: {user_delegation}")
 
         # Mark organisation contact as active
         try:
-            logger.info(f"role: {role}")
             org_contact = OrganisationContact.objects.get(
-                organisation=self, email=delegate.user.email
+                organisation=self, email=user.email
             )
-            org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_ACTIVE
-            org_contact.save()
         except OrganisationContact.DoesNotExist:
-            pass
+            raise ValidationError(
+                f"Organisation Contact with email {user.email} for {self} does not exist."
+            )
+
+        # We will make them a standard user by default.
+        # An admin can promote their priveleges later if necessary.
+        org_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_USER
+        org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_ACTIVE
+        org_contact.save()
 
         # log linking
         self.log_user_action(
             OrganisationAction.ACTION_LINK.format(
                 "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
+                    user.first_name,
+                    user.last_name,
+                    user.email,
                 )
             ),
             request,
@@ -407,20 +402,16 @@ class Organisation(models.Model):
 
     @transaction.atomic
     def relink_user(self, user, request):
-        try:
-            UserDelegation.objects.get(organisation=self, user=user)
-            raise ValidationError(
-                "This user has not yet been linked to {}".format(
-                    str(self.ledger_organisation_id)
-                )
-            )
-        except UserDelegation.DoesNotExist:
-            delegate = UserDelegation.objects.create(organisation=self, user=user)
+        user_delegation, created = UserDelegation.objects.get_or_create(
+            organisation=self, user=user.id
+        )
+        if created:
+            logger.info(f"Created User Delegation: {user_delegation}")
 
         # Mark organisation contact as active
         try:
             org_contact = OrganisationContact.objects.get(
-                organisation=self, email=delegate.user.email
+                organisation=self, email=user.email
             )
             org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_ACTIVE
             org_contact.save()
@@ -431,9 +422,9 @@ class Organisation(models.Model):
         self.log_user_action(
             OrganisationAction.ACTION_MAKE_CONTACT_REINSTATE.format(
                 "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
+                    user.first_name,
+                    user.last_name,
+                    user.email,
                 )
             ),
             request,
@@ -447,54 +438,43 @@ class Organisation(models.Model):
     @transaction.atomic
     def unlink_user(self, user, request):
         try:
-            delegate = UserDelegation.objects.get(organisation=self, user=user)
+            delegate = UserDelegation.objects.get(organisation=self, user=user.id)
         except UserDelegation.DoesNotExist:
-            raise ValidationError(
-                f"This user is not a member of {str(self.ledger_organisation_id)}"
-            )
+            raise ValidationError(f"This user is not a member of {self}")
 
         # Mark the organisation contact as unlinked
         try:
             org_contact = OrganisationContact.objects.get(
-                organisation=self, email=delegate.user.email
+                organisation=self, email=user.email
             )
-            if org_contact.user_role == OrganisationContact.USER_ROLE_CHOICE_ADMIN:
-                if (
-                    OrganisationContact.objects.filter(
-                        organisation=self,
-                        user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
-                        user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
-                    ).count()
-                    > 1
-                ):
-                    org_contact.user_status = (
-                        OrganisationContact.USER_STATUS_CHOICE_UNLINKED
-                    )
-                    org_contact.save()
-                    # delete delegate
-                    delegate.delete()
-                else:
-                    raise ValidationError(
-                        "This user is last Organisation Administrator."
-                    )
-
-            else:
-                org_contact.user_status = (
-                    OrganisationContact.USER_STATUS_CHOICE_UNLINKED
-                )
-                org_contact.save()
-                # delete delegate
-                delegate.delete()
         except OrganisationContact.DoesNotExist:
-            pass
+            raise ValidationError(
+                f"Organisation Contact with for {self} with email {user.email} does not exist."
+            )
+
+        if org_contact.user_role == OrganisationContact.USER_ROLE_CHOICE_ADMIN:
+            if (
+                OrganisationContact.objects.filter(
+                    organisation=self,
+                    user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
+                    user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+                ).count()
+                == 1
+            ):
+                raise ValidationError("This user is last Organisation Administrator.")
+
+        org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_UNLINKED
+        org_contact.save()
+        # delete delegate
+        delegate.delete()
 
         # log linking
         self.log_user_action(
             OrganisationAction.ACTION_UNLINK.format(
                 "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
+                    org_contact.first_name,
+                    org_contact.last_name,
+                    org_contact.email,
                 )
             ),
             request,
@@ -502,80 +482,78 @@ class Organisation(models.Model):
         # send email
         send_organisation_unlink_email_notification(user, request.user, self, request)
 
+    @transaction.atomic
     def make_admin_user(self, user, request):
-        with transaction.atomic():
-            try:
-                delegate = UserDelegation.objects.get(organisation=self, user=user)
-            except UserDelegation.DoesNotExist:
-                raise ValidationError(
-                    f"This user is not a member of {str(self.ledger_organisation_id)}"
-                )
-            # delete contact person
-            try:
-                org_contact = OrganisationContact.objects.get(
-                    organisation=self, email=delegate.user.email
-                )
-                org_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
-                org_contact.save()
-            except OrganisationContact.DoesNotExist:
-                pass
-            # log linking
-            self.log_user_action(
-                OrganisationAction.ACTION_MAKE_CONTACT_ADMIN.format(
-                    "{} {}({})".format(
-                        delegate.user.first_name,
-                        delegate.user.last_name,
-                        delegate.user.email,
-                    )
-                ),
-                request,
+        try:
+            UserDelegation.objects.get(organisation=self, user=user.id)
+        except UserDelegation.DoesNotExist:
+            raise ValidationError(
+                f"User Delegation with user id {user.id} does not exist for organisation {self}"
             )
-            # send email
-            send_organisation_contact_adminuser_email_notification(
-                user, request.user, self, request
+
+        # Mark user as admin
+        try:
+            org_contact = OrganisationContact.objects.get(
+                organisation=self, email=user.email
             )
+            org_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
+            org_contact.save()
+        except OrganisationContact.DoesNotExist:
+            pass
+
+        # log linking
+        self.log_user_action(
+            OrganisationAction.ACTION_MAKE_CONTACT_ADMIN.format(
+                "{} {}({})".format(
+                    user.first_name,
+                    user.last_name,
+                    user.email,
+                )
+            ),
+            request,
+        )
+        # send email
+        send_organisation_contact_adminuser_email_notification(
+            user, request.user, self, request
+        )
 
     @transaction.atomic
     def make_user(self, user, request):
         try:
-            delegate = UserDelegation.objects.get(organisation=self, user=user)
+            UserDelegation.objects.get(organisation=self, user=user.id)
         except UserDelegation.DoesNotExist:
             raise ValidationError(
-                f"This user is not a member of {str(self.ledger_organisation_id)}"
+                f"User Delegation with user id {user.id} does not exist for organisation {self}"
             )
-        # delete contact person
         try:
             org_contact = OrganisationContact.objects.get(
-                organisation=self, email=delegate.user.email
+                organisation=self, email=user.email
             )
-            if org_contact.user_role == OrganisationContact.USER_ROLE_CHOICE_ADMIN:
-                # Last admin user should not be able to make himself user.
-                if (
-                    OrganisationContact.objects.filter(
-                        organisation=self,
-                        user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
-                        user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
-                    ).count()
-                    > 1
-                ):
-                    org_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
-                    org_contact.save()
-                else:
-                    raise ValidationError(
-                        "This user is last Organisation Administrator."
-                    )
-            else:
-                org_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
-                org_contact.save()
         except OrganisationContact.DoesNotExist:
-            pass
+            raise ValidationError(
+                f"Organisation Contact with email {user.email} for {self} does not exist."
+            )
+
+        # Demote the user to an organisation user
+        if (
+            org_contact.user_role == OrganisationContact.USER_ROLE_CHOICE_ADMIN
+            and self.admin_user_count == 1
+        ):
+            # Last admin user should not be able to make himself user.
+            raise ValidationError(
+                "This user is the last organisation admin so they can't be demoted."
+            )
+        else:
+            org_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_USER
+            org_contact.save()
+
         # log linking
         self.log_user_action(
             OrganisationAction.ACTION_MAKE_CONTACT_USER.format(
                 "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
+                    user.first_name,
+                    user.last_name,
+                    user.email,
                 )
             ),
             request,
@@ -588,33 +566,37 @@ class Organisation(models.Model):
     @transaction.atomic
     def suspend_user(self, user, request):
         try:
-            delegate = UserDelegation.objects.get(organisation=self, user=user)
+            UserDelegation.objects.get(organisation=self, user=user.id)
         except UserDelegation.DoesNotExist:
             raise ValidationError(
-                f"This user is not a member of {str(self.ledger_organisation_id)}"
+                f"User Delegation with user id {user.id} does not exist for organisation {self}"
             )
 
         # Mark organisation contact as suspended
         try:
             org_contact = OrganisationContact.objects.get(
-                organisation=self, email=delegate.user.email
+                organisation=self, email=user.email
             )
-            org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_SUSPENDED
-            org_contact.save()
         except OrganisationContact.DoesNotExist:
-            pass
+            raise ValidationError(
+                f"Organisation Contact with email {user.email} for {self} does not exist."
+            )
+
+        org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_SUSPENDED
+        org_contact.save()
 
         # log suspension
         self.log_user_action(
             OrganisationAction.ACTION_MAKE_CONTACT_SUSPEND.format(
                 "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
+                    user.first_name,
+                    user.last_name,
+                    user.email,
                 )
             ),
             request,
         )
+
         # send email
         send_organisation_contact_suspend_email_notification(
             user, request.user, self, request
@@ -623,28 +605,32 @@ class Organisation(models.Model):
     @transaction.atomic
     def reinstate_user(self, user, request):
         try:
-            delegate = UserDelegation.objects.get(organisation=self, user=user)
+            UserDelegation.objects.get(organisation=self, user=user.id)
         except UserDelegation.DoesNotExist:
             raise ValidationError(
-                f"This user is not a member of {str(self.ledger_organisation_id)}"
+                f"User Delegation with user id {user.id} does not exist for organisation {self}"
             )
 
         # Mark organisation contact as active
         try:
             org_contact = OrganisationContact.objects.get(
-                organisation=self, email=delegate.user.email
+                organisation=self, email=user.email
             )
-            org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_ACTIVE
-            org_contact.save()
         except OrganisationContact.DoesNotExist:
-            pass
+            raise ValidationError(
+                f"Organisation Contact with email {user.email} for {self} does not exist."
+            )
+
+        org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_ACTIVE
+        org_contact.save()
+
         # log linking
         self.log_user_action(
             OrganisationAction.ACTION_MAKE_CONTACT_REINSTATE.format(
                 "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
+                    user.first_name,
+                    user.last_name,
+                    user.email,
                 )
             ),
             request,
@@ -700,11 +686,15 @@ class Organisation(models.Model):
         return ",".join([delegate.user_full_name for delegate in first_five_delegates])
 
     @property
+    def active_admin_users(self):
+        return self.contacts.filter(
+            user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+            user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
+        )
+
+    @property
     def admin_user_count(self):
-        return self.delegates.filter(
-            organisation__contacts__user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
-            organisation__contacts__user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
-        ).count()
+        return self.active_admin_users.count()
 
     @classmethod
     def organisations_user_can_admin(cls, user_id):
