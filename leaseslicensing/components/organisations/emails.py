@@ -225,7 +225,7 @@ def send_organisation_reinstate_email_notification(
 
     msg = email.send(linked_user.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, organisation, linked_user, sender=sender)
+    _log_org_email(msg, organisation, linked_user.id, sender=sender)
 
 
 def send_organisation_contact_suspend_email_notification(
@@ -245,7 +245,7 @@ def send_organisation_contact_suspend_email_notification(
             all_ccs = [cc_list]
     msg = email.send(linked_user.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, organisation, linked_user, sender=sender)
+    _log_org_email(msg, organisation, linked_user.id, sender=sender)
 
 
 def send_organisation_contact_decline_email_notification(
@@ -285,7 +285,7 @@ def send_organisation_contact_user_email_notification(
             all_ccs = [cc_list]
     msg = email.send(linked_user.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, organisation, linked_user, sender=sender)
+    _log_org_email(msg, organisation, linked_user.id, sender=sender)
 
 
 def send_organisation_contact_adminuser_email_notification(
@@ -305,7 +305,7 @@ def send_organisation_contact_adminuser_email_notification(
             all_ccs = [cc_list]
     msg = email.send(linked_user.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, organisation, linked_user, sender=sender)
+    _log_org_email(msg, organisation, linked_user.id, sender=sender)
 
 
 def send_organisation_link_email_notification(
@@ -326,7 +326,7 @@ def send_organisation_link_email_notification(
 
     msg = email.send(linked_user.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, organisation, linked_user, sender=sender)
+    _log_org_email(msg, organisation, linked_user.id, sender=sender)
 
 
 def send_organisation_request_email_notification(org_request, request, contact):
@@ -363,7 +363,7 @@ def send_organisation_unlink_email_notification(
 
     msg = email.send(unlinked_user.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, organisation, unlinked_user, sender=sender)
+    _log_org_email(msg, organisation, unlinked_user.id, sender=sender)
 
 
 def send_organisation_request_accept_email_notification(
@@ -410,7 +410,7 @@ def send_organisation_request_decline_email_notification(org_request, request):
     msg = email.send(requester_email_user.email, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_org_request_email(msg, org_request, sender=sender)
-    # _log_org_email(msg, organisation, org_request.requester, sender=sender)
+    _log_org_email(msg, org_request.organisation, org_request.requester, sender=sender)
 
 
 def send_organisation_address_updated_email_notification(

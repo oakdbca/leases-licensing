@@ -508,7 +508,7 @@ export default {
                         mRender: function (data, type, full) {
                             if (
                                 'Organisation Admin' == full.user_role &&
-                                1 == full.admin_count
+                                1 == full.admin_user_count
                             ) {
                                 return '';
                             }

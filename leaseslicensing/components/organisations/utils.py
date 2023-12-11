@@ -123,12 +123,17 @@ def get_organisation_ids_for_user(email_user_id):
     # Todo: If we are using the UserDelegates model, then use this instead otherwise remove this code:
     # from leaseslicensing.components.organisations.models import UserDelegation
     # return UserDelegation.objects.filter(user=email_user_id).values_list("organisation__id", flat=True)
-    from leaseslicensing.components.organisations.models import Organisation
+    from leaseslicensing.components.organisations.models import (
+        Organisation,
+        OrganisationContact,
+    )
 
     return list(
-        Organisation.objects.filter(delegates__user=email_user_id).values_list(
-            "id", flat=True
-        )
+        Organisation.objects.filter(
+            delegates__user=email_user_id,
+            contacts__user=email_user_id,
+            contacts__user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+        ).values_list("id", flat=True)
     )
 
 

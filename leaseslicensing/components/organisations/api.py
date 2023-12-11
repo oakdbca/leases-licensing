@@ -89,7 +89,12 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             if "validate_pins" == self.action:
                 return Organisation.objects.all()
             logger.info(list(Organisation.objects.filter(delegates__user=user.id)))
-            return Organisation.objects.filter(delegates__user=user.id)
+            return Organisation.objects.filter(
+                delegates__user=user.id,
+                contacts__user=user.id,
+                contacts__user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+            )
+
         return Organisation.objects.none()
 
     @list_route(
@@ -130,10 +135,12 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     @basic_exception_handler
     def contacts(self, request, *args, **kwargs):
         instance = self.get_object()
-        admin_count = instance.contacts.filter(user_role="organisation_admin").count()
-        queryset = instance.contacts.exclude(user_status="pending")
+        admin_user_count = instance.admin_user_count
+        queryset = instance.contacts.exclude(
+            user_status=OrganisationContact.USER_STATUS_CHOICE_PENDING
+        )
         queryset = queryset.annotate(
-            admin_count=Value(admin_count, output_field=IntegerField())
+            admin_user_count=Value(admin_user_count, output_field=IntegerField())
         )
         serializer = OrganisationContactAdminCountSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -159,7 +166,13 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     @basic_exception_handler
     def contacts_exclude(self, request, *args, **kwargs):
         instance = self.get_object()
-        qs = instance.contacts.exclude(user_status="draft")
+        admin_user_count = instance.admin_user_count
+        qs = instance.contacts.exclude(
+            user_status=OrganisationContact.USER_STATUS_CHOICE_DRAFT
+        )
+        qs = qs.annotate(
+            admin_user_count=Value(admin_user_count, output_field=IntegerField())
+        )
         serializer = OrganisationContactSerializer(qs, many=True)
         return Response(serializer.data)
 
@@ -945,7 +958,10 @@ class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         total_count = queryset.count()
-        admin_count = queryset.filter(user_role="organisation_admin").count()
+        admin_user_count = queryset.filter(
+            user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
+            user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+        ).count()
 
         filter_role = request.GET.get("filter_role", None)
 
@@ -955,7 +971,9 @@ class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
         # Apply regular request filters and union the result with the queryset
         queryset = self.apply_request(
             request, queryset, view, ledger_lookup_fields=[]
-        ).annotate(admin_count=Value(admin_count, output_field=IntegerField()))
+        ).annotate(
+            admin_user_count=Value(admin_user_count, output_field=IntegerField())
+        )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -994,11 +1012,16 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
         """delete an Organisation contact"""
         num_admins = (
             self.get_object()
-            .organisation.contacts.filter(user_role="organisation_admin")
+            .organisation.contacts.filter(
+                user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN
+            )
             .count()
         )
         org_contact = self.get_object().organisation.contacts.get(id=kwargs["pk"])
-        if num_admins == 1 and org_contact.user_role == "organisation_admin":
+        if (
+            num_admins == 1
+            and org_contact.user_role == OrganisationContact.USER_ROLE_CHOICE_ADMIN
+        ):
             raise serializers.ValidationError(
                 "Cannot delete the last Organisation Admin"
             )
@@ -1028,6 +1051,6 @@ class MyOrganisationsViewSet(viewsets.ModelViewSet):
             return Organisation.objects.filter(
                 contacts__user=user.id,
                 contacts__user_status="active",
-                contacts__user_role="organisation_admin",
+                contacts__user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
             )
         return Organisation.objects.none()

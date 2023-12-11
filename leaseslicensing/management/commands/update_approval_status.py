@@ -38,7 +38,7 @@ class Command(BaseCommand):
                 from_date = from_date.date()
                 if from_date <= today:
                     try:
-                        a.status = "suspended"
+                        a.status = Approval.APPROVAL_STATUS_SUSPENDED
                         a.set_to_suspend = False
                         a.save()
                         send_approval_suspend_email_notification(a)
@@ -126,7 +126,7 @@ class Command(BaseCommand):
                         logger.error(f"{err_msg}\n{str(e)}")
                         errors.append(err_msg)
 
-        for a in Approval.objects.filter(status="suspended"):
+        for a in Approval.objects.filter(status=Approval.APPROVAL_STATUS_SUSPENDED):
             if a.suspension_details and a.suspension_details["to_date"]:
                 to_date = datetime.datetime.strptime(
                     a.suspension_details["to_date"], "%d/%m/%Y"
