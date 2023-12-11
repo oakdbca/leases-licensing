@@ -468,6 +468,7 @@ class Organisation(models.Model):
 
         org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_UNLINKED
         org_contact.save()
+
         # delete delegate
         delegate.delete()
 

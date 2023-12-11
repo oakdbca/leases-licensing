@@ -1221,60 +1221,57 @@ export default {
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
                         swal.fire({
-                            title: 'Contact Accept (Previously Declined)',
+                            title: 'Accept Previously Declined Linking Request',
                             text:
-                                'Are you sure you want to accept the previously declined contact request for ' +
+                                'Are you sure you want to accept the previously declined linking request for ' +
                                 name +
                                 ' (' +
                                 email +
                                 ')?',
                             showCancelButton: true,
-                            confirmButtonText: 'Accept',
+                            confirmButtonText:
+                                'Accept Previously Declined Linking Request',
+                            reverseButtons: true,
                         }).then(
                             (result) => {
                                 if (result.value) {
-                                    vm.$http
-                                        .post(
-                                            helpers.add_endpoint_json(
-                                                api_endpoints.organisations,
-                                                vm.org.id +
-                                                    '/accept_declined_user'
+                                    fetch(
+                                        helpers.add_endpoint_json(
+                                            api_endpoints.organisations,
+                                            vm.org.id + '/accept_declined_user'
+                                        ),
+                                        {
+                                            emulateJSON: true,
+                                            body: JSON.stringify(
+                                                vm.contact_user
                                             ),
-                                            JSON.stringify(vm.contact_user),
-                                            {
-                                                emulateJSON: true,
-                                            }
-                                        )
-                                        .then(
-                                            () => {
-                                                swal.fire({
-                                                    title: 'Contact Accept (Previously Declined)',
-                                                    text:
-                                                        'You have successfully accepted ' +
-                                                        name +
-                                                        '.',
-                                                    icon: 'success',
-                                                    confirmButtonText: 'OK',
-                                                }).then(
-                                                    () => {
-                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                                    },
-                                                    (error) => {
-                                                        console.error(error);
-                                                    }
-                                                );
-                                            },
-                                            (error) => {
-                                                swal.fire(
-                                                    'Contact Accept (Previously Declined)',
-                                                    'There was an error accepting ' +
-                                                        name +
-                                                        '.',
-                                                    'error'
-                                                );
-                                                console.error(error);
-                                            }
-                                        );
+                                            method: 'POST',
+                                        }
+                                    ).then(
+                                        async (response) => {
+                                            await response.json();
+                                            swal.fire({
+                                                title: 'Previously Declined Linking Request Accepted',
+                                                text:
+                                                    'You have successfully accepted the linking request from ' +
+                                                    name +
+                                                    '.',
+                                                icon: 'success',
+                                                confirmButtonText: 'OK',
+                                            });
+                                            vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                        },
+                                        (error) => {
+                                            swal.fire(
+                                                'Accepting Previously Declined Linking Request Failed',
+                                                'There was an error accepting ' +
+                                                    name +
+                                                    '.',
+                                                'error'
+                                            );
+                                            console.error(error);
+                                        }
+                                    );
                                 }
                             },
                             (error) => {
@@ -1837,19 +1834,6 @@ export default {
                 );
             } // endif
         },
-        updateDetails_noconfirm: function () {
-            let vm = this;
-            vm.$http.post(
-                helpers.add_endpoint_json(
-                    api_endpoints.organisations,
-                    vm.org.id + '/update_details'
-                ),
-                JSON.stringify(vm.org),
-                {
-                    emulateJSON: true,
-                }
-            );
-        },
         validateForm: function (formId) {
             let vm = this;
             var form = document.getElementById(formId);
@@ -2050,31 +2034,26 @@ export default {
                     ' ?',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Accept',
+                confirmButtonText: 'Unlink User',
+                reverseButtons: true,
             }).then(
-                () => {
-                    vm.$http
-                        .post(
+                (result) => {
+                    if (result.isConfirmed) {
+                        fetch(
                             helpers.add_endpoint_json(
                                 api_endpoints.organisations,
                                 org.id + '/unlink_user'
                             ),
-                            { user: person.id },
                             {
                                 emulateJSON: true,
+                                body: JSON.stringify(person),
+                                method: 'POST',
                             }
-                        )
-                        .then(
-                            (response) => {
-                                vm.org = response.body;
-                                if (vm.org.postal_address == null) {
-                                    vm.org.postal_address = {};
-                                }
-                                if (vm.org.billing_address == null) {
-                                    vm.org.billing_address = {};
-                                }
+                        ).then(
+                            async (response) => {
+                                await response.json();
                                 swal.fire(
-                                    'Unlink',
+                                    'User Unlinked Successfully',
                                     'You have successfully unlinked ' +
                                         person.name +
                                         ' from ' +
@@ -2082,6 +2061,7 @@ export default {
                                         '.',
                                     'success'
                                 );
+                                vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
                             },
                             (error) => {
                                 swal.fire(
@@ -2096,6 +2076,7 @@ export default {
                                 );
                             }
                         );
+                    }
                 },
                 (error) => {
                     console.error(error);
