@@ -89,7 +89,12 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             if "validate_pins" == self.action:
                 return Organisation.objects.all()
             logger.info(list(Organisation.objects.filter(delegates__user=user.id)))
-            return Organisation.objects.filter(delegates__user=user.id)
+            return Organisation.objects.filter(
+                delegates__user=user.id,
+                contacts__user=user.id,
+                contacts__user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+            )
+
         return Organisation.objects.none()
 
     @list_route(
