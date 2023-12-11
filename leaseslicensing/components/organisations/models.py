@@ -167,6 +167,7 @@ class Organisation(models.Model):
         user = request.user
         try:
             org = OrganisationContact.objects.create(
+                user=user.id,
                 organisation=self,
                 first_name=user.first_name,
                 last_name=user.last_name,
@@ -184,6 +185,7 @@ class Organisation(models.Model):
     @transaction.atomic
     def add_user_contact(self, user, request, role):
         contact, created = OrganisationContact.objects.get_or_create(
+            user=user.id,
             organisation=self,
             first_name=user.first_name,
             last_name=user.last_name,
@@ -335,6 +337,7 @@ class Organisation(models.Model):
 
         # Create contact person
         OrganisationContact.objects.get_or_create(
+            user=user.id,
             organisation=self,
             first_name=user.first_name,
             last_name=user.last_name,
@@ -701,6 +704,7 @@ class Organisation(models.Model):
         return (
             cls.objects.filter(
                 delegates__user=user_id,
+                contacts__user=user_id,
                 contacts__user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
                 contacts__user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
             )
