@@ -954,7 +954,8 @@ class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
     def filter_queryset(self, request, queryset, view):
         total_count = queryset.count()
         admin_user_count = queryset.filter(
-            user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN
+            user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
+            user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
         ).count()
 
         filter_role = request.GET.get("filter_role", None)
