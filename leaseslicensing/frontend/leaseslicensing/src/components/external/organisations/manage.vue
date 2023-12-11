@@ -991,10 +991,10 @@ export default {
                                     links += `<a data-email='${full.email}' data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="unlink_contact">Unlink</a><br/>`;
                                     links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="suspend_contact">Suspend</a><br/>`;
                                     if (full.user_role == 'Organisation User') {
-                                        links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_admin_contact">Make Organisation Admin</a><br/>`;
+                                        links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_organisation_admin">Make Organisation Admin</a><br/>`;
                                     } else {
                                         if (full.admin_user_count > 1) {
-                                            links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_user_contact">Demote to Organisation User</a><br/>`;
+                                            links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_organisation_user">Demote to Organisation User</a><br/>`;
                                         }
                                     }
                                 } else if (full.user_status == 'Unlinked') {
@@ -1441,7 +1441,7 @@ export default {
                 );
                 vm.$refs.contacts_datatable_user.vmDataTable.on(
                     'click',
-                    '.make_admin_contact',
+                    '.make_organisation_admin',
                     (e) => {
                         e.preventDefault();
                         let firstname = $(e.target).data('firstname');
@@ -1516,7 +1516,7 @@ export default {
                 );
                 vm.$refs.contacts_datatable_user.vmDataTable.on(
                     'click',
-                    '.make_user_contact',
+                    '.make_organisation_user',
                     (e) => {
                         e.preventDefault();
                         let firstname = $(e.target).data('firstname');
@@ -2016,72 +2016,6 @@ export default {
                 .finally(() => {
                     vm.updatingAddress = false;
                 });
-        },
-        unlinkUser: function (d) {
-            let vm = this;
-            let org = vm.org;
-            let org_name = org.name;
-            let person = helpers.copyObject(d);
-            swal.fire({
-                title: 'Unlink From Organisation',
-                text:
-                    'Are you sure you want to unlink ' +
-                    person.name +
-                    ' ' +
-                    person.id +
-                    ' from ' +
-                    org.name +
-                    ' ?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Unlink User',
-                reverseButtons: true,
-            }).then(
-                (result) => {
-                    if (result.isConfirmed) {
-                        fetch(
-                            helpers.add_endpoint_json(
-                                api_endpoints.organisations,
-                                org.id + '/unlink_user'
-                            ),
-                            {
-                                emulateJSON: true,
-                                body: JSON.stringify(person),
-                                method: 'POST',
-                            }
-                        ).then(
-                            async (response) => {
-                                await response.json();
-                                swal.fire(
-                                    'User Unlinked Successfully',
-                                    'You have successfully unlinked ' +
-                                        person.name +
-                                        ' from ' +
-                                        org_name +
-                                        '.',
-                                    'success'
-                                );
-                                vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-                            },
-                            (error) => {
-                                swal.fire(
-                                    'Unlink',
-                                    'There was an error unlinking ' +
-                                        person.name +
-                                        ' from ' +
-                                        org_name +
-                                        '. ' +
-                                        error.body,
-                                    'error'
-                                );
-                            }
-                        );
-                    }
-                },
-                (error) => {
-                    console.error(error);
-                }
-            );
         },
         copyToClipboard: function (refName) {
             var element = this.$refs[refName];
