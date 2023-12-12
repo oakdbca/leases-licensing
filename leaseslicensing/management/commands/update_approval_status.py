@@ -30,7 +30,7 @@ class Command(BaseCommand):
         updates = []
         today = timezone.localtime(timezone.now()).date()
         logger.info(f"Running command {__name__}")
-        for a in Approval.objects.filter(status="current"):
+        for a in Approval.objects.filter(status=Approval.APPROVAL_STATUS_CURRENT):
             if a.suspension_details and a.set_to_suspend:
                 from_date = datetime.datetime.strptime(
                     a.suspension_details["from_date"], "%d/%m/%Y"
@@ -67,7 +67,7 @@ class Command(BaseCommand):
             if a.cancellation_date and a.set_to_cancel:
                 if a.cancellation_date <= today:
                     try:
-                        a.status = "cancelled"
+                        a.status = Approval.APPROVAL_STATUS_CANCELLED
                         a.set_to_cancel = False
                         a.save()
                         send_approval_cancel_email_notification(a)
@@ -100,7 +100,7 @@ class Command(BaseCommand):
                 surrender_date = surrender_date.date()
                 if surrender_date <= today:
                     try:
-                        a.status = "surrendered"
+                        a.status = Approval.APPROVAL_STATUS_SURRENDERED
                         a.set_to_surrender = False
                         a.save()
                         send_approval_surrender_email_notification(a)
@@ -134,7 +134,7 @@ class Command(BaseCommand):
                 to_date = to_date.date()
                 if to_date <= today and today < a.expiry_date:
                     try:
-                        a.status = "current"
+                        a.status = Approval.APPROVAL_STATUS_CURRENT
                         a.save()
                         proposal = a.current_proposal
                         ApprovalUserAction.log_action(
@@ -161,7 +161,7 @@ class Command(BaseCommand):
             if a.cancellation_date and a.set_to_cancel:
                 if a.cancellation_date <= today:
                     try:
-                        a.status = "cancelled"
+                        a.status = Approval.APPROVAL_STATUS_CANCELLED
                         a.set_to_cancel = False
                         a.save()
                         send_approval_cancel_email_notification(a)
@@ -194,7 +194,7 @@ class Command(BaseCommand):
                 surrender_date = surrender_date.date()
                 if surrender_date <= today:
                     try:
-                        a.status = "surrendered"
+                        a.status = Approval.APPROVAL_STATUS_SURRENDERED
                         a.set_to_surrender = False
                         a.save()
                         send_approval_surrender_email_notification(a)
