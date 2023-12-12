@@ -15,8 +15,7 @@ from ledger_api_client.utils import (
     update_organisation_obj,
 )
 from rest_framework import serializers, status, views, viewsets
-from rest_framework.decorators import action as list_route
-from rest_framework.decorators import renderer_classes
+from rest_framework.decorators import action, renderer_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -97,7 +96,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
 
         return Organisation.objects.none()
 
-    @list_route(
+    @action(
         methods=[
             "GET",
         ],
@@ -275,6 +274,23 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    # No logging action decorator for this one as once the user is unlinked the
+    # logging action will throw an exception trying to call get object since the user
+    # no longer has permission to do so. Todo: Could log manually if we need to
+    @action(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def unlink_request_user(self, request, *args, **kwargs):
+        instance = self.get_object()
+        user_obj = EmailUser.objects.get(email=request.user.email.lower())
+        instance.unlink_user(user_obj, request)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
     @logging_action(
         methods=[
             "POST",
@@ -438,7 +454,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
 
             return Response(serializer.data)
 
-    @list_route(
+    @action(
         methods=[
             "POST",
         ],
@@ -690,12 +706,15 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         if is_internal(self.request):
             return super().get_queryset()
         elif is_customer(self.request):
-            return self.queryset.filter(requester=self.request.user.id).exclude(
-                status=OrganisationRequest.STATUS_CHOICE_DECLINED
+            return self.queryset.filter(requester=self.request.user.id).filter(
+                status__in=[
+                    OrganisationRequest.STATUS_CHOICE_APPROVED,
+                    OrganisationRequest.STATUS_CHOICE_WITH_ASSESSOR,
+                ]
             )
         return OrganisationRequest.objects.none()
 
-    @list_route(
+    @action(
         methods=[
             "GET",
         ],
@@ -707,7 +726,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         serializer = OrganisationRequestDTSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @list_route(
+    @action(
         methods=[
             "GET",
         ],
@@ -719,7 +738,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         serializer = OrganisationRequestDTSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @list_route(
+    @action(
         methods=[
             "GET",
         ],
@@ -1010,16 +1029,17 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """delete an Organisation contact"""
-        num_admins = (
+        admin_user_count = (
             self.get_object()
             .organisation.contacts.filter(
-                user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN
+                user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
+                user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
             )
             .count()
         )
         org_contact = self.get_object().organisation.contacts.get(id=kwargs["pk"])
         if (
-            num_admins == 1
+            admin_user_count == 1
             and org_contact.user_role == OrganisationContact.USER_ROLE_CHOICE_ADMIN
         ):
             raise serializers.ValidationError(

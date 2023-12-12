@@ -733,6 +733,7 @@ export default {
             logsTable: null,
             myorgperms: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
+            user_is_self_message: `<i class="ps-2 fa-solid fa-lock text-secondary"></i><span class="text-secondary ps-2">Can't perform actions on self</span>`,
             last_admin_message: `<i class="ps-2 fa-solid fa-lock text-secondary"></i><span class="text-secondary ps-2">Can't remove last active admin user</span>`,
             logsDtOptions: {
                 language: {
@@ -929,6 +930,9 @@ export default {
                         mRender: function (data, type, full) {
                             let links = '';
                             let name = full.first_name + ' ' + full.last_name;
+                            if (full.user == vm.myorgperms.user_id) {
+                                return vm.user_is_self_message;
+                            }
                             if (
                                 full.admin_user_count == 1 &&
                                 full.user_role == 'Organisation Admin'
@@ -975,6 +979,9 @@ export default {
                         mRender: function (data, type, full) {
                             let links = '';
                             if (vm.myorgperms.is_admin) {
+                                if (full.user == vm.myorgperms.user_id) {
+                                    return vm.user_is_self_message;
+                                }
                                 if (
                                     full.user_role == 'Organisation Admin' &&
                                     full.user_status == 'Active' &&
