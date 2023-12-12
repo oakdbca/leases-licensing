@@ -311,19 +311,14 @@
                                     "
                                 >
                                     <div>
-                                        <a
-                                            :href="
-                                                '/external/organisations/manage/' +
-                                                organisation_request.organisation
-                                            "
-                                            class="btn btn-primary btn-sm btn-status me-1"
-                                            role="button"
-                                        >
-                                            <i class="fa fa-pencil-square"></i>
-                                            update</a
-                                        >
                                         <button
                                             class="btn btn-danger btn-sm btn-status"
+                                            @click="
+                                                unlinkUser(
+                                                    organisation_request.organisation,
+                                                    organisation_request.name
+                                                )
+                                            "
                                         >
                                             <i class="fa fa-chain-broken"></i>
                                             unlink
@@ -610,6 +605,68 @@ export default {
                 .finally(() => {
                     vm.validatingPins = false;
                 });
+        },
+        unlinkUser: function (org_id, org_name) {
+            let vm = this;
+            swal.fire({
+                title: 'Unlink from Organisation',
+                text:
+                    'Are you sure you want to be unlinked from ' +
+                    org_name +
+                    ' ?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Please Unlink Me',
+                reverseButtons: true,
+                confirmButtonColor: '#226fbb',
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.organisations,
+                            org_id + '/unlink_request_user'
+                        ),
+                        {
+                            emulateJSON: true,
+                            method: 'POST',
+                        }
+                    ).then(
+                        async (response) => {
+                            const data = await response.text();
+                            if (!response.ok) {
+                                swal.fire(
+                                    'Unlink Failed',
+                                    'There was an error unlinking you from ' +
+                                        org_name +
+                                        '. ' +
+                                        data.errors[0].detail,
+                                    'error'
+                                );
+                                return;
+                            }
+                            swal.fire(
+                                'Unlink Successful',
+                                'You have been successfully unlinked from ' +
+                                    org_name +
+                                    '.',
+                                'success'
+                            );
+                            vm.organisation_requests =
+                                vm.fetchOrganisationRequests();
+                        },
+                        (error) => {
+                            swal.fire(
+                                'Unlink Failed',
+                                'There was an error unlinking you from ' +
+                                    org_name +
+                                    '. ' +
+                                    error.body,
+                                'error'
+                            );
+                        }
+                    );
+                }
+            });
         },
         validateOrganisationRequest: function () {
             let vm = this;

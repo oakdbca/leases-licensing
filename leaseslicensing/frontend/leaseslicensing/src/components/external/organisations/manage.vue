@@ -733,6 +733,7 @@ export default {
             logsTable: null,
             myorgperms: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
+            user_is_self_message: `<i class="ps-2 fa-solid fa-lock text-secondary"></i><span class="text-secondary ps-2">Can't perform actions on self</span>`,
             last_admin_message: `<i class="ps-2 fa-solid fa-lock text-secondary"></i><span class="text-secondary ps-2">Can't remove last active admin user</span>`,
             logsDtOptions: {
                 language: {
@@ -929,6 +930,9 @@ export default {
                         mRender: function (data, type, full) {
                             let links = '';
                             let name = full.first_name + ' ' + full.last_name;
+                            if (full.user == vm.myorgperms.user_id) {
+                                return vm.user_is_self_message;
+                            }
                             if (
                                 full.admin_user_count == 1 &&
                                 full.user_role == 'Organisation Admin'
@@ -975,6 +979,9 @@ export default {
                         mRender: function (data, type, full) {
                             let links = '';
                             if (vm.myorgperms.is_admin) {
+                                if (full.user == vm.myorgperms.user_id) {
+                                    return vm.user_is_self_message;
+                                }
                                 if (
                                     full.user_role == 'Organisation Admin' &&
                                     full.user_status == 'Active' &&
@@ -991,10 +998,10 @@ export default {
                                     links += `<a data-email='${full.email}' data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="unlink_contact">Unlink</a><br/>`;
                                     links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="suspend_contact">Suspend</a><br/>`;
                                     if (full.user_role == 'Organisation User') {
-                                        links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_admin_contact">Make Organisation Admin</a><br/>`;
+                                        links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_organisation_admin">Make Organisation Admin</a><br/>`;
                                     } else {
                                         if (full.admin_user_count > 1) {
-                                            links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_user_contact">Demote to Organisation User</a><br/>`;
+                                            links += `<a data-email='${full.email}'  data-firstname='${full.first_name}' data-lastname='${full.last_name}' data-id='${full.id}' data-mobile='${full.mobile_number}' data-phone='${full.phone_number}' class="make_organisation_user">Demote to Organisation User</a><br/>`;
                                         }
                                     }
                                 } else if (full.user_status == 'Unlinked') {
@@ -1221,60 +1228,57 @@ export default {
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
                         swal.fire({
-                            title: 'Contact Accept (Previously Declined)',
+                            title: 'Accept Previously Declined Linking Request',
                             text:
-                                'Are you sure you want to accept the previously declined contact request for ' +
+                                'Are you sure you want to accept the previously declined linking request for ' +
                                 name +
                                 ' (' +
                                 email +
                                 ')?',
                             showCancelButton: true,
-                            confirmButtonText: 'Accept',
+                            confirmButtonText:
+                                'Accept Previously Declined Linking Request',
+                            reverseButtons: true,
                         }).then(
                             (result) => {
                                 if (result.value) {
-                                    vm.$http
-                                        .post(
-                                            helpers.add_endpoint_json(
-                                                api_endpoints.organisations,
-                                                vm.org.id +
-                                                    '/accept_declined_user'
+                                    fetch(
+                                        helpers.add_endpoint_json(
+                                            api_endpoints.organisations,
+                                            vm.org.id + '/accept_declined_user'
+                                        ),
+                                        {
+                                            emulateJSON: true,
+                                            body: JSON.stringify(
+                                                vm.contact_user
                                             ),
-                                            JSON.stringify(vm.contact_user),
-                                            {
-                                                emulateJSON: true,
-                                            }
-                                        )
-                                        .then(
-                                            () => {
-                                                swal.fire({
-                                                    title: 'Contact Accept (Previously Declined)',
-                                                    text:
-                                                        'You have successfully accepted ' +
-                                                        name +
-                                                        '.',
-                                                    icon: 'success',
-                                                    confirmButtonText: 'OK',
-                                                }).then(
-                                                    () => {
-                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                                    },
-                                                    (error) => {
-                                                        console.error(error);
-                                                    }
-                                                );
-                                            },
-                                            (error) => {
-                                                swal.fire(
-                                                    'Contact Accept (Previously Declined)',
-                                                    'There was an error accepting ' +
-                                                        name +
-                                                        '.',
-                                                    'error'
-                                                );
-                                                console.error(error);
-                                            }
-                                        );
+                                            method: 'POST',
+                                        }
+                                    ).then(
+                                        async (response) => {
+                                            await response.json();
+                                            swal.fire({
+                                                title: 'Previously Declined Linking Request Accepted',
+                                                text:
+                                                    'You have successfully accepted the linking request from ' +
+                                                    name +
+                                                    '.',
+                                                icon: 'success',
+                                                confirmButtonText: 'OK',
+                                            });
+                                            vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                        },
+                                        (error) => {
+                                            swal.fire(
+                                                'Accepting Previously Declined Linking Request Failed',
+                                                'There was an error accepting ' +
+                                                    name +
+                                                    '.',
+                                                'error'
+                                            );
+                                            console.error(error);
+                                        }
+                                    );
                                 }
                             },
                             (error) => {
@@ -1444,7 +1448,7 @@ export default {
                 );
                 vm.$refs.contacts_datatable_user.vmDataTable.on(
                     'click',
-                    '.make_admin_contact',
+                    '.make_organisation_admin',
                     (e) => {
                         e.preventDefault();
                         let firstname = $(e.target).data('firstname');
@@ -1519,7 +1523,7 @@ export default {
                 );
                 vm.$refs.contacts_datatable_user.vmDataTable.on(
                     'click',
-                    '.make_user_contact',
+                    '.make_organisation_user',
                     (e) => {
                         e.preventDefault();
                         let firstname = $(e.target).data('firstname');
@@ -1837,19 +1841,6 @@ export default {
                 );
             } // endif
         },
-        updateDetails_noconfirm: function () {
-            let vm = this;
-            vm.$http.post(
-                helpers.add_endpoint_json(
-                    api_endpoints.organisations,
-                    vm.org.id + '/update_details'
-                ),
-                JSON.stringify(vm.org),
-                {
-                    emulateJSON: true,
-                }
-            );
-        },
         validateForm: function (formId) {
             let vm = this;
             var form = document.getElementById(formId);
@@ -2032,75 +2023,6 @@ export default {
                 .finally(() => {
                     vm.updatingAddress = false;
                 });
-        },
-        unlinkUser: function (d) {
-            let vm = this;
-            let org = vm.org;
-            let org_name = org.name;
-            let person = helpers.copyObject(d);
-            swal.fire({
-                title: 'Unlink From Organisation',
-                text:
-                    'Are you sure you want to unlink ' +
-                    person.name +
-                    ' ' +
-                    person.id +
-                    ' from ' +
-                    org.name +
-                    ' ?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Accept',
-            }).then(
-                () => {
-                    vm.$http
-                        .post(
-                            helpers.add_endpoint_json(
-                                api_endpoints.organisations,
-                                org.id + '/unlink_user'
-                            ),
-                            { user: person.id },
-                            {
-                                emulateJSON: true,
-                            }
-                        )
-                        .then(
-                            (response) => {
-                                vm.org = response.body;
-                                if (vm.org.postal_address == null) {
-                                    vm.org.postal_address = {};
-                                }
-                                if (vm.org.billing_address == null) {
-                                    vm.org.billing_address = {};
-                                }
-                                swal.fire(
-                                    'Unlink',
-                                    'You have successfully unlinked ' +
-                                        person.name +
-                                        ' from ' +
-                                        org_name +
-                                        '.',
-                                    'success'
-                                );
-                            },
-                            (error) => {
-                                swal.fire(
-                                    'Unlink',
-                                    'There was an error unlinking ' +
-                                        person.name +
-                                        ' from ' +
-                                        org_name +
-                                        '. ' +
-                                        error.body,
-                                    'error'
-                                );
-                            }
-                        );
-                },
-                (error) => {
-                    console.error(error);
-                }
-            );
         },
         copyToClipboard: function (refName) {
             var element = this.$refs[refName];

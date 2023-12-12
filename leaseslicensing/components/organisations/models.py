@@ -464,10 +464,26 @@ class Organisation(models.Model):
                 ).count()
                 == 1
             ):
-                raise ValidationError("This user is last Organisation Administrator.")
+                if user.id == request.user.id:
+                    raise ValidationError(
+                        "You are the last active organisation administrator. You cannot unlink yourself."
+                    )
+                else:
+                    raise ValidationError(
+                        "This user is the last active organisation administrator."
+                    )
 
         org_contact.user_status = OrganisationContact.USER_STATUS_CHOICE_UNLINKED
         org_contact.save()
+
+        # Mark the most recent organisation request for this organisation as unlinked
+        organisation_request = OrganisationRequest.objects.filter(
+            organisation=self, requester=user.id
+        ).last()
+        if organisation_request:
+            organisation_request.status = OrganisationRequest.STATUS_CHOICE_UNLINKED
+            organisation_request.save()
+
         # delete delegate
         delegate.delete()
 
@@ -544,7 +560,7 @@ class Organisation(models.Model):
         ):
             # Last admin user should not be able to make himself user.
             raise ValidationError(
-                "This user is the last organisation admin so they can't be demoted."
+                "This user is the last active organisation administrator so they can't be demoted."
             )
         else:
             org_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_USER
@@ -952,11 +968,13 @@ class OrganisationRequest(models.Model):
     STATUS_CHOICE_WITH_ASSESSOR = "with_assessor"
     STATUS_CHOICE_APPROVED = "approved"
     STATUS_CHOICE_DECLINED = "declined"
+    STATUS_CHOICE_UNLINKED = "unlinked"
 
     STATUS_CHOICES = (
         (STATUS_CHOICE_WITH_ASSESSOR, "With Assessor"),
         (STATUS_CHOICE_APPROVED, "Approved"),
         (STATUS_CHOICE_DECLINED, "Declined"),
+        (STATUS_CHOICE_UNLINKED, "Unlinked"),
     )
 
     ROLE_CHOICE_EMPLOYEE = "employee"
@@ -995,6 +1013,9 @@ class OrganisationRequest(models.Model):
         ordering = ["-lodgement_number"]
         verbose_name = "Organisation Request"
 
+    def __str__(self):
+        return f"{self.lodgement_number}: User {self.requester} has requested to be linked to ({self.name})"
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.lodgement_number:
@@ -1006,88 +1027,88 @@ class OrganisationRequest(models.Model):
         """Used by the secure documents api to determine if the user can view the documents"""
         return belongs_to_by_user_id(user_id, settings.GROUP_NAME_ORGANISATION_ACCESS)
 
+    @transaction.atomic
     def accept(self, request):
-        # Todo: imlmenent for segregation system
-        with transaction.atomic():
-            self.status = "approved"
-            self.assigned_officer = None
-            self.save()
-            self.log_user_action(
-                OrganisationRequestUserAction.ACTION_ACCEPT_REQUEST.format(
-                    self.lodgement_number
-                ),
-                request,
-            )
+        self.status = OrganisationRequest.STATUS_CHOICE_APPROVED
+        self.assigned_officer = None
+        self.save()
+        self.log_user_action(
+            OrganisationRequestUserAction.ACTION_ACCEPT_REQUEST.format(
+                self.lodgement_number
+            ),
+            request,
+        )
 
-            ledger_org = None
+        ledger_org = None
+        search_organisation_response = get_search_organisation(self.name, self.abn)
+        if 200 == search_organisation_response["status"]:
+            data = search_organisation_response["data"]
+            ledger_org = data[0]
+
+        if not ledger_org:
+            # Would be much more robust if this api call gave some feedback, talk to
+            # a coordinator about this
+            create_organisation(self.name, self.abn)
             search_organisation_response = get_search_organisation(self.name, self.abn)
             if 200 == search_organisation_response["status"]:
                 data = search_organisation_response["data"]
                 ledger_org = data[0]
 
-            if not ledger_org:
-                # Would be much more robust if this api call gave some feedback, talk to
-                # a coordinator about this
-                create_organisation(self.name, self.abn)
-                search_organisation_response = get_search_organisation(
-                    self.name, self.abn
+        org, created = Organisation.objects.get_or_create(
+            ledger_organisation_id=ledger_org["organisation_id"]
+        )
+        if created:
+            logger.info(f"Created Organisation: {org}")
+
+        self.organisation = org
+        self.save()
+
+        delegate, created = UserDelegation.objects.get_or_create(
+            user=self.requester, organisation=org
+        )
+        if created:
+            logger.info(f"Created User Delegation: {delegate}")
+
+        org.log_user_action(
+            OrganisationAction.ACTION_REQUEST_APPROVED.format(self.lodgement_number),
+            request,
+        )
+
+        delegate_email_user = retrieve_email_user(delegate.user)
+
+        org.log_user_action(
+            OrganisationAction.ACTION_LINK.format(
+                "{} {}({})".format(
+                    delegate_email_user.first_name,
+                    delegate_email_user.last_name,
+                    delegate_email_user.email,
                 )
-                if 200 == search_organisation_response["status"]:
-                    data = search_organisation_response["data"]
-                    ledger_org = data[0]
-
-            org, created = Organisation.objects.get_or_create(
-                ledger_organisation_id=ledger_org["organisation_id"]
-            )
-
-            self.organisation = org
-            self.save()
-
-            delegate, created = UserDelegation.objects.get_or_create(
-                user=self.requester, organisation=org
-            )
-
-            org.log_user_action(
-                OrganisationAction.ACTION_REQUEST_APPROVED.format(
-                    self.lodgement_number
-                ),
-                request,
-            )
-
-            delegate_email_user = retrieve_email_user(delegate.user)
-
-            org.log_user_action(
-                OrganisationAction.ACTION_LINK.format(
-                    "{} {}({})".format(
-                        delegate_email_user.first_name,
-                        delegate_email_user.last_name,
-                        delegate_email_user.email,
-                    )
-                ),
-                request,
-            )
-
-            # Create contact person
-            if self.role == OrganisationContact.USER_ROLE_CHOICE_CONSULTANT:
-                role = OrganisationContact.USER_ROLE_CHOICE_CONSULTANT
-            elif self.role == OrganisationContact.USER_ROLE_CHOICE_ADMIN:
-                role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
-            else:
-                role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
+            ),
+            request,
+        )
 
         # Create contact person
-        OrganisationContact.objects.get_or_create(
-            user=self.requester,
+        organisation_contact_role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
+        if self.role == OrganisationRequest.ROLE_CHOICE_CONSULTANT:
+            organisation_contact_role = OrganisationContact.USER_ROLE_CHOICE_CONSULTANT
+
+        # Create contact person
+        organisation_contact, created = OrganisationContact.objects.update_or_create(
             organisation=org,
-            first_name=delegate_email_user.first_name,
-            last_name=delegate_email_user.last_name,
-            mobile_number=delegate_email_user.mobile_number,
-            phone_number=delegate_email_user.phone_number,
-            fax_number=delegate_email_user.fax_number,
             email=delegate_email_user.email,
-            user_role=role,
-            user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+            defaults={
+                "user": self.requester,
+                "first_name": delegate_email_user.first_name,
+                "last_name": delegate_email_user.last_name,
+                "mobile_number": delegate_email_user.mobile_number,
+                "phone_number": delegate_email_user.phone_number,
+                "fax_number": delegate_email_user.fax_number,
+                "user_role": organisation_contact_role,
+                "user_status": OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+            },
         )
+        if created:
+            logger.info(f"Created Organisation Contact: {organisation_contact}")
 
         # send email to requester
         send_organisation_request_accept_email_notification(
