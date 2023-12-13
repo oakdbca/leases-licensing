@@ -2064,19 +2064,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def add_default_requirements(self):
         # Add default standard requirements to Proposal
-        due_date = None
         default_requirements = ProposalStandardRequirement.objects.filter(
             application_type=self.application_type, default=True, obsolete=False
         )
-        if default_requirements:
-            for req in default_requirements:
-                r, created = ProposalRequirement.objects.get_or_create(
-                    proposal=self, standard_requirement=req, due_date=due_date
-                )
-
-    def get_requirements(self):
-        # Get all requirements for Proposal
-        return ProposalRequirement.objects.filter(proposal=self)
+        for req in default_requirements:
+            r, created = ProposalRequirement.objects.get_or_create(
+                proposal=self, standard_requirement=req
+            )
+            if created:
+                logger.info(f"Added Proposal Requirement: {r} to Proposal: {self}")
 
     def move_to_status(self, request, status, approver_comment):
         if not self.can_assess(request.user) and not self.is_referee(request.user):
@@ -3879,6 +3875,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         return documents
 
+    def reset_invoicing(self):
+        """Just used to speed up testing."""
+        if not settings.DEBUG:
+            raise ValidationError("This method is only available in DEBUG mode.")
+
+        self.compliances.filter(
+            requirement__standard_requirement__gross_turnover_required=True
+        ).delete()
+        self.requirements.filter(
+            standard_requirement__gross_turnover_required=True
+        ).delete()
+        self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+        self.save()
+        logger.debug(f"Proposal: {self} invoicing reset")
+
 
 class ProposalApplicant(BaseApplicant):
     proposal = models.ForeignKey(
@@ -5007,7 +5018,7 @@ class ProposalRequirement(RevisionedMixin):
     proposal = models.ForeignKey(
         Proposal, related_name="requirements", on_delete=models.CASCADE
     )
-    due_date = models.DateField(null=True, blank=True)
+    due_date = models.DateField(null=True, blank=True, default=None)
     reminder_date = models.DateField(null=True, blank=True)
     recurrence = models.BooleanField(default=False)
     recurrence_pattern = models.SmallIntegerField(
