@@ -29,6 +29,7 @@ class Command(BaseCommand):
         commands_to_run = [
             "expire_approvals",
             "update_approval_status",
+            "update_compliance_status",
         ]
         for command in commands_to_run:
             logger.info(f"Running {manage_script} {command}\n\n")
