@@ -507,8 +507,14 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             # instance.reset
             instance.update_invoice_schedule()
             instance.proposal.update_gross_turnover_requirements()
+            is_migration_proposal = (
+                instance.approval.current_proposal.proposal_type.code
+                == settings.PROPOSAL_TYPE_MIGRATION
+            )
             instance.proposal.generate_compliances(
-                instance.approval, self.context["request"]
+                instance.approval,
+                self.context["request"],
+                only_future=is_migration_proposal,
             )
 
         # Reverse FKs
