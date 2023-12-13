@@ -3045,10 +3045,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
             for month in months_included:
                 due_date = month + relativedelta(months=2)
-                end_of_month = (
-                    month.replace(day=calendar.monthrange(month.year, month.month)[1])
-                    < timezone.now().date()
+                end_of_month = month.replace(
+                    day=calendar.monthrange(month.year, month.month)[1]
                 )
+
                 if only_future and timezone.now().date() > end_of_month:
                     continue
 
