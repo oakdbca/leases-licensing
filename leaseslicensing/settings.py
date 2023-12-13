@@ -188,11 +188,14 @@ DEP_ADDRESS = env("DEP_ADDRESS", "17 Dick Perry Avenue, Kensington WA 6151")
 SITE_URL = env("SITE_URL", "https://" + SITE_PREFIX + "." + SITE_DOMAIN)
 PUBLIC_URL = env("PUBLIC_URL", SITE_URL)
 MEDIA_APP_DIR = env("MEDIA_APP_DIR", "leaseslicensing")
-CRON_RUN_AT_TIMES = env("CRON_RUN_AT_TIMES", "04:05")
-# for ORACLE Job Notification - override settings_base.py
 
+# CRON Settings
+
+CRON_RUN_AT_TIMES = env("CRON_RUN_AT_TIMES", "04:05")
 CRON_EMAIL = env("CRON_EMAIL", "cron@" + SITE_DOMAIN).lower()
 CRON_NOTIFICATION_EMAIL = env("CRON_NOTIFICATION_EMAIL", NOTIFICATION_EMAIL).lower()
+CRON_EMAIL_FILE_NAME = "cron_email.log"
+
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@" + SITE_DOMAIN).lower()
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", "licensing@" + SITE_DOMAIN).lower()
 EMAIL_FROM = DEFAULT_FROM_EMAIL
