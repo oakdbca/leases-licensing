@@ -2,6 +2,7 @@
 import json
 import logging
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from ledger_api_client import utils as ledger_api_client_utils
 from ledger_api_client.api import get_account_details
@@ -20,6 +21,12 @@ class Command(BaseCommand):
     help = "Create a proposal applicant for each ind_applicant in the system"
 
     def handle(self, *args, **options):
+        if not settings.DEBUG:
+            logger.error(
+                "This command can only be run in DEBUG mode (Only run this if you know what you're doing)"
+            )
+            return
+
         address_details = {}
         for proposal in Proposal.objects.all():
             ind_applicant = proposal.ind_applicant
