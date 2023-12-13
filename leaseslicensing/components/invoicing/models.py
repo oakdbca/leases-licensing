@@ -446,6 +446,7 @@ class InvoicingDetails(BaseModel):
                 <= timezone.now().date()
             )
 
+            # Skip adding the invoice if the proposal type is migration and the period is in the past
             skip_adding = (
                 self.proposal.proposal_type.code == settings.PROPOSAL_TYPE_MIGRATION
                 and start_date_has_passed
