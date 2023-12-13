@@ -288,7 +288,9 @@ if DEBUG:
             "verbose": {
                 "format": "%(levelname)s %(asctime)s %(name)s [Line:%(lineno)s][%(funcName)s] %(message)s"
             },
-            "simple": {"format": "%(levelname)s %(message)s"},
+            "simple": {
+                "format": "[Line:%(lineno)s][%(funcName)s] %(levelname)s %(message)s"
+            },
         },
         "handlers": {
             "console": {
