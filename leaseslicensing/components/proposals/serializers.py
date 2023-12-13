@@ -1372,6 +1372,73 @@ class ExternalRefereeInviteSerializer(serializers.ModelSerializer):
         ]
 
 
+class RequirementDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequirementDocument
+        fields = ("id", "name", "_file")
+        # fields = '__all__'
+
+
+class ProposalStandardRequirementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProposalStandardRequirement
+        fields = ("id", "code", "text", "gross_turnover_required")
+
+
+class ProposalRequirementSerializer(serializers.ModelSerializer):
+    can_referral_edit = serializers.SerializerMethodField()
+    requirement_documents = RequirementDocumentSerializer(many=True, read_only=True)
+    source = serializers.SerializerMethodField(read_only=True)
+    standard_requirement = ProposalStandardRequirementSerializer(read_only=True)
+    standard_requirement_id = serializers.IntegerField(write_only=True, required=False)
+
+    class Meta:
+        model = ProposalRequirement
+        fields = (
+            "id",
+            "due_date",
+            "reminder_date",
+            "free_requirement",
+            "standard_requirement",
+            "standard_requirement_id",
+            "standard",
+            "req_order",
+            "proposal",
+            "recurrence",
+            "recurrence_schedule",
+            "recurrence_pattern",
+            "requirement",
+            "is_deleted",
+            "copied_from",
+            "can_referral_edit",
+            "requirement_documents",
+            "require_due_date",
+            "copied_for_renewal",
+            "notification_only",
+            "referral",
+            "source",
+        )
+        read_only_fields = ("req_order", "requirement", "copied_from")
+
+    def get_can_referral_edit(self, obj):
+        request = self.context["request"]
+        user = (
+            request.user._wrapped if hasattr(request.user, "_wrapped") else request.user
+        )
+        return obj.can_referral_edit(user)
+
+    def get_source(self, obj):
+        """
+        Returns the user who created this proposal requirement
+        """
+
+        if obj.source:
+            email_user = retrieve_email_user(obj.source)
+            return EmailUserSerializer(email_user).data
+        else:
+            return None
+
+
 class InternalProposalSerializer(BaseProposalSerializer):
     applicant = serializers.CharField(read_only=True)
     org_applicant = OrganisationSerializer()
@@ -1394,7 +1461,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
     referral_assessments = ProposalAssessmentSerializer(read_only=True, many=True)
     # fee_invoice_url = serializers.SerializerMethodField()
 
-    requirements_completed = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
 
     approval_issue_date = serializers.SerializerMethodField()
@@ -1403,7 +1469,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     approved_on = serializers.SerializerMethodField()
     approved_by = serializers.SerializerMethodField()
     site_name = serializers.CharField(source="site_name.name", read_only=True)
-    requirements = serializers.SerializerMethodField()
+    requirements = ProposalRequirementSerializer(many=True, read_only=True)
     can_edit_invoicing_details = serializers.SerializerMethodField()
     additional_document_types = serializers.SerializerMethodField()
     additional_documents = AdditionalDocumentSerializer(many=True, read_only=True)
@@ -1460,7 +1526,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "can_edit_period",
             "assessor_assessment",
             "referral_assessments",
-            "requirements_completed",
             "proposalgeometry",
             "processing_status_id",
             "details_text",
@@ -1586,18 +1651,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
         return obj.can_edit_period(user)
 
     def get_readonly(self, obj):
-        return True
-
-    def get_requirements(self, obj):
-        requirements = ProposalRequirementSerializer(
-            obj.get_requirements(),
-            many=True,
-            context={"request": self.context["request"]},
-        )
-
-        return requirements.data
-
-    def get_requirements_completed(self, obj):
         return True
 
     def get_current_assessor(self, obj):
@@ -1769,73 +1822,6 @@ class DTReferralSerializer(serializers.ModelSerializer):
             else:
                 return True
         return False
-
-
-class RequirementDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RequirementDocument
-        fields = ("id", "name", "_file")
-        # fields = '__all__'
-
-
-class ProposalStandardRequirementSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProposalStandardRequirement
-        fields = ("id", "code", "text", "gross_turnover_required")
-
-
-class ProposalRequirementSerializer(serializers.ModelSerializer):
-    can_referral_edit = serializers.SerializerMethodField()
-    requirement_documents = RequirementDocumentSerializer(many=True, read_only=True)
-    source = serializers.SerializerMethodField(read_only=True)
-    standard_requirement = ProposalStandardRequirementSerializer(read_only=True)
-    standard_requirement_id = serializers.IntegerField(write_only=True, required=False)
-
-    class Meta:
-        model = ProposalRequirement
-        fields = (
-            "id",
-            "due_date",
-            "reminder_date",
-            "free_requirement",
-            "standard_requirement",
-            "standard_requirement_id",
-            "standard",
-            "req_order",
-            "proposal",
-            "recurrence",
-            "recurrence_schedule",
-            "recurrence_pattern",
-            "requirement",
-            "is_deleted",
-            "copied_from",
-            "can_referral_edit",
-            "requirement_documents",
-            "require_due_date",
-            "copied_for_renewal",
-            "notification_only",
-            "referral",
-            "source",
-        )
-        read_only_fields = ("req_order", "requirement", "copied_from")
-
-    def get_can_referral_edit(self, obj):
-        request = self.context["request"]
-        user = (
-            request.user._wrapped if hasattr(request.user, "_wrapped") else request.user
-        )
-        return obj.can_referral_edit(user)
-
-    def get_source(self, obj):
-        """
-        Returns the user who created this proposal requirement
-        """
-
-        if obj.source:
-            email_user = retrieve_email_user(obj.source)
-            return EmailUserSerializer(email_user).data
-        else:
-            return None
 
 
 class ProposedApprovalROISerializer(serializers.Serializer):
