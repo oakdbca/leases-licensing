@@ -261,6 +261,9 @@
                                     approval.current_proposal_processing_status
                                 "
                                 :approval-type="approval.approval_type"
+                                :proposal-type-code="
+                                    approval.current_proposal_proposal_type_code
+                                "
                                 @updateInvoicingDetails="updateInvoicingDetails"
                             />
                         </FormSection>
@@ -491,6 +494,7 @@ export default {
             ) {
                 return this.getGrossTurnoverChangesArrears();
             }
+            return [];
         },
         getGrossTurnoverChangesAdvance: function () {
             let annualTurnoverChanges = [];
