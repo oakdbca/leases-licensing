@@ -147,7 +147,14 @@
                                 v-model="custom_cpi_year.label"
                                 type="text"
                                 class="form-control"
-                                :required="custom_cpi_year.has_passed"
+                                :readonly="
+                                    isMigrationProposal &&
+                                    custom_cpi_year.has_passed
+                                "
+                                :required="
+                                    !isMigrationProposal &&
+                                    custom_cpi_year.has_passed
+                                "
                             />
                         </div>
                     </div>
@@ -161,7 +168,14 @@
                                 max="100"
                                 type="number"
                                 class="form-control"
-                                :required="custom_cpi_year.has_passed"
+                                :readonly="
+                                    isMigrationProposal &&
+                                    custom_cpi_year.has_passed
+                                "
+                                :required="
+                                    !isMigrationProposal &&
+                                    custom_cpi_year.has_passed
+                                "
                                 @change="updatePreviewInvoices"
                                 @keyup="updatePreviewInvoices"
                             />
@@ -512,6 +526,10 @@ export default {
             type: String,
             required: true,
         },
+        proposalTypeCode: {
+            type: String,
+            required: true,
+        },
         approvalType: {
             type: String,
             required: true,
@@ -551,6 +569,11 @@ export default {
             set(value) {
                 this.$emit('updateInvoicingDetails', value);
             },
+        },
+        isMigrationProposal: function () {
+            return (
+                this.proposalTypeCode == constants.PROPOSAL_TYPE.MIGRATION.code
+            );
         },
         financialYearRows: function () {
             const rows = [];

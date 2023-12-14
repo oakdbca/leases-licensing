@@ -2064,19 +2064,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def add_default_requirements(self):
         # Add default standard requirements to Proposal
-        due_date = None
         default_requirements = ProposalStandardRequirement.objects.filter(
             application_type=self.application_type, default=True, obsolete=False
         )
-        if default_requirements:
-            for req in default_requirements:
-                r, created = ProposalRequirement.objects.get_or_create(
-                    proposal=self, standard_requirement=req, due_date=due_date
-                )
-
-    def get_requirements(self):
-        # Get all requirements for Proposal
-        return ProposalRequirement.objects.filter(proposal=self)
+        for req in default_requirements:
+            r, created = ProposalRequirement.objects.get_or_create(
+                proposal=self, standard_requirement=req
+            )
+            if created:
+                logger.info(f"Created Proposal Requirement: {r}")
 
     def move_to_status(self, request, status, approver_comment):
         if not self.can_assess(request.user) and not self.is_referee(request.user):
@@ -2923,6 +2919,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             standard_requirement=annual_standard_requirement,
             is_deleted=False,
         )
+        if created:
+            logger.info(
+                f"Created Proposal Requirement: {annual_gross_turnover_requirement}"
+            )
 
         financial_years_included = invoicing_utils.financial_years_included_in_range(
             self.approval.start_date, self.approval.expiry_date
@@ -2957,10 +2957,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         ):
             # Don't generate quarterly or monthly compliances for percentage of gross turnover advance invoicing
             # Remove any such compliances
-            self.compliances.filter(
+            deleted = self.compliances.filter(
                 Q(requirement__standard_requirement=quarterly_standard_requirement)
                 | Q(requirement__standard_requirement=monthly_standard_requirement)
             ).delete()
+            if deleted[0] > 0:
+                logger.info(
+                    f"Deleted {deleted[0]} quarterly and monthly gross turnover compliances for Proposal: {self}"
+                )
             return
 
         # If invoicing quarterly, generate quarterly financial statement compliances
@@ -2976,6 +2980,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 standard_requirement=quarterly_standard_requirement,
                 is_deleted=False,
             )
+            if created:
+                logger.info(
+                    f"Created Proposal Requirement: {quarterly_gross_turnover_requirement}"
+                )
+
             financial_quarters_included = (
                 invoicing_utils.financial_quarters_included_in_range(
                     self.approval.start_date, self.approval.expiry_date
@@ -2983,10 +2992,17 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
             for financial_quarter in financial_quarters_included:
+                if invoicing_utils.financial_year_has_passed(financial_quarter[3]):
+                    # Don't generate quarterly compliances if the financial year this quarter is part of has passed
+                    continue
+
                 if only_future and invoicing_utils.financial_quarter_has_passed(
                     financial_quarter
                 ):
+                    # Don't generate quarterly compliances if the only_future flag is True
+                    # and the financial quarter has passed
                     continue
+
                 year = int(financial_quarter[2])
                 quarter = int(financial_quarter[0])
                 month = invoicing_utils.month_from_quarter(quarter - 1)
@@ -3021,7 +3037,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             ).delete()
             if deleted[0] > 0:
                 logger.info(
-                    f"Deleted {deleted[0]} future monthly gross turnover compliances for Proposal: {self}"
+                    f"Deleted {deleted[0]} monthly gross turnover compliances for Proposal: {self}"
                 )
 
         # If invoicing monthly, generate monthly financial statement compliances
@@ -3037,19 +3053,28 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 standard_requirement=monthly_standard_requirement,
                 is_deleted=False,
             )
-            logger.debug(
-                f"Monthly Gross Turnover Requirement: {monthly_gross_turnover_requirement}"
-            )
+            if created:
+                logger.info(
+                    f"Created Proposal Requirement: {monthly_gross_turnover_requirement}"
+                )
+
             months_included = invoicing_utils.months_included_in_range(
                 self.approval.start_date, self.approval.expiry_date
             )
             for month in months_included:
+                financial_year = invoicing_utils.financial_year_from_date(month)
+                if invoicing_utils.financial_year_has_passed(financial_year):
+                    # Don't generate monthly compliances if the financial year this month is part of has passed
+                    continue
+
                 due_date = month + relativedelta(months=2)
-                end_of_month = (
-                    month.replace(day=calendar.monthrange(month.year, month.month)[1])
-                    < timezone.now().date()
+                end_of_month = month.replace(
+                    day=calendar.monthrange(month.year, month.month)[1]
                 )
+
                 if only_future and timezone.now().date() > end_of_month:
+                    # Don't generate monthly compliances for months that have passed
+                    # These periods will be covered by the annual compliances
                     continue
 
                 compliance, created = Compliance.objects.get_or_create(
@@ -3082,7 +3107,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             ).delete()
             if deleted[0] > 0:
                 logger.info(
-                    f"Deleted {deleted[0]} future quarterly gross turnover compliances for Proposal: {self}"
+                    f"Deleted {deleted[0]} quarterly gross turnover compliances for Proposal: {self}"
                 )
 
     def generate_gross_turnover_requirements(self):
@@ -3154,10 +3179,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         ):
             # Don't generate quarterly or monthly requirements for percentage of gross turnover advance invoicing
             # Remove any such requirements
-            self.requirements.filter(
+            deleted = self.requirements.filter(
                 Q(standard_requirement=quarterly_standard_requirement)
                 | Q(standard_requirement=monthly_standard_requirement)
             ).delete()
+            if deleted[0] > 0:
+                logger.info(
+                    f"Deleted {deleted[0]} quarterly and monthly gross turnover requirements for Proposal: {self}"
+                )
             return
 
         if (
@@ -3242,7 +3271,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         invoicing_details = self.invoicing_details
 
         # If the user has selected a non gross turnover based invoicing method then
-        # delete any future gross turnover requirements and compliances
+        # mark any gross turnover requirements as deleted and delete any gross turnover compliances
         if invoicing_details.charge_method.key not in [
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
@@ -3250,12 +3279,20 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             gross_turnover_requirements = ProposalStandardRequirement.objects.filter(
                 gross_turnover_required=True
             )
-            self.requirements.filter(
+            deleted = self.requirements.filter(
                 standard_requirement__in=gross_turnover_requirements,
             ).update(is_deleted=True)
-            self.compliances.filter(
+            if deleted > 0:
+                logger.info(
+                    f"Deleted {deleted} gross turnover requirements for Proposal: {self}"
+                )
+            deleted = self.compliances.filter(
                 requirement__standard_requirement__in=gross_turnover_requirements
             ).delete()
+            if deleted[0] > 0:
+                logger.info(
+                    f"Deleted {deleted[0]} gross turnover compliances for Proposal: {self}"
+                )
             return
 
         if (
@@ -3295,16 +3332,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 )
 
                 (
-                    annual_financial_statement_requirement,
+                    quarterly_financial_statement_requirement,
                     created,
                 ) = ProposalRequirement.objects.get_or_create(
                     proposal=self,
                     standard_requirement=quarterly_turnover_requirement,
                     is_deleted=False,
                 )
-                if not created:
-                    annual_financial_statement_requirement.is_deleted = False
-                    annual_financial_statement_requirement.save()
+                if created:
+                    logger.info(
+                        "Created Gross Quarterly Turnover Proposal Requirement: "
+                        f"{quarterly_financial_statement_requirement}"
+                    )
+                else:
+                    quarterly_financial_statement_requirement.is_deleted = False
+                    quarterly_financial_statement_requirement.save()
 
             elif (
                 invoicing_details.invoicing_repetition_type.key
@@ -3323,16 +3365,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 )
 
                 (
-                    annual_financial_statement_requirement,
+                    monthly_financial_statement_requirement,
                     created,
                 ) = ProposalRequirement.objects.get_or_create(
                     proposal=self,
                     standard_requirement=monthly_turnover_requirement,
                     is_deleted=False,
                 )
-                if not created:
-                    annual_financial_statement_requirement.is_deleted = False
-                    annual_financial_statement_requirement.save()
+                if created:
+                    logger.info(
+                        "Created Gross Monthly Turnover Proposal Requirement: "
+                        f"{monthly_financial_statement_requirement}"
+                    )
+                else:
+                    monthly_financial_statement_requirement.is_deleted = False
+                    monthly_financial_statement_requirement.save()
 
         end_of_first_financial_year = invoicing_utils.end_of_next_financial_year(
             invoicing_details.proposal.approval.start_date
@@ -3354,11 +3401,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             standard_requirement=annual_turnover_requirement,
             is_deleted=False,
         )
-
         if created:
             logger.info(
-                "New Gross Annual Turnover Proposal Requirement: "
-                f"{annual_financial_statement_requirement} created for {self}"
+                f"Created Gross Annual Turnover Proposal Requirement: {annual_financial_statement_requirement}"
             )
 
         # Update the details
@@ -3878,6 +3923,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
         return documents
+
+    def reset_invoicing(self):
+        """Just used to speed up testing."""
+        if not settings.DEBUG:
+            raise ValidationError("This method is only available in DEBUG mode.")
+
+        self.compliances.filter(
+            requirement__standard_requirement__gross_turnover_required=True
+        ).delete()
+        self.requirements.filter(
+            standard_requirement__gross_turnover_required=True
+        ).delete()
+        self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+        self.save()
+        logger.debug(f"Proposal: {self} invoicing reset")
 
 
 class ProposalApplicant(BaseApplicant):
@@ -5007,7 +5067,7 @@ class ProposalRequirement(RevisionedMixin):
     proposal = models.ForeignKey(
         Proposal, related_name="requirements", on_delete=models.CASCADE
     )
-    due_date = models.DateField(null=True, blank=True)
+    due_date = models.DateField(null=True, blank=True, default=None)
     reminder_date = models.DateField(null=True, blank=True)
     recurrence = models.BooleanField(default=False)
     recurrence_pattern = models.SmallIntegerField(

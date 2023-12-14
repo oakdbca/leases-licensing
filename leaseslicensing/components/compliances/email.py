@@ -9,6 +9,7 @@ from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.helpers import (
     convert_external_url_to_internal_url,
     convert_internal_url_to_external_url,
+    emails_list_for_group,
 )
 from leaseslicensing.ledger_api_utils import (
     retrieve_default_from_email_user,
@@ -516,7 +517,12 @@ def send_submit_email_notification(request, compliance, is_test=False):
 
     context = {"compliance": compliance, "url": url}
 
-    msg = email.send(proposal.assessor_recipients, context=context)
+    cc = []
+    if compliance.gross_turnover_required:
+        cc = emails_list_for_group(settings.GROUP_FINANCE)
+        cc.append(settings.LEASING_FINANCE_NOTIFICATION_EMAIL)
+
+    msg = email.send(proposal.assessor_recipients, cc=cc, context=context)
     if is_test:
         return
 
