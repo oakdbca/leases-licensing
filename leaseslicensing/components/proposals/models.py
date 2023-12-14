@@ -2992,9 +2992,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
             for financial_quarter in financial_quarters_included:
-                if only_future and invoicing_utils.financial_quarter_has_passed(
-                    financial_quarter
-                ):
+                if invoicing_utils.financial_quarter_has_passed(financial_quarter):
                     continue
                 year = int(financial_quarter[2])
                 quarter = int(financial_quarter[0])
@@ -3060,7 +3058,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     day=calendar.monthrange(month.year, month.month)[1]
                 )
 
-                if only_future and timezone.now().date() > end_of_month:
+                if timezone.now().date() > end_of_month:
+                    # Don't generate monthly compliances for months that have passed
+                    # These periods will be covered by the annual compliances
                     continue
 
                 compliance, created = Compliance.objects.get_or_create(
