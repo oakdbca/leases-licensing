@@ -2992,8 +2992,17 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
             for financial_quarter in financial_quarters_included:
-                if invoicing_utils.financial_quarter_has_passed(financial_quarter):
+                if invoicing_utils.financial_year_has_passed(financial_quarter[3]):
+                    # Don't generate quarterly compliances if the financial year this quarter is part of has passed
                     continue
+
+                if only_future and invoicing_utils.financial_quarter_has_passed(
+                    financial_quarter
+                ):
+                    # Don't generate quarterly compliances if the only_future flag is True
+                    # and the financial quarter has passed
+                    continue
+
                 year = int(financial_quarter[2])
                 quarter = int(financial_quarter[0])
                 month = invoicing_utils.month_from_quarter(quarter - 1)
@@ -3053,12 +3062,17 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 self.approval.start_date, self.approval.expiry_date
             )
             for month in months_included:
+                financial_year = invoicing_utils.financial_year_from_date(month)
+                if invoicing_utils.financial_year_has_passed(financial_year):
+                    # Don't generate monthly compliances if the financial year this month is part of has passed
+                    continue
+
                 due_date = month + relativedelta(months=2)
                 end_of_month = month.replace(
                     day=calendar.monthrange(month.year, month.month)[1]
                 )
 
-                if timezone.now().date() > end_of_month:
+                if only_future and timezone.now().date() > end_of_month:
                     # Don't generate monthly compliances for months that have passed
                     # These periods will be covered by the annual compliances
                     continue
