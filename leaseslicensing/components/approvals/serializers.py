@@ -193,6 +193,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
     current_proposal_proposal_type = serializers.CharField(
         source="current_proposal.proposal_type", read_only=True
     )
+    current_proposal_proposal_type_code = serializers.CharField(
+        source="current_proposal.proposal_type.code", read_only=True
+    )
     approval_type = serializers.CharField(
         source="approval_type.name", allow_null=True, read_only=True
     )
@@ -212,6 +215,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "current_proposal",
             "current_proposal_processing_status",
             "current_proposal_proposal_type",
+            "current_proposal_proposal_type_code",
             "tenure",
             "renewal_notification_sent_to_holder",
             "issue_date",
