@@ -35,8 +35,13 @@ class Command(BaseCommand):
         start = time.time()
         logger.info("Running send_custom_cpi_reminders management command")
         charge_method_key = "current_proposal__invoicing_details__charge_method__key"
+        current_approval_statuses = [
+            Approval.APPROVAL_STATUS_CURRENT,
+            Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
+            Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL,
+        ]
         filters = {
-            "status": Approval.APPROVAL_STATUS_CURRENT,
+            "status__in": current_approval_statuses,
             "current_proposal__processing_status": Proposal.PROCESSING_STATUS_APPROVED,
             charge_method_key: settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM,
         }
@@ -63,10 +68,10 @@ class Command(BaseCommand):
 
             days_due_in = None
 
-            if approval.custom_cpi_entry_reminder_due_in(days=self.SIXTY):
+            if approval.custom_cpi_entry_due_in(days=self.SIXTY):
                 days_due_in = self.SIXTY
 
-            if approval.crown_land_rent_review_reminder_due_in(days=self.FORTY_FIVE):
+            if approval.custom_cpi_entry_due_in(days=self.FORTY_FIVE):
                 days_due_in = self.FORTY_FIVE
 
             if days_due_in is not None:
