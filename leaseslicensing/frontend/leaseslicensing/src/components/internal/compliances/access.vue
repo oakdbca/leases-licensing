@@ -488,6 +488,7 @@
                                                 type="text"
                                                 class="form-control-plaintext"
                                                 name="holder"
+                                                readonly
                                                 :value="compliance.holder"
                                             />
                                         </div>
