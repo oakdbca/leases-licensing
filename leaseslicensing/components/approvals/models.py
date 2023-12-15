@@ -722,7 +722,7 @@ class Approval(LicensingModelVersioned):
                 return review_date
         return None
 
-    def custom_cpi_entry_reminder_due_in(self, days=30):
+    def custom_cpi_entry_due_in(self, days: int = 30) -> bool:
         today = timezone.localtime(timezone.now()).date()
         return (
             today + relativedelta(days=days)
