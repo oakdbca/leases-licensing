@@ -153,10 +153,9 @@ class Organisation(models.Model):
                 role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
             elif val_user:
                 val = val_user
-                role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
+                role = OrganisationContact.USER_ROLE_CHOICE_USER
             else:
-                val = False
-                return val
+                return False
 
             self.add_user_contact(request.user, request, role)
             return val
