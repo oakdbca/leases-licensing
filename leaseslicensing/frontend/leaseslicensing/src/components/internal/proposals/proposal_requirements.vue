@@ -46,7 +46,7 @@
                 :proposal_id="proposal.id"
                 :requirements="requirements"
                 :selected-requirement="selectedRequirement"
-                @updateRequirement="updateRequirement"
+                @update-requirement="updateRequirement"
             />
         </FormSection>
     </div>
@@ -67,7 +67,7 @@ export default {
     props: {
         proposal: { type: Object, default: null },
     },
-    emits: ['updateRequirement'],
+    emits: ['updateRequirement', 'refreshProposal'],
     data: function () {
         let vm = this;
         return {
@@ -240,7 +240,9 @@ export default {
         },
         conditionsMissingDates() {
             return this.proposal.requirements.filter(
-                (condition) => !condition.due_date || !condition.reminder_date
+                (condition) =>
+                    !condition.is_deleted &&
+                    (!condition.due_date || !condition.reminder_date)
             );
         },
     },
@@ -293,6 +295,7 @@ export default {
                     );
                     if (response.ok) {
                         this.selectedRequirement = {}; // Unselect, so it can be re-added without error
+                        this.$emit('refreshProposal');
                         this.$refs.requirements_datatable.vmDataTable.ajax.reload();
                     } else {
                         console.error('error');
@@ -334,6 +337,7 @@ export default {
         },
         updateRequirement(requirement) {
             this.$emit('updateRequirement', requirement);
+            this.$emit('refreshProposal');
             this.$refs.requirements_datatable.vmDataTable.ajax.reload();
         },
         eventListeners() {

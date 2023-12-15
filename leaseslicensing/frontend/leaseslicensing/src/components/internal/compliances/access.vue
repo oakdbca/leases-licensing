@@ -488,6 +488,7 @@
                                                 type="text"
                                                 class="form-control-plaintext"
                                                 name="holder"
+                                                readonly
                                                 :value="compliance.holder"
                                             />
                                         </div>
@@ -1013,6 +1014,9 @@ export default {
                 timer: 2000,
                 showConfirmButton: false,
             });
+            vm.$nextTick(() => {
+                vm.initialiseRefereeSelect();
+            });
         },
         assignTo: async function () {
             let vm = this;
@@ -1039,6 +1043,11 @@ export default {
                     timer: 2000,
                     showConfirmButton: false,
                 });
+                if (vm.profile.id == vm.compliance.assigned_to) {
+                    vm.$nextTick(() => {
+                        vm.initialiseRefereeSelect();
+                    });
+                }
             } else {
                 const url = await helpers.add_endpoint_json(
                     api_endpoints.compliances,
@@ -1142,7 +1151,7 @@ export default {
                     $(vm.$refs.referees).val(null).trigger('change');
                 });
         },
-        initialiseSelects: function (reinit = false) {
+        initialiseRefereeSelect: function (reinit = false) {
             let vm = this;
             if (reinit) {
                 $(vm.$refs.referees).data('select2')
@@ -1297,8 +1306,7 @@ export default {
                 .then((data) => {
                     this.compliance = Object.assign({}, data);
                     this.$nextTick(() => {
-                        this.initialiseSelects();
-                        // this.updateAssignedOfficerSelect();
+                        this.initialiseRefereeSelect();
                     });
                 })
                 .catch((error) => {
@@ -1339,7 +1347,7 @@ export default {
                                 $(this).height($(this)[0].scrollHeight - 30);
                             }
                         });
-                        this.initialiseSelects();
+                        this.initialiseRefereeSelect();
                         this.initialisePopovers();
                     });
                 })

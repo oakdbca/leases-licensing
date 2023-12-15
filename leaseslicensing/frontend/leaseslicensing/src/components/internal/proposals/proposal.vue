@@ -56,8 +56,8 @@
                     :can_user_edit="proposal.can_user_edit"
                     :profile="profile"
                     class="mt-2"
-                    @toggleProposal="toggleProposal"
-                    @toggleRequirements="toggleRequirements"
+                    @toggle-proposal="toggleProposal"
+                    @toggle-requirements="toggleRequirements"
                     @back-to-assessor="backToAssessor"
                     @switchStatus="switchStatus"
                     @enter-conditions="enterConditions"
@@ -108,6 +108,7 @@
                     <Requirements
                         :key="requirementsKey"
                         :proposal="proposal"
+                        @refresh-proposal="fetchProposal"
                         @updateRequirement="updateRequirement"
                     />
                 </template>
@@ -1755,7 +1756,8 @@ export default {
                 this.proposal &&
                 this.proposal.requirements.filter(
                     (condition) =>
-                        !condition.due_date || !condition.reminder_date
+                        !condition.is_deleted &&
+                        (!condition.due_date || !condition.reminder_date)
                 )
             );
         },
