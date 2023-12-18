@@ -87,28 +87,41 @@
                             (!editingFromProposalPage ||
                                 !financialYearHasPassed(year.financial_year)) &&
                             year.gross_turnover &&
-                            year.discrepency
+                            year.discrepency_invoice_amount &&
+                            year.discrepency_invoice_amount != 0
                         "
                         class="card-body"
                     >
                         <BootstrapAlert>
-                            <template v-if="year.discrepency > 0">
+                            <template
+                                v-if="year.discrepency_invoice_amount > 0"
+                            >
                                 The gross annual turnover entered is greater
                                 than the sum of the four quarters.<br />
                                 When you complete editing, the system will
                                 generate a charge invoice record for
                                 <strong
-                                    >${{ currency(year.discrepency) }}</strong
+                                    >${{
+                                        currency(
+                                            year.discrepency_invoice_amount
+                                        )
+                                    }}</strong
                                 >
                             </template>
-                            <template v-else-if="year.discrepency < 0">
+                            <template
+                                v-else-if="year.discrepency_invoice_amount < 0"
+                            >
                                 The gross annual turnover entered is less than
                                 the sum of the four quarters.<br />
                                 When you complete editing, the system will
                                 generate a refund invoice record for
                                 <strong
                                     >${{
-                                        currency(Math.abs(year.discrepency))
+                                        currency(
+                                            Math.abs(
+                                                year.discrepency_invoice_amount
+                                            )
+                                        )
                                     }}</strong
                                 >
                             </template>
@@ -294,7 +307,7 @@
 
 <script>
 import currency from 'currency.js';
-import { constants, helpers } from '@/utils/hooks';
+import { helpers } from '@/utils/hooks';
 
 export default {
     name: 'PercentageTurnover',
@@ -441,12 +454,12 @@ export default {
                 0
             );
             if (event.target.value != total_of_quarters) {
-                year.discrepency = currency(
+                year.discrepency_invoice_amount = currency(
                     (event.target.value * year.percentage) / 100 -
                         (total_of_quarters * year.percentage) / 100
                 );
             } else {
-                year.discrepency = 0;
+                year.discrepency_invoice_amount = 0;
             }
             this.$emit('onChangeAnnualGrossTurnover');
         },
