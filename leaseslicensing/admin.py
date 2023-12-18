@@ -1,5 +1,11 @@
+from copy import deepcopy
+
 from django.contrib.gis import admin
+from ledger_api_client.admin import SystemGroupAdmin
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from ledger_api_client.managed_models import SystemGroup
+
+from leaseslicensing import helpers
 
 admin.site.index_template = "admin-index.html"
 admin.autodiscover()
@@ -29,3 +35,37 @@ class EmailUserAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+class CustomSystemGroupAdmin(SystemGroupAdmin):
+    """
+    Overriding the SystemGroupAdmin from ledger.accounts.admin, to remove ledger_permissions
+    selection field for DjangoAdmin SystemGroup on Admin page
+    """
+
+    def get_fieldsets(self, request, obj=None):
+        """Remove the ledger_permissions checkbox from the Admin page, if user is DjangoAdmin and NOT superuser"""
+        fieldsets = super().get_fieldsets(request, obj)
+        if not obj:
+            return fieldsets
+        if request.user.is_superuser:
+            return fieldsets
+        elif helpers.is_leaseslicensing_admin(request):
+            fieldsets = deepcopy(fieldsets)
+            for fieldset in fieldsets:
+                if "permissions" in fieldset[1]["fields"]:
+                    if isinstance(fieldset[1]["fields"], tuple):
+                        fieldset[1]["fields"] = list(fieldset[1]["fields"])
+                    fieldset[1]["fields"].remove("permissions")
+
+        return fieldsets
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return []
+        elif helpers.is_leaseslicensing_admin(request):
+            return ["name"]  # make fields readonly when editing an existing object
+
+
+admin.site.unregister(SystemGroup)
+admin.site.register(SystemGroup, CustomSystemGroupAdmin)

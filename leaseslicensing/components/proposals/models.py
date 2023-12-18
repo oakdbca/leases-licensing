@@ -3609,9 +3609,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     @transaction.atomic
     def finance_complete_editing(self, request, action):
-        self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
-        self.save()
-
         invoicing_details = self.save_invoicing_details(request, action)
         approval = invoicing_details.approval
         proposal = invoicing_details.proposal
@@ -3675,6 +3672,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         # Generate the invoice schdule for any future invoices
         invoicing_details.generate_invoice_schedule()
+
+        self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
+        self.save()
 
     def finance_cancel_editing(self, request, action):
         self.processing_status = Proposal.PROCESSING_STATUS_CURRENT

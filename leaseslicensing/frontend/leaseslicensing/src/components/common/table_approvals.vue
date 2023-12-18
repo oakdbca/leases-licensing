@@ -1414,7 +1414,7 @@ export default {
             Swal.fire({
                 title: 'Approval Review Invoice Details',
                 text: 'Are you sure you want to review the invoice details for this approval?',
-                icon: 'warning',
+                icon: 'question',
                 showCancelButton: true,
                 reverseButtons: true,
                 confirmButtonText: 'Review Invoice Details',

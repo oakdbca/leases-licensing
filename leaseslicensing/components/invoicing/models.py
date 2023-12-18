@@ -1043,7 +1043,7 @@ class InvoicingDetails(BaseModel):
                 if gross_turnover_percentage.discrepency:
                     invoice = Invoice.objects.create(
                         approval=self.approval,
-                        amount=gross_turnover_percentage.discrepency,
+                        amount=gross_turnover_percentage.discrepency_invoice_amount,
                         gst_free=gst_free,
                     )
 
@@ -1125,7 +1125,7 @@ class InvoicingDetails(BaseModel):
             if gross_turnover_percentage.discrepency:
                 invoice = Invoice.objects.create(
                     approval=self.approval,
-                    amount=gross_turnover_percentage.discrepency,
+                    amount=gross_turnover_percentage.discrepency_invoice_amount,
                     gst_free=gst_free,
                 )
 
@@ -1253,10 +1253,10 @@ class PercentageOfGrossTurnover(BaseModel):
         max_digits=4, decimal_places=1, default="0.0", null=True, blank=True
     )
     estimated_gross_turnover = models.DecimalField(
-        null=True, blank=True, max_digits=12, decimal_places=2
+        null=True, blank=True, max_digits=14, decimal_places=2
     )
     gross_turnover = models.DecimalField(
-        null=True, blank=True, max_digits=12, decimal_places=2
+        null=True, blank=True, max_digits=14, decimal_places=2
     )
     invoicing_details = models.ForeignKey(
         InvoicingDetails,
@@ -1301,7 +1301,8 @@ class PercentageOfGrossTurnover(BaseModel):
             if not sum_of_quarters:
                 # For back dated financial years, there are no quarters entered so there will not be a discrepency
                 sum_of_quarters = Decimal("0.00")
-            discrepency = abs(sum_of_quarters - self.gross_turnover)
+            discrepency = self.gross_turnover - sum_of_quarters
+
         if (
             self.invoicing_details.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
@@ -1309,12 +1310,38 @@ class PercentageOfGrossTurnover(BaseModel):
             if not self.estimated_gross_turnover:
                 return None
 
-            discrepency = abs(self.estimated_gross_turnover - self.gross_turnover)
+            discrepency = self.gross_turnover - self.estimated_gross_turnover
 
-        discrepency = discrepency * (self.percentage / 100)
-        logger.debug(f"Discrepency Amount: {discrepency}")
+        logger.debug(f"Discrepency: {discrepency}")
 
         return discrepency.quantize(Decimal("0.01"))
+
+    @property
+    def discrepency_invoice_amount(self):
+        if not self.gross_turnover:
+            return None
+
+        if not self.discrepency:
+            return None
+
+        discrepency_invoice_amount = self.discrepency * (self.percentage / 100)
+
+        logger.debug(f"Discrepency Invoice Amount: {discrepency_invoice_amount}")
+
+        return discrepency_invoice_amount.quantize(Decimal("0.01"))
+
+    @property
+    def discrepency_invoice_type(self):
+        if not self.gross_turnover:
+            return None
+
+        if not self.discrepency:
+            return None
+
+        if self.discrepency > 0:
+            return "Credit"
+
+        return "Debit"
 
 
 class FinancialQuarter(BaseModel):

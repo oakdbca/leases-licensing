@@ -33,7 +33,9 @@
                                         class="form-control"
                                         :readonly="
                                             !editingFromProposalPage() &&
-                                            (year.estimate_locked ||
+                                            (year.estimated_gross_turnover ||
+                                                year.gross_turnover ||
+                                                year.estimate_locked ||
                                                 year.locked)
                                         "
                                         required
@@ -56,6 +58,15 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="year.estimate_locked"
+                                        :required="
+                                            (editingFromProposalPage() &&
+                                                financialYearHasPassed(
+                                                    year.financial_year
+                                                )) ||
+                                            financialYearHasStarted(
+                                                year.financial_year
+                                            )
+                                        "
                                         @change="
                                             $emit(
                                                 'onChangeGrossTurnoverEstimate',
@@ -89,12 +100,14 @@
                                         "
                                         @change="
                                             grossAnnualTurnoverChanged(
+                                                $event,
                                                 year,
                                                 index
                                             )
                                         "
                                         @keyup="
                                             grossAnnualTurnoverChanged(
+                                                $event,
                                                 year,
                                                 index
                                             )
@@ -106,27 +119,46 @@
                         </div>
                     </div>
                     <div
-                        v-if="year.gross_turnover && year.discrepency"
+                        v-if="
+                            !year.locked &&
+                            year.estimated_gross_turnover &&
+                            year.gross_turnover &&
+                            year.discrepency &&
+                            year.discrepency != 0
+                        "
                         class="card-body"
                     >
                         <BootstrapAlert>
-                            <template v-if="year.discrepency > 0">
-                                The gross annual turnover entered is greater
-                                than the sum of the four quarters.<br />
+                            <template
+                                v-if="year.discrepency_invoice_amount > 0"
+                            >
+                                The actual gross annual turnover entered is
+                                greater than the estimate for that financial
+                                year.<br />
                                 When you complete editing, the system will
                                 generate a charge invoice record for
                                 <strong
-                                    >${{ currency(year.discrepency) }}</strong
+                                    >${{
+                                        currency(
+                                            year.discrepency_invoice_amount
+                                        )
+                                    }}</strong
                                 >
                             </template>
-                            <template v-else-if="year.discrepency < 0">
-                                The gross annual turnover entered is less than
-                                the sum of the four quarters.<br />
+                            <template
+                                v-else-if="year.discrepency_invoice_amount < 0"
+                            >
+                                The actual gross annual turnover entered is less
+                                than the estimate for that financial year.<br />
                                 When you complete editing, the system will
                                 generate a refund invoice record for
                                 <strong
                                     >${{
-                                        currency(Math.abs(year.discrepency))
+                                        currency(
+                                            Math.abs(
+                                                year.discrepency_invoice_amount
+                                            )
+                                        )
                                     }}</strong
                                 >
                             </template>
@@ -148,7 +180,7 @@
 
 <script>
 import currency from 'currency.js';
-import { constants, helpers } from '@/utils/hooks';
+import { helpers } from '@/utils/hooks';
 
 export default {
     name: 'PercentageTurnover',
@@ -184,6 +216,7 @@ export default {
         return {
             originalAnnualTurnover: null,
             financialYearHasPassed: helpers.financialYearHasPassed,
+            financialYearHasStarted: helpers.financialYearHasStarted,
             getFinancialQuarterLabel: helpers.getFinancialQuarterLabel,
             helpers: helpers,
             currency: currency,
@@ -224,7 +257,7 @@ export default {
             // Todo populate the next years estimate with this years actual
             console.log('grossAnnualTurnoverEstimateChanged', event, year);
         },
-        grossAnnualTurnoverChanged: function (year, index) {
+        grossAnnualTurnoverChanged: function (event, year, index) {
             // Todo populate the next years estimate with this years actual
             // If there is a next year and it hasn't passed then populate it with this years actual
             if (
@@ -237,6 +270,20 @@ export default {
                 this.grossTurnoverPercentagesComputed[
                     index + 1
                 ].estimated_gross_turnover = year.gross_turnover;
+            }
+            const estimated_gross_turnover =
+                this.grossTurnoverPercentagesComputed[index]
+                    .estimated_gross_turnover;
+            if (event.target.value != estimated_gross_turnover) {
+                year.discrepency =
+                    event.target.value - estimated_gross_turnover;
+                year.discrepency_invoice_amount = currency(
+                    (event.target.value * year.percentage) / 100 -
+                        (estimated_gross_turnover * year.percentage) / 100
+                );
+            } else {
+                year.discrepency = 0;
+                year.discrepency_invoice_amount = 0;
             }
             this.$emit('onChangeGrossTurnoverActual', year.gross_turnover);
         },

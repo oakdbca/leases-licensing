@@ -379,6 +379,7 @@
                 :years-array="invoicingDetailsComputed.annual_increment_amounts"
                 :approval-duration-years="approvalDurationYears"
                 :start-date="startDate"
+                :context="context"
                 @update-years-array="updateYearsArray"
                 @on-change-increment="updatePreviewInvoices"
             />
@@ -391,6 +392,7 @@
                     invoicingDetailsComputed.annual_increment_percentages
                 "
                 :start-date="startDate"
+                :context="context"
                 :approval-duration-years="approvalDurationYears"
                 @update-years-array="updateYearsArray"
                 @on-change-increment="updatePreviewInvoices"

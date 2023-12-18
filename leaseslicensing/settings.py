@@ -400,7 +400,7 @@ LEDGER_UI_ACCOUNTS_MANAGEMENT = [
 ]
 LEDGER_UI_CARDS_MANAGEMENT = True
 
-ADMIN_GROUP = env("ADMIN_GROUP", "LALS Admin")
+ADMIN_GROUP = env("ADMIN_GROUP", "Leases and Licensing Admin")
 
 GROUP_NAME_ASSESSOR = "proposal_assessor_group"
 GROUP_NAME_APPROVER = "proposal_approver_group"

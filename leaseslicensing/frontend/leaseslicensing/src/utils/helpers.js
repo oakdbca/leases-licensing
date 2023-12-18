@@ -467,6 +467,12 @@ export default {
     calendarYearHasPassed: function (year) {
         return new Date().year() > year;
     },
+    financialYearHasStarted: function (financialYear) {
+        const startOfFinancialYear = new Date(
+            `${financialYear.split('-')[0]}-07-01`
+        );
+        return new Date() > startOfFinancialYear;
+    },
     financialYearHasPassed: function (financialYear) {
         const endOfFinancialYear = new Date(
             `${financialYear.split('-')[1]}-06-30`
