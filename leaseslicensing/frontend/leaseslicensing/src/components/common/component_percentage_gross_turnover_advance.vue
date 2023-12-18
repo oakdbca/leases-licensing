@@ -33,7 +33,9 @@
                                         class="form-control"
                                         :readonly="
                                             !editingFromProposalPage() &&
-                                            (year.estimate_locked ||
+                                            (year.estimated_gross_turnover ||
+                                                year.gross_turnover ||
+                                                year.estimate_locked ||
                                                 year.locked)
                                         "
                                         required
