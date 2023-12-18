@@ -58,6 +58,12 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="year.estimate_locked"
+                                        :required="
+                                            editingFromProposalPage() &&
+                                            financialYearHasPassed(
+                                                year.financial_year
+                                            )
+                                        "
                                         @change="
                                             $emit(
                                                 'onChangeGrossTurnoverEstimate',
