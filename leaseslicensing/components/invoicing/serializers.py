@@ -127,6 +127,12 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
         max_digits=9,
         decimal_places=2,
     )
+    discrepency_invoice_amount = serializers.DecimalField(
+        read_only=True,
+        allow_null=True,
+        max_digits=9,
+        decimal_places=2,
+    )
 
     class Meta:
         model = PercentageOfGrossTurnover
@@ -143,6 +149,7 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "quarters",
             "months",
             "discrepency",
+            "discrepency_invoice_amount",
         )
         extra_kwargs = {
             "id": {
