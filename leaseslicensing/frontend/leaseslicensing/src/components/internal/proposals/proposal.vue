@@ -59,20 +59,20 @@
                     @toggle-proposal="toggleProposal"
                     @toggle-requirements="toggleRequirements"
                     @back-to-assessor="backToAssessor"
-                    @switchStatus="switchStatus"
+                    @switch-status="switchStatus"
                     @enter-conditions="enterConditions"
-                    @completeReferral="completeReferral"
-                    @amendmentRequest="amendmentRequest"
-                    @proposedDecline="proposedDecline"
-                    @proposedApproval="proposedApproval"
-                    @issueApproval="issueApproval"
-                    @declineProposal="declineProposal"
-                    @assignRequestUser="assignRequestUser"
-                    @assignTo="assignTo"
-                    @completeEditing="validateInvoicingForm"
-                    @updateProposalData="updateProposalData"
-                    @updateAssignedApprover="updateAssignedApprover"
-                    @updateAssignedOfficer="updateAssignedOfficer"
+                    @complete-referral="completeReferral"
+                    @amendment-request="amendmentRequest"
+                    @proposed-decline="proposedDecline"
+                    @proposed-approval="proposedApproval"
+                    @issue-approval="issueApproval"
+                    @decline-proposal="declineProposal"
+                    @assign-request-user="assignRequestUser"
+                    @assign-to="assignTo"
+                    @complete-editing="validateInvoicingForm"
+                    @update-proposal-data="updateProposalData"
+                    @update-assigned-approver="updateAssignedApprover"
+                    @update-assigned-officer="updateAssignedOfficer"
                 />
             </div>
 
@@ -100,7 +100,7 @@
                         ref="approval_screen"
                         :proposal="proposal"
                         :readonly="readonly"
-                        @updateInvoicingDetails="updateInvoicingDetails"
+                        @update-invoicing-details="updateInvoicingDetails"
                     />
                 </template>
 
@@ -109,7 +109,7 @@
                         :key="requirementsKey"
                         :proposal="proposal"
                         @refresh-proposal="fetchProposal"
-                        @updateRequirement="updateRequirement"
+                        @update-requirement="updateRequirement"
                     />
                 </template>
 
@@ -152,8 +152,8 @@
                             :show_related_items_tab="true"
                             :registration-of-interest="isRegistrationOfInterest"
                             :lease-licence="isLeaseLicence"
-                            @formMounted="applicationFormMounted"
-                            @update:GisData="updateGisData"
+                            @form-mounted="applicationFormMounted"
+                            @update:gis-data="updateGisData"
                         >
                             <!-- Inserted into the slot on the form.vue: Collapsible Assessor Questions -->
                             <template #slot_map_assessment_comments>
