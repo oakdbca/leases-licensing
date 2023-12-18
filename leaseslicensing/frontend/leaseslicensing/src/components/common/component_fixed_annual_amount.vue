@@ -33,6 +33,10 @@
                                         :max="100000000"
                                         :step="100"
                                         class="form-control form-control-sm"
+                                        :readonly="
+                                            !editingFromProposalPage &&
+                                            yearHasPassed(item.year)
+                                        "
                                         required
                                         @change="$emit('onChangeIncrement')"
                                         @onkeyup="$emit('onChangeIncrement')"
@@ -54,6 +58,10 @@
                                         :step="0.1"
                                         class="form-control form-control-sm"
                                         required
+                                        :readonly="
+                                            !editingFromProposalPage &&
+                                            yearHasPassed(item.year)
+                                        "
                                         @change="$emit('onChangeIncrement')"
                                         @onkeyup="$emit('onChangeIncrement')"
                                     />
@@ -99,11 +107,14 @@ export default {
             type: String,
             required: true,
         },
+        context: {
+            type: String,
+            required: true,
+        },
     },
     emits: ['updateYearsArray', 'onChangeIncrement'],
     data: function () {
         return {
-            financialYearHasPassed: helpers.financialYearHasPassed,
             yearsElapsedSinceStartDate: helpers.yearsElapsedSinceStartDate,
             ordinalSuffixOf: helpers.ordinalSuffixOf,
         };
@@ -133,6 +144,9 @@ export default {
             if (this.incrementType === 'annual_increment_amount') return 100;
             return 0.1;
         },
+        editingFromProposalPage: function () {
+            return this.context === 'proposal';
+        },
     },
     mounted: function () {
         for (
@@ -156,21 +170,15 @@ export default {
                 return 'increment_amount';
             return 'increment_percentage';
         },
-        addAnotherYearClicked: function () {
-            let key_name = this.getKeyName();
-            let year = new Date().getFullYear() + 1;
-            if (this.yearsArrayComputed.length > 0) {
-                year =
-                    this.yearsArrayComputed[this.yearsArrayComputed.length - 1]
-                        .year + 1;
+        yearHasPassed: function (yearIndex) {
+            var startDate = new Date(this.startDate);
+            var yearStartDate = new Date(
+                startDate.setFullYear(startDate.getFullYear() + yearIndex)
+            );
+            if (yearStartDate < new Date()) {
+                return true;
             }
-            this.yearsArrayComputed.push({
-                id: 0,
-                key: uuid(),
-                year: year,
-                [key_name]: 0.0,
-                readonly: false,
-            });
+            return false;
         },
     },
 };
