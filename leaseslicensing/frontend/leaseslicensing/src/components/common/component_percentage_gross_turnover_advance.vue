@@ -59,8 +59,11 @@
                                         class="form-control"
                                         :readonly="year.estimate_locked"
                                         :required="
-                                            editingFromProposalPage() &&
-                                            financialYearHasPassed(
+                                            (editingFromProposalPage() &&
+                                                financialYearHasPassed(
+                                                    year.financial_year
+                                                )) ||
+                                            financialYearHasStarted(
                                                 year.financial_year
                                             )
                                         "
@@ -114,13 +117,19 @@
                         </div>
                     </div>
                     <div
-                        v-if="year.gross_turnover && year.discrepency"
+                        v-if="
+                            !year.locked &&
+                            year.estimated_gross_turnover &&
+                            year.gross_turnover &&
+                            year.discrepency
+                        "
                         class="card-body"
                     >
                         <BootstrapAlert>
                             <template v-if="year.discrepency > 0">
-                                The gross annual turnover entered is greater
-                                than the sum of the four quarters.<br />
+                                The actual gross annual turnover entered is
+                                greater than the estimate for that financial
+                                year.<br />
                                 When you complete editing, the system will
                                 generate a charge invoice record for
                                 <strong
@@ -128,8 +137,8 @@
                                 >
                             </template>
                             <template v-else-if="year.discrepency < 0">
-                                The gross annual turnover entered is less than
-                                the sum of the four quarters.<br />
+                                The actual gross annual turnover entered is less
+                                than the estimate for that financial year.<br />
                                 When you complete editing, the system will
                                 generate a refund invoice record for
                                 <strong
@@ -192,6 +201,7 @@ export default {
         return {
             originalAnnualTurnover: null,
             financialYearHasPassed: helpers.financialYearHasPassed,
+            financialYearHasStarted: helpers.financialYearHasStarted,
             getFinancialQuarterLabel: helpers.getFinancialQuarterLabel,
             helpers: helpers,
             currency: currency,
