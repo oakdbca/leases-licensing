@@ -45,7 +45,7 @@ class CustomSystemGroupAdmin(SystemGroupAdmin):
 
     def get_fieldsets(self, request, obj=None):
         """Remove the ledger_permissions checkbox from the Admin page, if user is DjangoAdmin and NOT superuser"""
-        fieldsets = super(SystemGroupAdmin, self).get_fieldsets(request, obj)
+        fieldsets = super().get_fieldsets(request, obj)
         if not obj:
             return fieldsets
         if request.user.is_superuser:
@@ -54,7 +54,7 @@ class CustomSystemGroupAdmin(SystemGroupAdmin):
             fieldsets = deepcopy(fieldsets)
             for fieldset in fieldsets:
                 if "permissions" in fieldset[1]["fields"]:
-                    if isinstance(tuple, fieldset[1]["fields"]):
+                    if isinstance(fieldset[1]["fields"], tuple):
                         fieldset[1]["fields"] = list(fieldset[1]["fields"])
                     fieldset[1]["fields"].remove("permissions")
 
