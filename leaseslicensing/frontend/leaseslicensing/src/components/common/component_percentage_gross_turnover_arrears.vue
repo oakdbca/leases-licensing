@@ -87,8 +87,8 @@
                             (!editingFromProposalPage ||
                                 !financialYearHasPassed(year.financial_year)) &&
                             year.gross_turnover &&
-                            year.discrepency_invoice_amount &&
-                            year.discrepency_invoice_amount != 0
+                            year.discrepency &&
+                            year.discrepency != 0
                         "
                         class="card-body"
                     >
@@ -454,11 +454,15 @@ export default {
                 0
             );
             if (event.target.value != total_of_quarters) {
+                year.discrepency = currency(
+                    event.target.value - total_of_quarters
+                );
                 year.discrepency_invoice_amount = currency(
                     (event.target.value * year.percentage) / 100 -
                         (total_of_quarters * year.percentage) / 100
                 );
             } else {
+                year.discrepency = 0;
                 year.discrepency_invoice_amount = 0;
             }
             this.$emit('onChangeAnnualGrossTurnover');
