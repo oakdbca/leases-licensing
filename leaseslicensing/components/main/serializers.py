@@ -9,7 +9,6 @@ from rest_framework import serializers
 from leaseslicensing.components.main.models import (
     ApplicationType,
     CommunicationsLogEntry,
-    GlobalSettings,
     MapColumn,
     MapLayer,
     Question,
@@ -76,12 +75,6 @@ class ApplicationTypeKeyValueSerializer(serializers.ModelSerializer):
 
     def get_name_display(self, obj):
         return obj.get_name_display()
-
-
-class GlobalSettingsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GlobalSettings
-        fields = ("key", "value")
 
 
 class QuestionSerializer(serializers.ModelSerializer):

@@ -354,21 +354,6 @@ class Document(models.Model):
         return self.name or self.filename
 
 
-class GlobalSettings(models.Model):
-    keys = ()
-    key = models.CharField(
-        max_length=255,
-        choices=keys,
-        blank=False,
-        null=False,
-    )
-    value = models.CharField(max_length=255)
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Global Settings"
-
-
 # @python_2_unicode_compatible
 class SystemMaintenance(models.Model):
     name = models.CharField(max_length=100)

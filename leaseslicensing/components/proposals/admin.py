@@ -6,7 +6,6 @@ from django.http import HttpResponseRedirect
 
 from leaseslicensing.components.main.models import (
     ApplicationType,
-    GlobalSettings,
     OracleCode,
     SystemMaintenance,
 )
@@ -188,12 +187,6 @@ class OracleCodeInline(admin.TabularInline):
     extra = 3
     max_num = 3
     can_delete = False
-
-
-@admin.register(GlobalSettings)
-class GlobalSettingsAdmin(admin.ModelAdmin):
-    list_display = ["key", "value"]
-    ordering = ("key",)
 
 
 @admin.register(models.ExternalRefereeInvite)

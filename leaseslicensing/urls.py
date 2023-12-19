@@ -97,7 +97,6 @@ router.register(r"amendment_request", proposal_api.AmendmentRequestViewSet)
 router.register(
     r"compliance_amendment_request", compliances_api.ComplianceAmendmentRequestViewSet
 )
-router.register(r"global_settings", main_api.GlobalSettingsViewSet)
 router.register(r"application_types", main_api.ApplicationTypeViewSet)
 router.register(r"assessments", proposal_api.ProposalAssessmentViewSet)
 router.register(r"questions", main_api.QuestionViewSet)

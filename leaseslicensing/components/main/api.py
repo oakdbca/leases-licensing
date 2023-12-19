@@ -20,7 +20,6 @@ from leaseslicensing import helpers
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.models import (
     ApplicationType,
-    GlobalSettings,
     MapLayer,
     Question,
     TemporaryDocumentCollection,
@@ -33,7 +32,6 @@ from leaseslicensing.components.main.process_document import (
 from leaseslicensing.components.main.serializers import (
     ApplicationTypeKeyValueSerializer,
     ApplicationTypeSerializer,
-    GlobalSettingsSerializer,
     MapLayerSerializer,
     QuestionSerializer,
     SecureDocumentSerializer,
@@ -43,11 +41,6 @@ from leaseslicensing.helpers import is_customer, is_internal
 from leaseslicensing.permissions import IsInternalOrHasObjectPermission
 
 logger = logging.getLogger(__name__)
-
-
-class GlobalSettingsViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = GlobalSettings.objects.all().order_by("id")
-    serializer_class = GlobalSettingsSerializer
 
 
 class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
