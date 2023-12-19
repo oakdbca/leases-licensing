@@ -9,8 +9,6 @@ from rest_framework import serializers
 from leaseslicensing.components.main.models import (
     ApplicationType,
     CommunicationsLogEntry,
-    MapColumn,
-    MapLayer,
     Question,
     TemporaryDocumentCollection,
 )
@@ -99,46 +97,6 @@ class BookingSettlementReportSerializer(serializers.Serializer):
 class OracleSerializer(serializers.Serializer):
     date = serializers.DateField(input_formats=["%d/%m/%Y", "%Y-%m-%d"])
     override = serializers.BooleanField(default=False)
-
-
-class MapColumnSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MapColumn
-        fields = (
-            "name",
-            "option_for_internal",
-            "option_for_external",
-        )
-
-
-class MapLayerSerializer(serializers.ModelSerializer):
-    layer_full_name = serializers.SerializerMethodField()
-    layer_group_name = serializers.SerializerMethodField()
-    layer_name = serializers.SerializerMethodField()
-    columns = MapColumnSerializer(many=True)
-
-    class Meta:
-        model = MapLayer
-        fields = (
-            "id",
-            "display_name",
-            "layer_full_name",
-            "layer_group_name",
-            "layer_name",
-            "display_all_columns",
-            "columns",
-            "transparency",
-        )
-        read_only_fields = ("id",)
-
-    def get_layer_full_name(self, obj):
-        return obj.layer_name.strip()
-
-    def get_layer_group_name(self, obj):
-        return obj.layer_name.strip().split(":")[0]
-
-    def get_layer_name(self, obj):
-        return obj.layer_name.strip().split(":")[1]
 
 
 class EmailUserROSerializerForReferral(serializers.ModelSerializer):
