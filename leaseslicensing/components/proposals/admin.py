@@ -1,12 +1,15 @@
+from typing import Any
+
 from django.conf.urls import url
 from django.contrib import admin
 from django.db.models import TextField
 from django.forms import Textarea
 from django.http import HttpResponseRedirect
+from django.http.request import HttpRequest
 
+from leaseslicensing import helpers
 from leaseslicensing.components.main.models import (
     ApplicationType,
-    GlobalSettings,
     OracleCode,
     SystemMaintenance,
 )
@@ -67,9 +70,31 @@ class ProposalStandardRequirementAdmin(admin.ModelAdmin):
         "text",
         "obsolete",
         "application_type",
-        "gross_turnover_required",
         "default",
     ]
+    exclude = ["gross_turnover_required"]
+
+    def get_exclude(self, request: HttpRequest, obj: Any | None = ...) -> Any:
+        if request.user.is_superuser:
+            return []
+        return super().get_exclude(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return []
+
+        if helpers.is_leaseslicensing_admin(request):
+            if obj and obj.gross_turnover_required:
+                return [
+                    "code",
+                    "text",
+                    "obsolete",
+                    "application_type",
+                    "gross_turnover_required",
+                    "default",
+                ]
+
+        return super().get_readonly_fields(request, obj)
 
 
 class HelpPageAdmin(admin.ModelAdmin):
@@ -188,12 +213,6 @@ class OracleCodeInline(admin.TabularInline):
     extra = 3
     max_num = 3
     can_delete = False
-
-
-@admin.register(GlobalSettings)
-class GlobalSettingsAdmin(admin.ModelAdmin):
-    list_display = ["key", "value"]
-    ordering = ("key",)
 
 
 @admin.register(models.ExternalRefereeInvite)

@@ -1,7 +1,4 @@
-from django.contrib import admin
 from django.forms import ModelForm
-
-from leaseslicensing.components.main.models import MapColumn, MapLayer
 
 
 class MyForm(ModelForm):
@@ -26,30 +23,3 @@ class MyForm(ModelForm):
         ].help_text = (
             "When checked, a checkbox for this layer is displayed for the external user"
         )
-
-
-class MapColumnInline(admin.TabularInline):
-    model = MapColumn
-    extra = 0
-
-
-@admin.register(MapLayer)
-class MapLayerAdmin(admin.ModelAdmin):
-    list_display = [
-        "display_name",
-        "layer_name",
-        "option_for_internal",
-        "option_for_external",
-        "display_all_columns",
-        "column_names",
-        "transparency",
-    ]
-    list_filter = [
-        "option_for_internal",
-        "option_for_external",
-        "display_all_columns",
-    ]
-    form = MyForm
-    inlines = [
-        MapColumnInline,
-    ]

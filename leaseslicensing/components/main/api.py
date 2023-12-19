@@ -20,8 +20,6 @@ from leaseslicensing import helpers
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.models import (
     ApplicationType,
-    GlobalSettings,
-    MapLayer,
     Question,
     TemporaryDocumentCollection,
 )
@@ -33,43 +31,18 @@ from leaseslicensing.components.main.process_document import (
 from leaseslicensing.components.main.serializers import (
     ApplicationTypeKeyValueSerializer,
     ApplicationTypeSerializer,
-    GlobalSettingsSerializer,
-    MapLayerSerializer,
     QuestionSerializer,
     SecureDocumentSerializer,
     TemporaryDocumentCollectionSerializer,
 )
-from leaseslicensing.helpers import is_customer, is_internal
 from leaseslicensing.permissions import IsInternalOrHasObjectPermission
 
 logger = logging.getLogger(__name__)
 
 
-class GlobalSettingsViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = GlobalSettings.objects.all().order_by("id")
-    serializer_class = GlobalSettingsSerializer
-
-
 class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
-
-
-class MapLayerViewSet(viewsets.ModelViewSet):
-    queryset = MapLayer.objects.none()
-    serializer_class = MapLayerSerializer
-
-    def get_queryset(self):
-        if is_internal(self.request):
-            return MapLayer.objects.filter(option_for_internal=True)
-        elif is_customer(self.request):
-            return MapLayer.objects.filter(option_for_external=True)
-        return MapLayer.objects.none()
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
 
 
 class TemporaryDocumentCollectionViewSet(viewsets.ModelViewSet):
