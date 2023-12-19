@@ -153,6 +153,7 @@ class SiteName(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
     class Meta:
+        verbose_name = "Site Name"
         app_label = "leaseslicensing"
         ordering = ["name"]
 

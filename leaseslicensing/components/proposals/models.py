@@ -164,6 +164,7 @@ class AdditionalDocumentType(RevisionedMixin):
     enabled = models.BooleanField(default=True)
 
     class Meta:
+        verbose_name = "Additional Document Type"
         app_label = "leaseslicensing"
         ordering = ["name"]
 

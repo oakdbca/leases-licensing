@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.contrib.gis import admin
 from django.contrib.sites.models import Site
 from ledger_api_client.admin import SystemGroupAdmin
@@ -71,6 +71,8 @@ class CustomSystemGroupAdmin(SystemGroupAdmin):
 
 admin.site.unregister(SystemGroup)
 admin.site.register(SystemGroup, CustomSystemGroupAdmin)
+
+admin.site.register(Permission)
 
 # Remove any model admins that are not required for the application
 admin.site.unregister(Group)

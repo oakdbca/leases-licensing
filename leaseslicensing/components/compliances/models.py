@@ -563,6 +563,7 @@ class ComplianceAmendmentReason(models.Model):
     reason = models.CharField("Reason", max_length=125)
 
     class Meta:
+        verbose_name = "Compliance Amendment Reason"
         app_label = "leaseslicensing"
 
     def __str__(self):
