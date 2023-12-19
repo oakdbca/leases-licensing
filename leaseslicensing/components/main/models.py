@@ -337,17 +337,6 @@ class SystemMaintenance(models.Model):
         )
 
 
-class UserSystemSettings(models.Model):
-    one_row_per_park = models.BooleanField(default=False)
-    # Setting for user if they want to see Payment (Park Entry Fees Dashboard)
-    # by one row per park or one row per booking
-    user = models.IntegerField(unique=True)  # EmailUserRO
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "User System Settings"
-
-
 class TemporaryDocumentCollection(models.Model):
     class Meta:
         app_label = "leaseslicensing"

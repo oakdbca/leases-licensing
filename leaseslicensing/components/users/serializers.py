@@ -5,11 +5,7 @@ from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
 from leaseslicensing.components.compliances.models import ComplianceReferral
-from leaseslicensing.components.main.models import (
-    CommunicationsLogEntry,
-    Document,
-    UserSystemSettings,
-)
+from leaseslicensing.components.main.models import CommunicationsLogEntry, Document
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import can_admin_org, is_consultant
 from leaseslicensing.components.proposals.models import ProposalApplicant, Referral
@@ -35,12 +31,6 @@ class UserAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = ("id", "line1", "locality", "state", "country", "postcode")
-
-
-class UserSystemSettingsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserSystemSettings
-        fields = ("one_row_per_park",)
 
 
 class UserOrganisationSerializer(serializers.ModelSerializer):

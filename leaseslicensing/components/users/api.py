@@ -25,7 +25,6 @@ from leaseslicensing.components.invoicing.serializers import (
 )
 from leaseslicensing.components.main.api import UserActionLoggingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
-from leaseslicensing.components.main.models import UserSystemSettings
 from leaseslicensing.components.main.serializers import EmailUserSerializer
 from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestDTSerializer,
@@ -45,7 +44,6 @@ from leaseslicensing.components.users.serializers import (
     UserAddressSerializer,
     UserFilterSerializer,
     UserSerializer,
-    UserSystemSettingsSerializer,
 )
 from leaseslicensing.helpers import is_internal
 
@@ -402,23 +400,6 @@ class UserViewSet(UserActionLoggingViewset):
 
         instance.save()
         serializer = UserSerializer(instance, context={"request": request})
-        return Response(serializer.data)
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    @basic_exception_handler
-    def update_system_settings(self, request, *args, **kwargs):
-        instance = self.get_object()
-        user_setting, created = UserSystemSettings.objects.get_or_create(user=instance)
-        serializer = UserSystemSettingsSerializer(user_setting, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        instance = self.get_object()
-        serializer = UserSerializer(instance)
         return Response(serializer.data)
 
     @detail_route(
