@@ -294,8 +294,13 @@ class Approval(LicensingModelVersioned):
     )
     renewal_review_notification_sent_to_assessors = models.BooleanField(default=False)
     renewal_notification_sent_to_holder = models.BooleanField(default=False)
+
+    # This field holds the date that the approval was most recently issued (since they may be reissued)
     issue_date = models.DateTimeField()
+
+    # This field holds the date the approval was first issued
     original_issue_date = models.DateField(auto_now_add=True)
+
     start_date = models.DateField()
     expiry_date = models.DateField()
     surrender_details = JSONField(blank=True, null=True)
