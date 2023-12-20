@@ -1,7 +1,7 @@
 <template>
     <div class="row mb-3">
         <div class="col">
-            <div v-if="context == 'Proposal'">
+            <div v-if="editingFromProposalPage">
                 <BootstrapAlert>
                     Enter the percentage of gross turnover to charge for each
                     financial year
@@ -303,7 +303,7 @@
     </div>
     <div class="row mb-3 pb-3 border-bottom">
         <div class="col">
-            <BootstrapAlert v-if="context == 'Proposal'" class="py-2 mb-0">
+            <BootstrapAlert v-if="editingFromProposalPage" class="py-2 mb-0">
                 The system will generate compliances to ask for an audited
                 financial statement for each
                 {{
