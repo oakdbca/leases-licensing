@@ -257,6 +257,7 @@
                                 :invoicing-details="approval.invoicing_details"
                                 :start-date="approval.start_date"
                                 :expiry-date="approval.expiry_date"
+                                :issue-date="approval.issue_date"
                                 :proposal-processing-status-id="
                                     approval.current_proposal_processing_status
                                 "
@@ -589,33 +590,24 @@ export default {
                     .length;
                 i++
             ) {
-                if (
-                    !this.approval.invoicing_details.gross_turnover_percentages[
-                        i
-                    ].locked &&
+                let gross_turnover_percentage =
                     this.approval.invoicing_details.gross_turnover_percentages[
                         i
-                    ].gross_turnover != null
+                    ];
+                if (
+                    !gross_turnover_percentage.locked &&
+                    gross_turnover_percentage.gross_turnover != null
                 ) {
                     annualTurnoverChanges.push({
-                        year: this.approval.invoicing_details
-                            .gross_turnover_percentages[i].year,
-                        percentage:
-                            this.approval.invoicing_details
-                                .gross_turnover_percentages[i].percentage,
+                        year: gross_turnover_percentage.year,
+                        percentage: gross_turnover_percentage.percentage,
                         gross_turnover:
-                            this.approval.invoicing_details
-                                .gross_turnover_percentages[i].gross_turnover,
+                            gross_turnover_percentage.gross_turnover,
                         invoice_amount:
-                            this.approval.invoicing_details
-                                .gross_turnover_percentages[i]
-                                .discrepency_invoice_amount,
+                            gross_turnover_percentage.discrepency_invoice_amount,
                     });
                 }
-                let quarters =
-                    this.approval.invoicing_details.gross_turnover_percentages[
-                        i
-                    ].quarters;
+                let quarters = gross_turnover_percentage.quarters;
                 for (let j = 0; j < quarters.length; j++) {
                     if (
                         !quarters[j].locked &&
