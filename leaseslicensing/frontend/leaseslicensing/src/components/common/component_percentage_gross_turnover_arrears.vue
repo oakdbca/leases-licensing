@@ -86,6 +86,7 @@
                         v-if="
                             (!editingFromProposalPage ||
                                 !financialYearHasPassed(year.financial_year)) &&
+                            !year.locked &&
                             year.gross_turnover &&
                             year.discrepency &&
                             year.discrepency != 0
