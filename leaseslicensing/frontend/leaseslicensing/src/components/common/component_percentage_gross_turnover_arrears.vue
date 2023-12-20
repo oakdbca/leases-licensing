@@ -129,10 +129,9 @@
                     </div>
                     <div
                         v-if="
-                            context == 'Approval' &&
+                            !editingFromProposalPage &&
                             invoicingReptitionQuarterly &&
-                            (!editingFromProposalPage ||
-                                !financialYearHasPassed(year.financial_year))
+                            !financialYearHasPassed(year.financial_year)
                         "
                         class="card-body py-3"
                     >
@@ -210,10 +209,9 @@
                     </div>
                     <div
                         v-if="
-                            context == 'Approval' &&
+                            !editingFromProposalPage &&
                             !invoicingReptitionQuarterly &&
-                            (!editingFromProposalPage ||
-                                !financialYearHasPassed(year.financial_year))
+                            !financialYearHasPassed(year.financial_year)
                         "
                         class="card-body py-3"
                     >
@@ -370,6 +368,9 @@ export default {
             // Todo: Relying on ids like this is dangerous - need to use the key property instead
             return this.invoicingRepetitionType == 2;
         },
+        editingFromProposalPage: function () {
+            return this.context == 'Proposal';
+        },
     },
     watch: {
         invoicingRepetitionType: function (newVal) {
@@ -391,9 +392,6 @@ export default {
         this.populateFinancialYearsArray(financialYearsIncluded);
     },
     methods: {
-        editingFromProposalPage: function () {
-            return this.context == 'Proposal';
-        },
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
             // Gross turnover is readonly if the financial year hasn't passed
             // or if the proposal is being edited from the proposal details page
