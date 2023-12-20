@@ -62,6 +62,9 @@
                                         class="form-control"
                                         :disabled="
                                             year.locked ||
+                                            !financialYearHasPassed(
+                                                year.financial_year
+                                            ) ||
                                             (!yearBeforeIssueDate(year) &&
                                                 !allQuartersLocked(year))
                                         "
