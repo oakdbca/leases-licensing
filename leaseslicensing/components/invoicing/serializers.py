@@ -185,10 +185,9 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
                     year=instance,
                     quarter=quarter_data.get("quarter"),
                 )
-                gross_turnover = quarter_data.get("gross_turnover")
-                if gross_turnover:
-                    quarter.gross_turnover = gross_turnover
-                    quarter.save()
+                gross_turnover = quarter_data.get("gross_turnover", None)
+                quarter.gross_turnover = gross_turnover
+                quarter.save()
 
     def get_or_create_months(self, months, instance):
         if months:
@@ -198,10 +197,9 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
                     year=month_data.get("year"),
                     month=month_data.get("month"),
                 )
-                gross_turnover = month_data.get("gross_turnover")
-                if gross_turnover:
-                    month.gross_turnover = gross_turnover
-                    month.save()
+                gross_turnover = month_data.get("gross_turnover", None)
+                month.gross_turnover = gross_turnover
+                month.save()
 
 
 class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
