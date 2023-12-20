@@ -145,7 +145,7 @@ export default {
             return 0.1;
         },
         editingFromProposalPage: function () {
-            return this.context === 'proposal';
+            return this.context === 'Proposal';
         },
     },
     mounted: function () {
