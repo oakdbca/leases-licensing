@@ -670,7 +670,10 @@ export default {
                         changes.annualTurnoverChanges
                     );
                 }
-                if (changes.annualTurnoverDiscrepencyChanges.length > 0) {
+                if (
+                    changes.annualTurnoverDiscrepencyChanges &&
+                    changes.annualTurnoverDiscrepencyChanges.length > 0
+                ) {
                     annualChangesDiscrepencyHtml =
                         this.getAnnualTurnoverChangesAdvanceDiscrepencyHtml(
                             changes.annualTurnoverDiscrepencyChanges
