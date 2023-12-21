@@ -436,7 +436,7 @@ export default {
             return {
                 data: 'approval_type',
                 orderable: true,
-                searchable: false, // FIXME: make searchable
+                searchable: true,
                 visible: true,
                 render: function (row, type, full) {
                     return full.approval_type;
