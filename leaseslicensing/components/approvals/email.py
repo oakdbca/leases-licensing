@@ -358,7 +358,7 @@ def send_approval_crown_land_rent_review_email_notification(approval, months_due
     _log_approval_email(msg, approval, sender=sender_user)
 
 
-def send_approval_custom_cpi_entry_email_notification(approval, days_due_in):
+def send_approval_custom_cpi_entry_email_notification(approval, days_before_issue_date):
     email = TemplateEmailBase(
         subject=f"Custom CPI Entry Required for {approval.approval_type} {approval.lodgement_number}",
         html_template="leaseslicensing/emails/approval_custom_cpi_entry_notification.html",
@@ -369,7 +369,7 @@ def send_approval_custom_cpi_entry_email_notification(approval, days_due_in):
 
     invoicing_details = approval.current_proposal.invoicing_details
 
-    days_left = f"{days_due_in} days"
+    days_left = f"{days_before_issue_date} days"
     next_reminder_date = invoicing_details.invoicing_periods_next_reminder_date
     start_of_next_invoicing_period = invoicing_details.invoicing_periods_next_start_date
 
