@@ -727,11 +727,11 @@ class Approval(LicensingModelVersioned):
                 return review_date
         return None
 
-    def custom_cpi_entry_due_in(self, days: int = 30) -> bool:
+    def has_invoice_issue_date_in(self, days: int = 30) -> bool:
         today = timezone.localtime(timezone.now()).date()
         return (
             today + relativedelta(days=days)
-            in self.invoicing_details.invoicing_periods_start_dates
+            in self.invoicing_details.preview_invoices_issue_dates
         )
 
     def user_has_object_permission(self, user_id):

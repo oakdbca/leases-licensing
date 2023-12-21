@@ -14,12 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    SIXTY = 60
-    FORTY_FIVE = 45
+    THIRTY = 30
+    FIFTEEN = 15
 
     help = (
-        f"This script is designed to run as a daily cron job and send out reminders ({SIXTY} days prior and "
-        f"{FORTY_FIVE} days prior to the next invoicing period) for any custom cpi figures that are due to be entered"
+        f"This script is designed to run as a daily cron job and send out reminders ({THIRTY} days prior and "
+        f"{FIFTEEN} days prior to the issue date for the next invoice) "
+        "for any custom cpi figures that are due to be entered"
     )
 
     def add_arguments(self, parser):
@@ -49,32 +50,30 @@ class Command(BaseCommand):
         for approval in approvals:
             logger.info(f"Checking approval: {approval}")
             invoicing_details = approval.current_proposal.invoicing_details
-            logger.info(
-                f"Found invoicing details: {invoicing_details.has_future_invoicing_periods}"
-            )
+
             # Just in case
             if not invoicing_details.has_future_invoicing_periods:
-                logger.info(
+                logger.debug(
                     f"Skipping approval: {approval} as it has no future invoicing periods"
                 )
                 continue
 
             if invoicing_details.custom_cpi_entered_for_next_invoicing_period:
-                logger.info(
+                logger.debug(
                     f"Skipping approval: {approval} as the custom cpi for the next "
                     "invoicing period has already been entered"
                 )
                 continue
 
-            days_due_in = None
+            days_before_issue_date = None
 
-            if approval.custom_cpi_entry_due_in(days=self.SIXTY):
-                days_due_in = self.SIXTY
+            if approval.has_invoice_issue_date_in(days=self.THIRTY):
+                days_before_issue_date = self.THIRTY
 
-            if approval.custom_cpi_entry_due_in(days=self.FORTY_FIVE):
-                days_due_in = self.FORTY_FIVE
+            if approval.has_invoice_issue_date_in(days=self.FIFTEEN):
+                days_before_issue_date = self.FIFTEEN
 
-            if days_due_in is not None:
+            if days_before_issue_date is not None:
                 if options["test"]:
                     logger.info(
                         f"Test: Would have sent custom cpi entry reminder for approval: {approval}"
@@ -86,7 +85,7 @@ class Command(BaseCommand):
                 )
                 try:
                     send_approval_custom_cpi_entry_email_notification(
-                        approval, days_due_in
+                        approval, days_before_issue_date
                     )
                 except Exception as e:
                     logger.error(
