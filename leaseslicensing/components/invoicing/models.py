@@ -308,6 +308,28 @@ class InvoicingDetails(BaseModel):
     def preview_invoices_issue_dates(self):
         return [period["issue_date"] for period in self.preview_invoices]
 
+    @property
+    def custom_cpi_reminder_dates(self) -> list[date] | None:
+        if not self.has_future_invoicing_periods:
+            return None
+
+        seen = set()
+        for issue_date in self.preview_invoices_issue_dates:
+            issue_date = datetime.strptime(issue_date, "%d/%m/%Y").date()
+            reminder_date_1 = issue_date - relativedelta(
+                days=settings.CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE[0]
+            )
+            reminder_date_2 = issue_date - relativedelta(
+                days=settings.CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE[1]
+            )
+            if reminder_date_1 not in seen:
+                seen.add(reminder_date_1)
+                yield reminder_date_1
+
+            if reminder_date_2 not in seen:
+                seen.add(reminder_date_2)
+                yield reminder_date_2
+
     def preview_invoice_by_date(self, date):
         for invoice in self.preview_invoices:
             if invoice["issue_date"] == datetime.strftime(date, "%d/%m/%Y"):
