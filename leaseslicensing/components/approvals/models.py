@@ -1,6 +1,5 @@
 import datetime
 import logging
-import re
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -438,21 +437,6 @@ class Approval(LicensingModelVersioned):
         return self.current_proposal.title
 
     @property
-    def next_id(self):
-        ids = map(
-            int,
-            [
-                re.sub("^[A-Za-z]*", "", i)
-                for i in Approval.objects.all().values_list(
-                    "lodgement_number", flat=True
-                )
-                if i
-            ],
-        )
-        ids = list(ids)
-        return max(ids) + 1 if ids else 1
-
-    @property
     def reference(self):
         return f"L{self.id}"
 
@@ -727,7 +711,7 @@ class Approval(LicensingModelVersioned):
                 return review_date
         return None
 
-    def has_invoice_issue_date_in(self, days: int = 30) -> bool:
+    def has_invoice_issue_date_in(self, days: int) -> bool:
         today = timezone.localtime(timezone.now()).date()
         return (
             today + relativedelta(days=days)
