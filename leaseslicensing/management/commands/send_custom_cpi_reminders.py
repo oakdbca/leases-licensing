@@ -14,12 +14,12 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    THIRTY = 30
-    FIFTEEN = 15
+    REMINDER_ONE = settings.CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE[0]
+    REMINDER_TWO = settings.CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE[1]
 
     help = (
-        f"This script is designed to run as a daily cron job and send out reminders ({THIRTY} days prior and "
-        f"{FIFTEEN} days prior to the issue date for the next invoice) "
+        f"This script is designed to run as a daily cron job and send out reminders ({REMINDER_ONE} days prior and "
+        f"{REMINDER_TWO} days prior to the issue date for the next invoice) "
         "for any custom cpi figures that are due to be entered"
     )
 
@@ -67,11 +67,11 @@ class Command(BaseCommand):
 
             days_before_issue_date = None
 
-            if approval.has_invoice_issue_date_in(days=self.THIRTY):
-                days_before_issue_date = self.THIRTY
+            if approval.has_invoice_issue_date_in(days=self.REMINDER_ONE):
+                days_before_issue_date = self.REMINDER_ONE
 
-            if approval.has_invoice_issue_date_in(days=self.FIFTEEN):
-                days_before_issue_date = self.FIFTEEN
+            if approval.has_invoice_issue_date_in(days=self.REMINDER_TWO):
+                days_before_issue_date = self.REMINDER_TWO
 
             if days_before_issue_date is not None:
                 if options["test"]:
