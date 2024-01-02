@@ -389,6 +389,8 @@ DEFAULT_DAYS_BEFORE_PAYMENT_DUE = 30  # Net 30 Payment terms
 
 DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD = 30
 
+CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE = (30, 15)
+
 template_title = "Leases and Licensing"
 template_group = "parkswildlife"
 
