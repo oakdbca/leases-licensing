@@ -38,6 +38,7 @@ class Command(BaseCommand):
         charge_method_key = "current_proposal__invoicing_details__charge_method__key"
         current_approval_statuses = [
             Approval.APPROVAL_STATUS_CURRENT,
+            Approval.APPROVAL_STATUS_CURRENT_EDITING_INVOICING,
             Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
             Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL,
         ]
@@ -48,7 +49,7 @@ class Command(BaseCommand):
         }
         approvals = Approval.objects.filter(**filters)
         for approval in approvals:
-            logger.info(f"Checking approval: {approval}")
+            logger.debug(f"Checking approval: {approval}")
             invoicing_details = approval.current_proposal.invoicing_details
 
             # Just in case
@@ -75,7 +76,7 @@ class Command(BaseCommand):
 
             if days_before_issue_date is not None:
                 if options["test"]:
-                    logger.info(
+                    logger.debug(
                         f"Test: Would have sent custom cpi entry reminder for approval: {approval}"
                     )
                     continue
