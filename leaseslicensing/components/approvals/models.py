@@ -713,10 +713,9 @@ class Approval(LicensingModelVersioned):
 
     def has_invoice_issue_date_in(self, days: int) -> bool:
         today = timezone.localtime(timezone.now()).date()
-        return (
-            today + relativedelta(days=days)
-            in self.invoicing_details.preview_invoices_issue_dates
-        )
+        return (today + relativedelta(days=days)).strftime(
+            "%d/%m/%Y"
+        ) in self.invoicing_details.preview_invoices_issue_dates
 
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
