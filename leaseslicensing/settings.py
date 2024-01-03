@@ -232,6 +232,9 @@ PROTECTED_MEDIA_ROOT = env(
 )
 SECURE_FILE_API_BASE_PATH = "/api/main/secure_file/"
 SECURE_DOCUMENT_API_BASE_PATH = "/api/main/secure_document/"
+
+# This is needed so that the chmod is not called in django/core/files/storage.py (line 302)
+# As it causes an permission exception when using azure network drives
 FILE_UPLOAD_PERMISSIONS = None
 
 BASE_URL = env("BASE_URL")
