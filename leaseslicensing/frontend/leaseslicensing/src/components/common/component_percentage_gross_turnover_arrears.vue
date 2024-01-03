@@ -1,7 +1,7 @@
 <template>
     <div class="row mb-3">
         <div class="col">
-            <div v-if="context == 'Proposal'">
+            <div v-if="editingFromProposalPage">
                 <BootstrapAlert>
                     Enter the percentage of gross turnover to charge for each
                     financial year
@@ -47,10 +47,13 @@
                                     <span class="input-group-text">%</span>
                                 </div>
                             </label>
-                            <div v-if="context == 'Approval'" class="pe-3">
+                            <div v-if="!editingFromProposalPage" class="pe-3">
                                 Gross Turnover
                             </div>
-                            <div v-if="context == 'Approval'" class="col-sm-3">
+                            <div
+                                v-if="!editingFromProposalPage"
+                                class="col-sm-4"
+                            >
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
                                     <input
@@ -59,10 +62,18 @@
                                         class="form-control"
                                         :disabled="
                                             year.locked ||
-                                            (!financialYearHasPassed(
+                                            !financialYearHasPassed(
                                                 year.financial_year
-                                            ) &&
-                                                !allQuartersEntered(year))
+                                            ) ||
+                                            (!yearBeforeIssueDate(year) &&
+                                                !allQuartersLocked(year))
+                                        "
+                                        :placeholder="
+                                            !yearBeforeIssueDate(year) &&
+                                            !allQuartersLocked(year)
+                                                ? 'Enter ' +
+                                                  repetitionTypePlural
+                                                : ''
                                         "
                                         @change="
                                             grossAnnualTurnoverChanged(
@@ -86,9 +97,11 @@
                         v-if="
                             (!editingFromProposalPage ||
                                 !financialYearHasPassed(year.financial_year)) &&
+                            !year.locked &&
                             year.gross_turnover &&
                             year.discrepency &&
-                            year.discrepency != 0
+                            year.discrepency != 0 &&
+                            year.discrepency_invoice_amount != 0
                         "
                         class="card-body"
                     >
@@ -96,8 +109,10 @@
                             <template
                                 v-if="year.discrepency_invoice_amount > 0"
                             >
-                                The gross annual turnover entered is greater
-                                than the sum of the four quarters.<br />
+                                <div v-if="!yearBeforeIssueDate(year)">
+                                    The gross annual turnover entered is greater
+                                    than the sum of the four quarters.
+                                </div>
                                 When you complete editing, the system will
                                 generate a charge invoice record for
                                 <strong
@@ -111,8 +126,10 @@
                             <template
                                 v-else-if="year.discrepency_invoice_amount < 0"
                             >
-                                The gross annual turnover entered is less than
-                                the sum of the four quarters.<br />
+                                <div v-if="!yearBeforeIssueDate(year)">
+                                    The gross annual turnover entered is less
+                                    than the sum of the four quarters.
+                                </div>
                                 When you complete editing, the system will
                                 generate a refund invoice record for
                                 <strong
@@ -129,10 +146,9 @@
                     </div>
                     <div
                         v-if="
-                            context == 'Approval' &&
+                            !editingFromProposalPage &&
                             invoicingReptitionQuarterly &&
-                            (!editingFromProposalPage ||
-                                !financialYearHasPassed(year.financial_year))
+                            !yearBeforeIssueDate(year)
                         "
                         class="card-body py-3"
                     >
@@ -210,10 +226,9 @@
                     </div>
                     <div
                         v-if="
-                            context == 'Approval' &&
+                            !editingFromProposalPage &&
                             !invoicingReptitionQuarterly &&
-                            (!editingFromProposalPage ||
-                                !financialYearHasPassed(year.financial_year))
+                            !yearBeforeIssueDate(year)
                         "
                         class="card-body py-3"
                     >
@@ -291,7 +306,7 @@
     </div>
     <div class="row mb-3 pb-3 border-bottom">
         <div class="col">
-            <BootstrapAlert v-if="context == 'Proposal'" class="py-2 mb-0">
+            <BootstrapAlert v-if="editingFromProposalPage" class="py-2 mb-0">
                 The system will generate compliances to ask for an audited
                 financial statement for each
                 {{
@@ -317,6 +332,10 @@ export default {
             required: true,
         },
         expiryDate: {
+            type: String,
+            required: true,
+        },
+        issueDate: {
             type: String,
             required: true,
         },
@@ -370,6 +389,14 @@ export default {
             // Todo: Relying on ids like this is dangerous - need to use the key property instead
             return this.invoicingRepetitionType == 2;
         },
+        editingFromProposalPage: function () {
+            return this.context == 'Proposal';
+        },
+        repetitionTypePlural: function () {
+            return this.invoicingRepetitionTypeKey == 'quarterly'
+                ? 'quarters'
+                : 'months';
+        },
     },
     watch: {
         invoicingRepetitionType: function (newVal) {
@@ -391,9 +418,6 @@ export default {
         this.populateFinancialYearsArray(financialYearsIncluded);
     },
     methods: {
-        editingFromProposalPage: function () {
-            return this.context == 'Proposal';
-        },
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
             // Gross turnover is readonly if the financial year hasn't passed
             // or if the proposal is being edited from the proposal details page
@@ -434,6 +458,16 @@ export default {
             }
             return true;
         },
+        allQuartersLocked: function (grossTurnoverPercentage) {
+            // Returns true if all the quarterly figures have been locked
+
+            for (let i = 0; i < grossTurnoverPercentage.quarters.length; i++) {
+                if (grossTurnoverPercentage.quarters[i].locked == false) {
+                    return false;
+                }
+            }
+            return true;
+        },
         quartersTotal: function (grossTurnoverPercentage) {
             return grossTurnoverPercentage.quarters.reduce(
                 (total, quarter) =>
@@ -448,7 +482,13 @@ export default {
             );
         },
         grossAnnualTurnoverChanged: function (event, year) {
-            var total_of_quarters = year.quarters.reduce(
+            if (!event.target.value) {
+                year.gross_turnover = null;
+                year.discrepency = null;
+                year.discrepency_invoice_amount = null;
+                return;
+            }
+            let total_of_quarters = year.quarters.reduce(
                 (total, quarter) =>
                     total + parseFloat(quarter.gross_turnover || 0),
                 0
@@ -496,6 +536,12 @@ export default {
                 }
             }
             return true;
+        },
+        yearBeforeIssueDate: function (year) {
+            return (
+                new Date(year.financial_year.split('-')[1]) <
+                new Date(this.issueDate)
+            );
         },
         populateFinancialYearsArray: function (financialYearsIncluded) {
             var financialYear = null;

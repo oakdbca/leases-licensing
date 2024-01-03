@@ -331,6 +331,7 @@
                 v-if="invoicingDetailsComputed"
                 :start-date="startDate"
                 :expiry-date="expiryDate"
+                :issue-date="issueDate"
                 :gross-turnover-percentages="
                     invoicingDetailsComputed.gross_turnover_percentages
                 "
@@ -521,6 +522,10 @@ export default {
             required: true,
         },
         expiryDate: {
+            type: String,
+            required: true,
+        },
+        issueDate: {
             type: String,
             required: true,
         },

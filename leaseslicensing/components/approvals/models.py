@@ -1,6 +1,5 @@
 import datetime
 import logging
-import re
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -294,8 +293,13 @@ class Approval(LicensingModelVersioned):
     )
     renewal_review_notification_sent_to_assessors = models.BooleanField(default=False)
     renewal_notification_sent_to_holder = models.BooleanField(default=False)
+
+    # This field holds the date that the approval was most recently issued (since they may be reissued)
     issue_date = models.DateTimeField()
+
+    # This field holds the date the approval was first issued
     original_issue_date = models.DateField(auto_now_add=True)
+
     start_date = models.DateField()
     expiry_date = models.DateField()
     surrender_details = JSONField(blank=True, null=True)
@@ -431,21 +435,6 @@ class Approval(LicensingModelVersioned):
     @property
     def title(self):
         return self.current_proposal.title
-
-    @property
-    def next_id(self):
-        ids = map(
-            int,
-            [
-                re.sub("^[A-Za-z]*", "", i)
-                for i in Approval.objects.all().values_list(
-                    "lodgement_number", flat=True
-                )
-                if i
-            ],
-        )
-        ids = list(ids)
-        return max(ids) + 1 if ids else 1
 
     @property
     def reference(self):
@@ -722,12 +711,11 @@ class Approval(LicensingModelVersioned):
                 return review_date
         return None
 
-    def custom_cpi_entry_due_in(self, days: int = 30) -> bool:
+    def has_invoice_issue_date_in(self, days: int) -> bool:
         today = timezone.localtime(timezone.now()).date()
-        return (
-            today + relativedelta(days=days)
-            in self.invoicing_details.invoicing_periods_start_dates
-        )
+        return (today + relativedelta(days=days)).strftime(
+            "%d/%m/%Y"
+        ) in self.invoicing_details.preview_invoices_issue_dates
 
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""

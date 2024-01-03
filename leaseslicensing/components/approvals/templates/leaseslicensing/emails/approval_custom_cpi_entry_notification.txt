@@ -1,10 +1,11 @@
 {%  extends 'leaseslicensing/emails/base_email.txt' %}
 
 {%  block content %}
-            Approval {{ approval.lodgement_number }} is due for a crown land rent review {{ due_text }}.
+            Approval {{ approval.lodgement_number }} requires a custom cpi percentage to be entered within {{ days_before_issue_date }}.
 
-            {% endif %}
-            You can access this approval using the following link:
+            If no custom cpi percentage is entered for the coming billing period then no cpi change will be applied to the base fee.
 
-            {{ url }}
+            To View Approval {{ approval.lodgement_number }} click on the link below:
+
+            {{url}}
 {%  endblock %}

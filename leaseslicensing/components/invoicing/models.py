@@ -254,6 +254,13 @@ class InvoicingDetails(BaseModel):
     def invoicing_periods(self):
         """Returns an array of invoicing periods based on the invoicing details object"""
         invoicing_periods = []
+
+        if not self.charge_method or self.charge_method.key in [
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
+        ]:
+            return invoicing_periods
+
         start_date = self.approval.start_date
         expiry_date = self.approval.expiry_date
         end_of_next_interval = self.get_end_of_next_interval(start_date)
@@ -300,6 +307,28 @@ class InvoicingDetails(BaseModel):
     @property
     def preview_invoices_issue_dates(self):
         return [period["issue_date"] for period in self.preview_invoices]
+
+    @property
+    def custom_cpi_reminder_dates(self) -> list[date] | None:
+        if not self.has_future_invoicing_periods:
+            return None
+
+        seen = set()
+        for issue_date in self.preview_invoices_issue_dates:
+            issue_date = datetime.strptime(issue_date, "%d/%m/%Y").date()
+            reminder_date_1 = issue_date - relativedelta(
+                days=settings.CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE[0]
+            )
+            reminder_date_2 = issue_date - relativedelta(
+                days=settings.CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE[1]
+            )
+            if reminder_date_1 not in seen:
+                seen.add(reminder_date_1)
+                yield reminder_date_1
+
+            if reminder_date_2 not in seen:
+                seen.add(reminder_date_2)
+                yield reminder_date_2
 
     def preview_invoice_by_date(self, date):
         for invoice in self.preview_invoices:
@@ -390,7 +419,7 @@ class InvoicingDetails(BaseModel):
         ):
             logger.warning(
                 f"custom_cpi_entered_for_next_period called for Invoicing Details: {self.id} "
-                "which is not using custom CPI charge method."
+                "which is not using custom CPI charge method. (Returning True so no reminder are sent)"
             )
             return (
                 True  # Not strictly true but will prevent any reminders from being sent
@@ -682,6 +711,23 @@ class InvoicingDetails(BaseModel):
             )
 
         return first_issue_date
+
+    @property
+    def next_issue_date(self):
+        """Returns the next issue date based on the invoicing details object"""
+        if not self.has_future_invoicing_periods:
+            return None
+
+        for issue_date_string in self.preview_invoices_issue_dates:
+            try:
+                issue_date = datetime.strptime(issue_date_string, "%d/%m/%Y").date()
+            except ValueError:
+                continue
+
+            if issue_date > helpers.today():
+                return issue_date_string
+
+        return None
 
     def get_issue_date(
         self, amount_object, original_issue_date, issue_date_now_or_future, end_date

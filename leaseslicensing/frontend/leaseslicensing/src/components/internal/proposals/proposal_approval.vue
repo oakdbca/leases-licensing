@@ -84,6 +84,7 @@
                 :invoicing-details="proposal.invoicing_details"
                 :start-date="proposal.approval.start_date"
                 :expiry-date="proposal.approval.expiry_date"
+                :issue-date="proposal.approval.issue_date"
                 :proposal-processing-status-id="proposal.processing_status_id"
                 :approval-type="proposal.approval.approval_type"
                 :proposal-type-code="proposal.proposal_type.code"

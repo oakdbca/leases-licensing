@@ -60,6 +60,27 @@
                     </div>
                 </div>
                 <div
+                    v-if="showReviewInvoicingDetailsAction"
+                    class="card card-default mt-2 mb-2"
+                >
+                    <div class="card-header">Review Invoicing Details</div>
+                    <div class="card-body card-collapse">
+                        <div class="mb-2">
+                            <button
+                                class="btn btn-primary btn-licensing"
+                                @click="
+                                    reviewInvoicingDetails(
+                                        approval.id,
+                                        approval.lodgement_number
+                                    )
+                                "
+                            >
+                                Review Invoicing Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div
                     v-if="showEditingInvoicingOptions"
                     class="card card-default sticky-top mt-2 mb-2"
                 >
@@ -257,6 +278,7 @@
                                 :invoicing-details="approval.invoicing_details"
                                 :start-date="approval.start_date"
                                 :expiry-date="approval.expiry_date"
+                                :issue-date="approval.issue_date"
                                 :proposal-processing-status-id="
                                     approval.current_proposal_processing_status
                                 "
@@ -380,6 +402,19 @@ export default {
                     this.approval.status
             );
         },
+        showReviewInvoicingDetailsAction: function () {
+            return (
+                this.approval &&
+                [
+                    constants.APPROVAL_STATUS.CURRENT.TEXT,
+                    constants.APPROVAL_STATUS.CURRENT_PENDING_RENEWAL.TEXT,
+                    constants.APPROVAL_STATUS.CURRENT_PENDING_RENEWAL_REVIEW
+                        .TEXT,
+                ].includes(this.approval.status) &&
+                constants.PROPOSAL_STATUS.APPROVED.ID ==
+                    this.approval.current_proposal_processing_status
+            );
+        },
     },
     created: async function () {
         const response = await fetch(
@@ -394,15 +429,9 @@ export default {
         if (this.approval.submitter.postal_address == null) {
             this.approval.submitter.postal_address = {};
         }
-        this.$nextTick(function () {
-            var tab_element = document.querySelector('#pills-invoicing-tab');
-            var tab = new bootstrap.Tab(tab_element);
-            if (window.location.hash == '#edit-invoicing') {
-                this.loadInvoices = true;
-                tab.show();
-                window.scrollTo(0, document.body.scrollHeight);
-            }
-        });
+        if (window.location.hash == '#edit-invoicing') {
+            this.showInvoicingTab();
+        }
     },
     mounted: function () {},
     methods: {
@@ -415,6 +444,17 @@ export default {
                     this.$refs.component_map.forceToRefreshMap();
                 });
             }
+        },
+        showInvoicingTab: function () {
+            this.$nextTick(function () {
+                var tab_element = document.querySelector(
+                    '#pills-invoicing-tab'
+                );
+                var tab = new bootstrap.Tab(tab_element);
+                this.loadInvoices = true;
+                tab.show();
+                window.scrollTo(0, document.body.scrollHeight);
+            });
         },
         formatDate: function (data) {
             return data ? moment(data).format(this.DATE_TIME_FORMAT) : '';
@@ -471,6 +511,56 @@ export default {
                                 'success'
                             );
                             vm.approval = Object.assign({}, data);
+                        },
+                        (error) => {
+                            console.error(error);
+                        }
+                    );
+                }
+            });
+        },
+        reviewInvoicingDetails: function (
+            approval_id,
+            // eslint-disable-next-line no-unused-vars
+            approval_lodgement_number
+        ) {
+            let vm = this;
+            Swal.fire({
+                title: 'Approval Review Invoice Details',
+                text: 'Are you sure you want to review the invoice details for this approval?',
+                icon: 'question',
+                showCancelButton: true,
+                reverseButtons: true,
+                confirmButtonText: 'Review Invoice Details',
+                confirmButtonColor: '#226fbb',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2',
+                },
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    let requestOptions = {
+                        method: 'PATCH',
+                    };
+                    fetch(
+                        helpers.add_endpoint_join(
+                            api_endpoints.approvals,
+                            approval_id + '/review_invoice_details/'
+                        ),
+                        requestOptions
+                    ).then(
+                        async (response) => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const error =
+                                    (data && data.message) ||
+                                    response.statusText;
+                                console.error(error);
+                                Promise.reject(error);
+                            }
+                            vm.approval = Object.assign({}, data);
+                            vm.showInvoicingTab();
                         },
                         (error) => {
                             console.error(error);
@@ -589,33 +679,24 @@ export default {
                     .length;
                 i++
             ) {
-                if (
-                    !this.approval.invoicing_details.gross_turnover_percentages[
-                        i
-                    ].locked &&
+                let gross_turnover_percentage =
                     this.approval.invoicing_details.gross_turnover_percentages[
                         i
-                    ].gross_turnover != null
+                    ];
+                if (
+                    !gross_turnover_percentage.locked &&
+                    gross_turnover_percentage.gross_turnover != null
                 ) {
                     annualTurnoverChanges.push({
-                        year: this.approval.invoicing_details
-                            .gross_turnover_percentages[i].year,
-                        percentage:
-                            this.approval.invoicing_details
-                                .gross_turnover_percentages[i].percentage,
+                        year: gross_turnover_percentage.year,
+                        percentage: gross_turnover_percentage.percentage,
                         gross_turnover:
-                            this.approval.invoicing_details
-                                .gross_turnover_percentages[i].gross_turnover,
+                            gross_turnover_percentage.gross_turnover,
                         invoice_amount:
-                            this.approval.invoicing_details
-                                .gross_turnover_percentages[i]
-                                .discrepency_invoice_amount,
+                            gross_turnover_percentage.discrepency_invoice_amount,
                     });
                 }
-                let quarters =
-                    this.approval.invoicing_details.gross_turnover_percentages[
-                        i
-                    ].quarters;
+                let quarters = gross_turnover_percentage.quarters;
                 for (let j = 0; j < quarters.length; j++) {
                     if (
                         !quarters[j].locked &&
@@ -670,7 +751,10 @@ export default {
                         changes.annualTurnoverChanges
                     );
                 }
-                if (changes.annualTurnoverDiscrepencyChanges.length > 0) {
+                if (
+                    changes.annualTurnoverDiscrepencyChanges &&
+                    changes.annualTurnoverDiscrepencyChanges.length > 0
+                ) {
                     annualChangesDiscrepencyHtml =
                         this.getAnnualTurnoverChangesAdvanceDiscrepencyHtml(
                             changes.annualTurnoverDiscrepencyChanges
@@ -923,9 +1007,7 @@ export default {
                                 console.error(error);
                                 Promise.reject(error);
                             }
-                            vm.$router.push({
-                                name: 'internal-approvals-dash',
-                            });
+                            vm.approval = Object.assign({}, data);
                         },
                         (error) => {
                             console.error(error);

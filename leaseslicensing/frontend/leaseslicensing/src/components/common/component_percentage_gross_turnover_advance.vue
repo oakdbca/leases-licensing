@@ -133,7 +133,7 @@
                                 v-if="year.discrepency_invoice_amount > 0"
                             >
                                 The actual gross annual turnover entered is
-                                greater than the estimate for that financial
+                                greater than the estimate for this financial
                                 year.<br />
                                 When you complete editing, the system will
                                 generate a charge invoice record for
@@ -149,7 +149,7 @@
                                 v-else-if="year.discrepency_invoice_amount < 0"
                             >
                                 The actual gross annual turnover entered is less
-                                than the estimate for that financial year.<br />
+                                than the estimate for this financial year.<br />
                                 When you complete editing, the system will
                                 generate a refund invoice record for
                                 <strong
