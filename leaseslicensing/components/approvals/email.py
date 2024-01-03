@@ -369,14 +369,14 @@ def send_approval_custom_cpi_entry_email_notification(approval, days_before_issu
 
     invoicing_details = approval.current_proposal.invoicing_details
 
-    days_left = f"{days_before_issue_date} days"
+    days_before_issue_date = f"{days_before_issue_date} days"
     next_reminder_date = invoicing_details.invoicing_periods_next_reminder_date
     start_of_next_invoicing_period = invoicing_details.invoicing_periods_next_start_date
 
     context = {
         "approval": approval,
         "invoicing_details": invoicing_details,
-        "days_left": days_left,
+        "days_before_issue_date": days_before_issue_date,
         "next_reminder_date": next_reminder_date,
         "start_of_next_invoicing_period": start_of_next_invoicing_period,
         "url": url,
