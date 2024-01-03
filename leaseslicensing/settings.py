@@ -232,6 +232,7 @@ PROTECTED_MEDIA_ROOT = env(
 )
 SECURE_FILE_API_BASE_PATH = "/api/main/secure_file/"
 SECURE_DOCUMENT_API_BASE_PATH = "/api/main/secure_document/"
+FILE_UPLOAD_PERMISSIONS = None
 
 BASE_URL = env("BASE_URL")
 
