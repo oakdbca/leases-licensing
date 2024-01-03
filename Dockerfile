@@ -50,6 +50,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     python3-dev \
     python3-pip \
     python3-setuptools \
+    ipython3 \
     rsyslog \
     sqlite3 \
     ssh \
