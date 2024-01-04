@@ -1,12 +1,7 @@
-from datetime import timedelta
-
-import pytz
 from django.conf import settings
 from django.template import Library
-from django.utils import timezone
 
 from leaseslicensing import helpers as leaseslicensing_helpers
-from leaseslicensing.components.main.models import SystemMaintenance
 
 register = Library()
 
@@ -26,15 +21,25 @@ def is_internal(context):
 
 
 @register.simple_tag(takes_context=True)
+def is_referee(context):
+    request = context["request"]
+    return leaseslicensing_helpers.is_referee(request)
+
+
+@register.simple_tag(takes_context=True)
+def is_compliance_referee(context):
+    request = context["request"]
+    return leaseslicensing_helpers.is_compliance_referee(request)
+
+
+@register.simple_tag(takes_context=True)
 def is_assessor(context):
-    # checks if user is a departmentuser and logged in via single sign-on
     request = context["request"]
     return leaseslicensing_helpers.is_assessor(request)
 
 
 @register.simple_tag(takes_context=True)
 def is_approver(context):
-    # checks if user is a departmentuser and logged in via single sign-on
     request = context["request"]
     return leaseslicensing_helpers.is_approver(request)
 
@@ -57,38 +62,6 @@ def is_finance_officer(context):
 def is_organisation_access_officer(context):
     request = context["request"]
     return leaseslicensing_helpers.is_organisation_access_officer(request)
-
-
-@register.simple_tag()
-def system_maintenance_due():
-    """Returns True (actually a time str), if within <timedelta hours> of system maintenance due datetime"""
-    tz = pytz.timezone(settings.TIME_ZONE)
-    now = timezone.now()  # returns UTC time
-    qs = SystemMaintenance.objects.filter(start_date__gte=now - timedelta(minutes=1))
-    if qs:
-        obj = qs.earliest("start_date")
-        if now >= obj.start_date - timedelta(
-            hours=settings.SYSTEM_MAINTENANCE_WARNING
-        ) and now <= obj.start_date + timedelta(minutes=1):
-            # display time in local timezone
-            return "{} - {} (Duration: {} mins)".format(
-                obj.start_date.astimezone(tz=tz).ctime(),
-                obj.end_date.astimezone(tz=tz).ctime(),
-                obj.duration(),
-            )
-    return False
-
-
-@register.simple_tag()
-def system_maintenance_can_start():
-    """Returns True if current datetime is within 1 minute past scheduled start_date"""
-    now = timezone.now()  # returns UTC time
-    qs = SystemMaintenance.objects.filter(start_date__gte=now - timedelta(minutes=1))
-    if qs:
-        obj = qs.earliest("start_date")
-        if now >= obj.start_date and now <= obj.start_date + timedelta(minutes=1):
-            return True
-    return False
 
 
 @register.simple_tag()

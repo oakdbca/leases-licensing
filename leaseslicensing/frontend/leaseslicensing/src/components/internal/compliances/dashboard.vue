@@ -1,6 +1,7 @@
 <template>
     <div id="compliancesDash" class="container">
         <FormSection
+            v-if="show_compliances_form_section"
             :form-collapse="false"
             label="Compliances"
             index="compliances"
@@ -8,6 +9,7 @@
             <CompliancesTable level="internal" />
         </FormSection>
         <FormSection
+            v-if="show_compliances_referred_to_me_form_section"
             :form-collapse="false"
             label="Compliances Referred to Me"
             index="compliances-referred-to-me"
@@ -31,6 +33,26 @@ export default {
     name: 'InternalCompliancesDashboard',
     components: {
         CompliancesTable,
+    },
+    data() {
+        return {
+            accessing_user: null,
+        };
+    },
+    computed: {
+        show_compliances_form_section() {
+            return this.accessing_user && this.accessing_user.is_assessor;
+        },
+        show_compliances_referred_to_me_form_section() {
+            return (
+                this.accessing_user && this.accessing_user.is_compliance_referee
+            );
+        },
+    },
+    mounted: async function () {
+        const res = await fetch('/api/profile');
+        const resData = await res.json();
+        this.accessing_user = resData;
     },
 };
 </script>
