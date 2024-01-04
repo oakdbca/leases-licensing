@@ -1497,6 +1497,30 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
+    @basic_exception_handler
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    def update_lease_licence_approval_documents_approval_type(
+        self, request, *args, **kwargs
+    ):
+        """Used when the user changes the approval type on the proposed approval modal
+        so that any uploaded documents are associated with the correct approval type"""
+        instance = self.get_object()
+        approval_type = request.data.get("approval_type", None)
+        # Remove any previously uploaded licence documents
+        instance.lease_licence_approval_documents.exclude(
+            approval_type_id=approval_type
+        ).filter(approval_type_document_type__is_license_document=True).delete()
+        # Update the approval type for any remaining (non licence) documents
+        instance.lease_licence_approval_documents.update(approval_type_id=approval_type)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
+
     @detail_route(
         methods=[
             "POST",
