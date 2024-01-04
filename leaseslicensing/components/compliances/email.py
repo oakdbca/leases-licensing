@@ -717,7 +717,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
     else:
         text = smart_text(email_message)
         subject = ""
-        to = customer.email
+        to = customer
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
@@ -781,7 +781,7 @@ def _log_user_email(email_message, emailuser, customer, sender=None):
     else:
         text = smart_text(email_message)
         subject = ""
-        to = customer.email
+        to = customer
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
