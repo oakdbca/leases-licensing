@@ -9,7 +9,6 @@
             <CompliancesTable level="internal" />
         </FormSection>
         <FormSection
-            v-if="show_compliances_referred_to_me_form_section"
             :form-collapse="false"
             label="Compliances Referred to Me"
             index="compliances-referred-to-me"

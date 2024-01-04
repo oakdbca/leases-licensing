@@ -206,8 +206,7 @@ export default {
     computed: {
         ajaxUrl: function () {
             let url =
-                api_endpoints.compliances_paginated_external +
-                '?format=datatables';
+                api_endpoints.compliances_paginated + '?format=datatables';
             if (this.targetEmailUserId) {
                 url += '&target_email_user_id=' + this.targetEmailUserId;
             }
@@ -319,7 +318,24 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.lodgement_number;
+                    let lodgement_number = full.lodgement_number;
+                    if (full.referral_processing_status) {
+                        if (
+                            full.referral_processing_status ==
+                            constants.REFERRAL_STATUS
+                                .PROCESSING_STATUS_WITH_REFERRAL.ID
+                        ) {
+                            lodgement_number += `<i class="fa-solid fa-circle-exclamation text-warning ms-1" title="With Referral"></i>`;
+                        } else if (
+                            full.referral_processing_status ==
+                            constants.REFERRAL_STATUS
+                                .PROCESSING_STATUS_COMPLETED.ID
+                        ) {
+                            lodgement_number += `<i class="fa-solid fa-circle-check text-success ms-1" title="Completed"></i>`;
+                        }
+                        lodgement_number += ``;
+                    }
+                    return lodgement_number;
                 },
             };
         },
@@ -390,7 +406,12 @@ export default {
                         if (full.can_process) {
                             links += `<a href='/internal/compliance/${full.id}'>Process</a><br/>`;
                         } else {
-                            if (vm.compliancesReferredToMe) {
+                            if (
+                                vm.compliancesReferredToMe &&
+                                full.referral_processing_status ==
+                                    constants.REFERRAL_STATUS
+                                        .PROCESSING_STATUS_WITH_REFERRAL.ID
+                            ) {
                                 links += `<a href='/internal/compliance/${full.id}'>Process</a><br/>`;
                             } else {
                                 links += `<a href='/internal/compliance/${full.id}'>View</a><br/>`;

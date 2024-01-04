@@ -325,6 +325,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                 self.request.query_params.get("email_user_id_assigned", "0")
             )
             if email_user_id_assigned:
+                logger.debug(f"email_user_id_assigned: {email_user_id_assigned}")
                 qs = Proposal.objects.filter(
                     Q(
                         referrals__in=Referral.objects.filter(

@@ -5,7 +5,7 @@ from datetime import datetime
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from rest_framework import serializers, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -110,9 +110,10 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             filter_approval_type = int(filter_approval_type)
             queryset = queryset.filter(approval__approval_type__id=filter_approval_type)
 
-        queryset = self.apply_request(
-            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
-        )
+        # Todo: This is causing anomolies when using annotation. Get Karsten to fix this.
+        # queryset = self.apply_request(
+        #     request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+        # )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -157,17 +158,34 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
                 approval__org_applicant__id=target_organisation_id
             )
 
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+
         compliances_referred_to_me = self.request.query_params.get(
             "compliances_referred_to_me", False
         )
         if compliances_referred_to_me:
-            ids = ComplianceReferral.objects.filter(
-                referral=self.request.user.id,
-                processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
-            ).values_list("compliance_id", flat=True)
-            return Compliance.objects.filter(id__in=ids)
+            logger.debug("compliances_referred_to_me")
+            qs = Compliance.objects.filter(
+                Q(
+                    referrals__in=ComplianceReferral.objects.exclude(
+                        processing_status=ComplianceReferral.PROCESSING_STATUS_RECALLED
+                    ).filter(referral=self.request.user.id)
+                )
+            ).annotate(referral_processing_status=F("referrals__processing_status"))
 
-        return qs
+        qs = self.filter_queryset(qs)
+
+        self.paginator.page_size = qs.count()
+        result_page = self.paginator.paginate_queryset(qs, request)
+        serializer = ComplianceSerializer(
+            result_page, context={"request": request}, many=True
+        )
+        result = self.paginator.get_paginated_response(serializer.data)
+        logger.debug(result.__dict__)
+        return result
 
     @list_route(
         methods=[

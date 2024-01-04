@@ -204,6 +204,7 @@ class ComplianceSerializer(BaseComplianceSerializer):
     due_date = serializers.SerializerMethodField(read_only=True)
     lodgement_date_display = serializers.SerializerMethodField(read_only=True)
     assigned_to_name = serializers.CharField(read_only=True)
+    referral_processing_status = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Compliance
@@ -211,9 +212,11 @@ class ComplianceSerializer(BaseComplianceSerializer):
             "due_date",
             "lodgement_date_display",
             "assigned_to_name",
+            "referral_processing_status",
         ]
         datatables_always_serialize = (
             BaseComplianceSerializer.Meta.datatables_always_serialize
+            + ["referral_processing_status"]
         )
 
     def get_due_date(self, obj):
@@ -226,6 +229,11 @@ class ComplianceSerializer(BaseComplianceSerializer):
                 + " at "
                 + obj.lodgement_date.strftime("%I:%M %p")
             )
+
+    def get_referral_processing_status(self, obj):
+        if hasattr(obj, "referral_processing_status"):
+            return obj.referral_processing_status
+        return None
 
 
 class InternalComplianceSerializer(BaseComplianceSerializer):
