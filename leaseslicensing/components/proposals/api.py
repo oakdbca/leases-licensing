@@ -267,12 +267,13 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
         if is_internal(request):
             ledger_lookup_fields += ["assigned_officer", "assigned_approver"]
 
-        queryset = self.apply_request(
-            request,
-            queryset,
-            view,
-            ledger_lookup_fields=ledger_lookup_fields,
-        )
+        # Todo: This is still causing anomolies when using annotation. Get Karsten to fix this.
+        # queryset = self.apply_request(
+        #     request,
+        #     queryset,
+        #     view,
+        #     ledger_lookup_fields=ledger_lookup_fields,
+        # )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -372,7 +373,8 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     referrals__in=Referral.objects.exclude(
                         processing_status=Referral.PROCESSING_STATUS_RECALLED
                     ).filter(referral=email_user_id_assigned)
-                )
+                ),
+                referrals__referral=email_user_id_assigned,
             ).annotate(referral_processing_status=F("referrals__processing_status"))
 
         qs = self.filter_queryset(qs)
