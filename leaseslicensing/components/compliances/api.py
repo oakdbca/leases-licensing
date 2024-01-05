@@ -110,7 +110,7 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             filter_approval_type = int(filter_approval_type)
             queryset = queryset.filter(approval__approval_type__id=filter_approval_type)
 
-        # Todo: This is causing anomolies when using annotation. Get Karsten to fix this.
+        # Todo: This is still causing anomolies when using annotation. Get Karsten to fix this.
         # queryset = self.apply_request(
         #     request, queryset, view, ledger_lookup_fields=["ind_applicant"]
         # )
@@ -167,14 +167,20 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             "compliances_referred_to_me", False
         )
         if compliances_referred_to_me:
-            logger.debug("compliances_referred_to_me")
-            qs = Compliance.objects.filter(
-                Q(
-                    referrals__in=ComplianceReferral.objects.exclude(
-                        processing_status=ComplianceReferral.PROCESSING_STATUS_RECALLED
-                    ).filter(referral=self.request.user.id)
+            ids = (
+                ComplianceReferral.objects.exclude(
+                    processing_status=ComplianceReferral.PROCESSING_STATUS_RECALLED
                 )
-            ).annotate(referral_processing_status=F("referrals__processing_status"))
+                .filter(referral=self.request.user.id)
+                .values_list("compliance_id", flat=True)
+            )
+            qs = (
+                Compliance.objects.filter(
+                    id__in=ids, referrals__referral=self.request.user.id
+                )
+                .order_by()
+                .annotate(referral_processing_status=F("referrals__processing_status"))
+            )
 
         qs = self.filter_queryset(qs)
 
@@ -184,7 +190,7 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             result_page, context={"request": request}, many=True
         )
         result = self.paginator.get_paginated_response(serializer.data)
-        logger.debug(result.__dict__)
+
         return result
 
     @list_route(
@@ -707,6 +713,13 @@ class ComplianceReferralViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def complete(self, request, *args, **kwargs):
         instance = self.get_object()
+        update_serializer = UpdateComplianceReferralSerializer(
+            instance, data=request.data
+        )
+        if not update_serializer.is_valid():
+            raise serializers.ValidationError(update_serializer.errors)
+        instance = update_serializer.save()
+        serializer = self.partial_update(request, *args, **kwargs)
         instance.complete(request)
         serializer = InternalComplianceSerializer(
             instance.compliance, context={"request": request}
