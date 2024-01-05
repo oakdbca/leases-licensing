@@ -2,6 +2,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.db import transaction
@@ -596,6 +597,15 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         else:
             serializer = ComplianceSerializer(instance, context={"request": request})
         return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=False,
+    )
+    def compliance_reminder_days_prior(self, request, *args, **kwargs):
+        return Response(settings.COMPLIANCES_DAYS_PRIOR_TO_SEND_REMINDER)
 
 
 class ComplianceAmendmentRequestViewSet(viewsets.ModelViewSet):

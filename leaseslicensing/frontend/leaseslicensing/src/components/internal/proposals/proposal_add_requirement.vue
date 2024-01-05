@@ -124,29 +124,10 @@
                                             type="date"
                                             class="form-control"
                                             required
-                                            @change="setReminderDate"
                                         />
                                         <div class="invalid-feedback">
                                             Please select a due date.
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="row mb-3">
-                                    <label
-                                        class="col-form-label col-sm-3"
-                                        for="reminder_date"
-                                        >Reminder Date</label
-                                    >
-                                    <div class="col-sm-9">
-                                        <input
-                                            id="reminder_date"
-                                            ref="reminder_date"
-                                            v-model="requirement.reminder_date"
-                                            type="date"
-                                            class="form-control"
-                                        />
                                     </div>
                                 </div>
                             </div>
@@ -240,6 +221,19 @@
                                     </div>
                                 </template>
                             </template>
+                            <div
+                                v-if="compliance_reminder_days_prior"
+                                class="row mb-3"
+                            >
+                                <BootstrapAlert
+                                    >A reminder will be sent to the
+                                    lease/licence holder
+                                    {{ compliance_reminder_days_prior }} days
+                                    prior to the due date and then once again if
+                                    the due date passes and the compliance has
+                                    still not been submitted.</BootstrapAlert
+                                >
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -282,7 +276,6 @@ export default {
             form: null,
             requirement: {
                 due_date: '',
-                reminder_date: '',
                 standard: true,
                 recurrence: false,
                 recurrence_pattern: '1',
@@ -303,6 +296,7 @@ export default {
                 keepInvalid: true,
                 allowInputToggle: true,
             },
+            compliance_reminder_days_prior: null,
         };
     },
     computed: {
@@ -318,6 +312,7 @@ export default {
     },
     mounted: function () {
         this.form = document.forms.requirementForm;
+        this.fetchComplianceReminderDaysPrior();
         this.$nextTick(() => {
             // edit existing requirement
             if (this.selectedRequirement && this.selectedRequirement.id) {
@@ -328,18 +323,12 @@ export default {
         });
     },
     methods: {
-        setReminderDate: function () {
-            if (this.requirement.due_date) {
-                this.requirement.reminder_date = this.requirement.due_date;
-            }
-        },
         ok: function () {
             this.sendData();
         },
         close: function () {
             this.requirement = {
                 due_date: '',
-                reminder_date: '',
                 standard: true,
                 recurrence: false,
                 recurrence_pattern: '1',
@@ -353,6 +342,16 @@ export default {
             if (response.ok) {
                 this.contact = await response.json();
                 this.isModalOpen = true;
+            } else {
+                console.error(response.statusText);
+            }
+        },
+        fetchComplianceReminderDaysPrior: async function () {
+            const response = await fetch(
+                api_endpoints.compliances + 'compliance_reminder_days_prior/'
+            );
+            if (response.ok) {
+                this.compliance_reminder_days_prior = await response.json();
             } else {
                 console.error(response.statusText);
             }

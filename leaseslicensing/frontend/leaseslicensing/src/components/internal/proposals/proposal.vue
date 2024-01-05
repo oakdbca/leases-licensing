@@ -1755,9 +1755,7 @@ export default {
             return (
                 this.proposal &&
                 this.proposal.requirements.filter(
-                    (condition) =>
-                        !condition.is_deleted &&
-                        (!condition.due_date || !condition.reminder_date)
+                    (condition) => !condition.is_deleted && !condition.due_date
                 )
             );
         },
@@ -2409,7 +2407,7 @@ export default {
             ) {
                 swal.fire({
                     title: 'Conditions Missing Dates',
-                    text: 'You must enter a due date and reminder date for each condition before proposing to approve.',
+                    text: 'You must enter a due date for each condition before proposing to approve.',
                     icon: 'warning',
                 });
                 return;

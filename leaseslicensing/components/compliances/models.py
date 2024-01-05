@@ -329,7 +329,6 @@ class Compliance(LicensingModelVersioned):
             send_reminder_email_notification(self)
             send_internal_reminder_email_notification(self)
             self.post_reminder_sent = True
-            self.reminder_sent = True
             self.save()
             ComplianceUserAction.log_action(
                 self,
@@ -347,7 +346,9 @@ class Compliance(LicensingModelVersioned):
         # (deals with Compliances created with the reminder period)
         elif (
             self.due_date >= today
-            and today >= self.due_date - datetime.timedelta(days=14)
+            and today
+            >= self.due_date
+            - datetime.timedelta(days=settings.COMPLIANCES_DAYS_PRIOR_TO_SEND_REMINDER)
             and self.reminder_sent is False
         ):
             if self.requirement.notification_only:
