@@ -72,7 +72,7 @@
                     v-model="invoicingDetailsComputed.base_fee_amount"
                     type="number"
                     min="0"
-                    step="100"
+                    step="1"
                     class="form-control"
                     required
                     @keyup="updatePreviewInvoices"
