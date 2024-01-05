@@ -2,10 +2,11 @@ import logging
 from copy import deepcopy
 from datetime import datetime
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from rest_framework import serializers, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -110,9 +111,10 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             filter_approval_type = int(filter_approval_type)
             queryset = queryset.filter(approval__approval_type__id=filter_approval_type)
 
-        queryset = self.apply_request(
-            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
-        )
+        # Todo: This is still causing anomolies when using annotation. Get Karsten to fix this.
+        # queryset = self.apply_request(
+        #     request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+        # )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -157,17 +159,40 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
                 approval__org_applicant__id=target_organisation_id
             )
 
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+
         compliances_referred_to_me = self.request.query_params.get(
             "compliances_referred_to_me", False
         )
         if compliances_referred_to_me:
-            ids = ComplianceReferral.objects.filter(
-                referral=self.request.user.id,
-                processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
-            ).values_list("compliance_id", flat=True)
-            return Compliance.objects.filter(id__in=ids)
+            ids = (
+                ComplianceReferral.objects.exclude(
+                    processing_status=ComplianceReferral.PROCESSING_STATUS_RECALLED
+                )
+                .filter(referral=self.request.user.id)
+                .values_list("compliance_id", flat=True)
+            )
+            qs = (
+                Compliance.objects.filter(
+                    id__in=ids, referrals__referral=self.request.user.id
+                )
+                .order_by()
+                .annotate(referral_processing_status=F("referrals__processing_status"))
+            )
 
-        return qs
+        qs = self.filter_queryset(qs)
+
+        self.paginator.page_size = qs.count()
+        result_page = self.paginator.paginate_queryset(qs, request)
+        serializer = ComplianceSerializer(
+            result_page, context={"request": request}, many=True
+        )
+        result = self.paginator.get_paginated_response(serializer.data)
+
+        return result
 
     @list_route(
         methods=[
@@ -573,6 +598,15 @@ class ComplianceViewSet(viewsets.ModelViewSet):
             serializer = ComplianceSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=False,
+    )
+    def compliance_reminder_days_prior(self, request, *args, **kwargs):
+        return Response(settings.COMPLIANCES_DAYS_PRIOR_TO_SEND_REMINDER)
+
 
 class ComplianceAmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = ComplianceAmendmentRequest.objects.all()
@@ -689,6 +723,13 @@ class ComplianceReferralViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def complete(self, request, *args, **kwargs):
         instance = self.get_object()
+        update_serializer = UpdateComplianceReferralSerializer(
+            instance, data=request.data
+        )
+        if not update_serializer.is_valid():
+            raise serializers.ValidationError(update_serializer.errors)
+        instance = update_serializer.save()
+        serializer = self.partial_update(request, *args, **kwargs)
         instance.complete(request)
         serializer = InternalComplianceSerializer(
             instance.compliance, context={"request": request}

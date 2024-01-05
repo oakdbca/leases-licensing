@@ -3882,6 +3882,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             "required": mandatory_documenttypes.filter(is_sign_off_sheet=True).exists(),
         }
         documents["other_documents"] = {"documents": []}
+
+        # Remove any documents of the wrong approval type to avoid confusion / bugs
+        self.lease_licence_approval_documents.exclude(
+            approval_type=approval_type
+        ).delete()
+
         for document in self.lease_licence_approval_documents.all():
             if document.approval_type_id != approval_type.id:
                 logger.warn(
@@ -3939,6 +3945,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
         self.save()
         logger.debug(f"Proposal: {self} invoicing reset")
+
+    def update_lease_licence_approval_documents_approval_type(self):
+        self.lease_licence_approval_documents
 
 
 class ProposalApplicant(BaseApplicant):

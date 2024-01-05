@@ -256,6 +256,9 @@
                                         :disabled="readonly"
                                         class="form-select"
                                         required
+                                        @change="
+                                            updateApprovalTypeForExisingDocuments
+                                        "
                                     >
                                         <option></option>
                                         <option
@@ -896,6 +899,7 @@ export default {
         },
         handleApprovalTypeChangeEvent(id) {
             this.updateSelectedApprovalType(id);
+            this.updateApprovalTypeForExisingDocuments();
             this.initSelectDocument();
         },
         updateSelectedApprovalType(id) {
@@ -910,6 +914,27 @@ export default {
             }
 
             this.selectedApprovalTypeId = id;
+        },
+        updateApprovalTypeForExisingDocuments: async function () {
+            // Convert existing documents to the new approval type in case the user had
+            // accidentally selected the wrong approval type. They can easily delete the documents
+            // if they want to replace them with different ones.
+            this.approval.approval_type = this.selectedApprovalTypeId;
+            const response = await fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.proposals,
+                    this.proposal_id +
+                        '/update_lease_licence_approval_documents_approval_type'
+                ),
+                {
+                    body: JSON.stringify(this.approval),
+                    method: 'POST',
+                }
+            );
+            if (!response.ok) {
+                this.issuingApproval = false;
+                this.errorString = await helpers.parseFetchError(response);
+            }
         },
         preview: function () {
             let vm = this;

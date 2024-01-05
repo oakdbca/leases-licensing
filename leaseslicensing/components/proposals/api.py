@@ -267,12 +267,13 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
         if is_internal(request):
             ledger_lookup_fields += ["assigned_officer", "assigned_approver"]
 
-        queryset = self.apply_request(
-            request,
-            queryset,
-            view,
-            ledger_lookup_fields=ledger_lookup_fields,
-        )
+        # Todo: This is still causing anomolies when using annotation. Get Karsten to fix this.
+        # queryset = self.apply_request(
+        #     request,
+        #     queryset,
+        #     view,
+        #     ledger_lookup_fields=ledger_lookup_fields,
+        # )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -325,6 +326,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                 self.request.query_params.get("email_user_id_assigned", "0")
             )
             if email_user_id_assigned:
+                logger.debug(f"email_user_id_assigned: {email_user_id_assigned}")
                 qs = Proposal.objects.filter(
                     Q(
                         referrals__in=Referral.objects.filter(
@@ -371,7 +373,8 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     referrals__in=Referral.objects.exclude(
                         processing_status=Referral.PROCESSING_STATUS_RECALLED
                     ).filter(referral=email_user_id_assigned)
-                )
+                ),
+                referrals__referral=email_user_id_assigned,
             ).annotate(referral_processing_status=F("referrals__processing_status"))
 
         qs = self.filter_queryset(qs)
@@ -1493,6 +1496,30 @@ class ProposalViewSet(UserActionLoggingViewset):
             serializer = ProposedApprovalSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance.proposed_approval(request, request.data)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
+
+    @basic_exception_handler
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    def update_lease_licence_approval_documents_approval_type(
+        self, request, *args, **kwargs
+    ):
+        """Used when the user changes the approval type on the proposed approval modal
+        so that any uploaded documents are associated with the correct approval type"""
+        instance = self.get_object()
+        approval_type = request.data.get("approval_type", None)
+        # Remove any previously uploaded licence documents
+        instance.lease_licence_approval_documents.exclude(
+            approval_type_id=approval_type
+        ).filter(approval_type_document_type__is_license_document=True).delete()
+        # Update the approval type for any remaining (non licence) documents
+        instance.lease_licence_approval_documents.update(approval_type_id=approval_type)
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)

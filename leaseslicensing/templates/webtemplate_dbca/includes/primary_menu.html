@@ -3,7 +3,6 @@
 {% is_internal as is_internal_login %}
 {% is_leaseslicensing_admin as is_leaseslicensing_admin_user %}
 {% can_show_tests as show_tests %}
-{% system_maintenance_due as system_maintenance_due %}
 {% system_name_short as short_name %}
 {% dept_name as department_name %}
 {% system_name as system_name %}
@@ -13,17 +12,21 @@
 {% is_approver as is_approver %}
 {% is_finance_officer as is_finance_officer %}
 {% is_organisation_access_officer as is_organisation_access_officer %}
+{% is_compliance_referee as is_compliance_referee %}
 {% build_tag as build_tag %}
 
 <ul class="nav navbar-expand-lg navbar-light align-items-center">
 {% if is_internal_login %}
-{% if is_assessor or is_finance %}
-<li class="nav-item"><a class="nav-link" href="/internal/approvals">Approvals</a></li>
-<li class="nav-item"><a class="nav-link" href="/internal/compliances">Compliances</a></li>
-{% endif %}
-{% if is_organisation_access_officer %}
-<li class="nav-item"><a class="nav-link" href="/internal/organisations/access">Organisation Access</a></li>
-{% endif %}
+    {% if is_assessor or is_finance %}
+    <li class="nav-item"><a class="nav-link" href="/internal/approvals">Approvals</a></li>
+    <li class="nav-item"><a class="nav-link" href="/internal/compliances">Compliances</a></li>
+    {% endif %}
+    {% if is_compliance_referee %}
+    <li class="nav-item"><a class="nav-link" href="/internal/compliances">Compliances</a></li>
+    {% endif %}
+    {% if is_organisation_access_officer %}
+    <li class="nav-item"><a class="nav-link" href="/internal/organisations/access">Organisation Access</a></li>
+    {% endif %}
     {% if is_assessor or is_finance %}
     <li class="nav-item"><a class="nav-link" href="/internal/invoices">Invoices</a></li>
     {% endif %}

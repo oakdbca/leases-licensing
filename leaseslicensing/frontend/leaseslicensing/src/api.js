@@ -16,7 +16,7 @@ module.exports = {
     compliance_assessments: '/api/compliance_assessments/',
     compliance_statuses_dict: '/api/compliance_statuses_dict',
     compliance_referrals: '/api/compliance_referrals/',
-    compliances_paginated_external: '/api/compliance_paginated/list_external/',
+    compliances_paginated: '/api/compliance_paginated/',
     compliances: '/api/compliances/',
     countries: '/api/countries',
     cpi_calculation_methods: '/api/cpi_calculation_methods/',

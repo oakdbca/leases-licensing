@@ -509,47 +509,45 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
         check_geometry(proposal)
 
 
+@transaction.atomic
 def save_referral_data(proposal, request):
-    with transaction.atomic():
-        proposal_data = (
-            request.data.get("proposal") if request.data.get("proposal") else {}
+    proposal_data = request.data.get("proposal") if request.data.get("proposal") else {}
+    if not proposal_data:
+        return
+
+    referral_text = request.data.get("referral_text", "")
+
+    for referral in proposal_data["referrals"]:
+        logger.info(f"Saving referral data for {referral}")
+        # Referee can only save changes to their own referral
+        if not referral["referral"] == request.user.id:
+            continue
+
+        referral = Referral(
+            pk=referral["id"],
+            proposal=proposal,
+            referral_text=referral_text,
+            comment_map=referral["comment_map"],
+            comment_proposal_details=referral["comment_proposal_details"],
+            comment_proposal_impact=referral["comment_proposal_impact"],
+            comment_gis_data=referral["comment_gis_data"],
+            comment_categorisation=referral["comment_categorisation"],
+            comment_deed_poll=referral["comment_deed_poll"],
+            comment_additional_documents=referral["comment_additional_documents"],
         )
-        if not proposal_data:
-            return
-
-        referral_text = request.data.get("referral_text", None)
-
-        for referral in proposal_data["referrals"]:
-            logger.info(f"Saving referral data for {referral}")
-            # Referee can only save changes to their own referral
-            if not referral["referral"] == request.user.id:
-                continue
-
-            referral = Referral(
-                pk=referral["id"],
-                proposal=proposal,
-                referral_text=referral_text,
-                comment_map=referral["comment_map"],
-                comment_proposal_details=referral["comment_proposal_details"],
-                comment_proposal_impact=referral["comment_proposal_impact"],
-                comment_gis_data=referral["comment_gis_data"],
-                comment_categorisation=referral["comment_categorisation"],
-                comment_deed_poll=referral["comment_deed_poll"],
-                comment_additional_documents=referral["comment_additional_documents"],
-            )
-            # Only allow updating of comment fields
-            referral.save(
-                update_fields=[
-                    "referral_text",
-                    "comment_map",
-                    "comment_proposal_details",
-                    "comment_proposal_impact",
-                    "comment_gis_data",
-                    "comment_categorisation",
-                    "comment_deed_poll",
-                    "comment_additional_documents",
-                ]
-            )
+        # Only allow updating of comment fields
+        referral.save(
+            update_fields=[
+                "referral_text",
+                "comment_map",
+                "comment_proposal_details",
+                "comment_proposal_impact",
+                "comment_gis_data",
+                "comment_categorisation",
+                "comment_deed_poll",
+                "comment_additional_documents",
+            ]
+        )
 
 
 @transaction.atomic

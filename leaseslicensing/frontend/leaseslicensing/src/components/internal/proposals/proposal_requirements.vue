@@ -12,7 +12,7 @@
                 icon="exclamation-triangle-fill"
                 type="warning"
             >
-                A due date and reminder date are required for every condition
+                A due date is required for every condition
             </BootstrapAlert>
             <form class="form-horizontal" action="index.html" method="post">
                 <div class="row">
@@ -240,9 +240,7 @@ export default {
         },
         conditionsMissingDates() {
             return this.proposal.requirements.filter(
-                (condition) =>
-                    !condition.is_deleted &&
-                    (!condition.due_date || !condition.reminder_date)
+                (condition) => !condition.is_deleted && !condition.due_date
             );
         },
     },

@@ -476,7 +476,7 @@ export default {
                 '&org_id=' +
                 vm.$route.params.org_id,
             compliances_url:
-                api_endpoints.compliances_paginated_external +
+                api_endpoints.compliances_paginated +
                 '&org_id=' +
                 vm.$route.params.org_id,
 

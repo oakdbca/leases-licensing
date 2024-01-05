@@ -232,6 +232,10 @@ PROTECTED_MEDIA_ROOT = env(
 )
 SECURE_FILE_API_BASE_PATH = "/api/main/secure_file/"
 SECURE_DOCUMENT_API_BASE_PATH = "/api/main/secure_document/"
+
+# This is needed so that the chmod is not called in django/core/files/storage.py
+# (_save method of FileSystemStorage class)
+# As it causes a permission exception when using azure network drives
 FILE_UPLOAD_PERMISSIONS = None
 
 BASE_URL = env("BASE_URL")
@@ -392,6 +396,10 @@ DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD = 30
 
 CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE = (30, 15)
 
+COMPLIANCES_DAYS_PRIOR_TO_SEND_REMINDER = env(
+    "COMPLIANCES_DAYS_PRIOR_TO_SEND_REMINDER", 14
+)
+
 template_title = "Leases and Licensing"
 template_group = "parkswildlife"
 
@@ -400,6 +408,7 @@ LEDGER_UI_ACCOUNTS_MANAGEMENT = [
     {"first_name": {"options": {"view": True, "edit": True}}},
     {"last_name": {"options": {"view": True, "edit": True}}},
     {"residential_address": {"options": {"view": True, "edit": True}}},
+    {"postal_same_as_residential": {"options": {"view": True, "edit": True}}},
     {"postal_address": {"options": {"view": True, "edit": True}}},
     {"phone_number": {"options": {"view": True, "edit": True}}},
     {"mobile_number": {"options": {"view": True, "edit": True}}},
