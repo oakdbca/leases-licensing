@@ -2603,8 +2603,8 @@ export default {
             )
                 .then(async (response) => {
                     if (!response.ok) {
-                        const text = await response.json();
-                        throw new Error(text);
+                        const data = await response.json();
+                        throw new Error(data.errors[0].detail);
                     } else {
                         return response.json();
                     }
