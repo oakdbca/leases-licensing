@@ -237,7 +237,7 @@
                                 :can-action="true"
                                 :referral_url="referralListURL"
                                 :api_endpoint="referrals_api_endpoint"
-                                @switchStatus="switchStatus"
+                                @switch-status="switchStatus"
                             />
                         </div>
                     </div>
@@ -1128,6 +1128,9 @@ export default {
                 })
                 .then(async (response) => {
                     vm.compliance = Object.assign({}, response); // 'with_referral'
+                    vm.$nextTick(() => {
+                        vm.initialisePopovers();
+                    });
                 })
                 .catch((error) => {
                     let errorText = '';
