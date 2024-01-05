@@ -1,5 +1,14 @@
 <template>
     <!-- <pre>{{ $filters.pretty(grossTurnoverPercentagesComputed) }}</pre> -->
+    <div class="row mb-3 pb-3 border-bottom">
+        <div class="col">
+            <BootstrapAlert v-if="editingFromProposalPage()" class="py-2 mb-0">
+                Gross turnover estimates for future years do not have to be
+                entered now however they must be entered by the first issue date
+                that relates to that financial year.
+            </BootstrapAlert>
+        </div>
+    </div>
     <div class="row mb-3">
         <div class="col">
             <template
