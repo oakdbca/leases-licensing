@@ -193,7 +193,19 @@ class DefaultDocument(Document):
         )
 
 
+class ShapefileDocumentQueryset(models.QuerySet):
+    """Using a custom manager to make sure shapfiles are removed when a bulk .delete is called
+    as having multiple files with the shapefile extensions in the same folder causes issues.
+    """
+
+    def delete(self):
+        for obj in self:
+            obj._file.delete()
+        super().delete()
+
+
 class ShapefileDocument(Document):
+    objects = ShapefileDocumentQueryset.as_manager()
     proposal = models.ForeignKey(
         "Proposal", related_name="shapefile_documents", on_delete=models.CASCADE
     )
@@ -211,6 +223,7 @@ class ShapefileDocument(Document):
 
     def delete(self):
         if self.can_delete:
+            self._file.delete()
             return super().delete()
         logger.info(
             "Cannot delete existing document object after Proposal has been submitted "
@@ -1754,105 +1767,99 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         # and when they intersect with DBCA legislated land or water polygons
 
         valid_geometry_saved = False
-        try:
-            # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
-            shp_file_qs = self.shapefile_documents.filter(
-                Q(name__endswith=".shp")
-                | Q(name__endswith=".shx")
-                | Q(name__endswith=".dbf")
-                | Q(name__endswith=".prj")
+
+        # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
+        shp_file_qs = self.shapefile_documents.filter(
+            Q(name__endswith=".shp")
+            | Q(name__endswith=".shx")
+            | Q(name__endswith=".dbf")
+            | Q(name__endswith=".prj")
+        )
+        # Validate shapefile and all the other related files are present
+        if not shp_file_qs:
+            raise ValidationError(
+                "Please attach at least a .shp, .shx, and .dbf file (the .prj file is optional but recommended)"
             )
-            # Validate shapefile and all the other related files are present
-            if not shp_file_qs:
-                raise ValidationError("Please upload a valid shapefile")
 
-            shp_files = shp_file_qs.filter(name__endswith=".shp").count()
-            shx_files = shp_file_qs.filter(name__endswith=".shx").count()
-            dbf_files = shp_file_qs.filter(name__endswith=".dbf").count()
+        shp_files = shp_file_qs.filter(name__endswith=".shp").count()
+        shx_files = shp_file_qs.filter(name__endswith=".shx").count()
+        dbf_files = shp_file_qs.filter(name__endswith=".dbf").count()
 
-            if shp_files != 1 or shx_files != 1 or dbf_files != 1:
-                raise ValidationError(
-                    "Please upload a valid shapefile with at least .shp, .shx, and .dbf extensions"
-                )
+        if shp_files != 1 or shx_files != 1 or dbf_files != 1:
+            raise ValidationError(
+                "Please upload a valid shapefile with at least .shp, .shx, and .dbf extensions"
+            )
 
-            # A list of all uploaded shapefiles
-            shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
-            shp_gdfs = []
+        # A list of all uploaded shapefiles
+        shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
+        shp_gdfs = []
 
-            for shp_file_obj in shp_file_objs:
-                gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
+        for shp_file_obj in shp_file_objs:
+            gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
 
-                # If no prj file assume WGS-84 datum
-                if not gdf.crs:
-                    gdf_transform = gdf.set_crs("epsg:4326", inplace=True)
-                else:
-                    gdf_transform = gdf.to_crs("epsg:4326")
+            # If no prj file assume WGS-84 datum
+            if not gdf.crs:
+                gdf_transform = gdf.set_crs("epsg:4326", inplace=True)
+            else:
+                gdf_transform = gdf.to_crs("epsg:4326")
 
-                geometries = gdf.geometry  # GeoSeries
+            geometries = gdf.geometry  # GeoSeries
 
-                # Only accept polygons
-                geom_type = geometries.geom_type.values[0]
-                if geom_type not in ("Polygon", "MultiPolygon"):
-                    raise ValidationError(f"Geometry of type {geom_type} not allowed")
+            # Only accept polygons
+            geom_type = geometries.geom_type.values[0]
+            if geom_type not in ("Polygon", "MultiPolygon"):
+                raise ValidationError(f"Geometry of type {geom_type} not allowed")
 
-                # Check for intersection with DBCA geometries
-                gdf_transform["valid"] = False
-                for geom in geometries:
-                    srid = SpatialReference(
-                        geometries.crs.srs
-                    ).srid  # spatial reference identifier
+            # Check for intersection with DBCA geometries
+            gdf_transform["valid"] = False
+            for geom in geometries:
+                srid = SpatialReference(
+                    geometries.crs.srs
+                ).srid  # spatial reference identifier
 
-                    polygon = GEOSGeometry(geom.wkt, srid=srid)
+                polygon = GEOSGeometry(geom.wkt, srid=srid)
 
-                    # Add the file name as identifier to the geojson for use in the frontend
-                    if "source_" not in gdf_transform:
-                        gdf_transform["source_"] = shp_file_obj.name
+                # Add the file name as identifier to the geojson for use in the frontend
+                if "source_" not in gdf_transform:
+                    gdf_transform["source_"] = shp_file_obj.name
 
-                    # Imported geometry is valid if it intersects with any one of the DBCA geometries
-                    if not polygon_intersects_with_layer(
-                        polygon, "public:dbca_legislated_lands_and_waters"
-                    ):
-                        raise ValidationError(
-                            "One or more polygons does not intersect with a relevant layer"
-                        )
-
-                    gdf_transform["valid"] = True
-
-                    ProposalGeometry.objects.create(
-                        proposal=self,
-                        polygon=polygon,
-                        intersects=True,
-                        drawn_by=request.user.id,
+                # Imported geometry is valid if it intersects with any one of the DBCA geometries
+                if not polygon_intersects_with_layer(
+                    polygon, "public:dbca_legislated_lands_and_waters"
+                ):
+                    raise ValidationError(
+                        "One or more polygons does not intersect with a relevant layer"
                     )
 
-                shp_gdfs.append(gdf_transform)
+                gdf_transform["valid"] = True
 
-                # Merge all GeoDataFrames into a single one
-                gdf_merged = gpd.GeoDataFrame(
-                    pd.concat(shp_gdfs).reset_index(drop=True)
+                ProposalGeometry.objects.create(
+                    proposal=self,
+                    polygon=polygon,
+                    intersects=True,
+                    drawn_by=request.user.id,
                 )
 
-                # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
-                shp_json = gdf_merged.to_json()
+            shp_gdfs.append(gdf_transform)
 
-                # Todo: maybe axe this at some point as we are converting the shapefile into a proposalgeometry
-                # which is more useful in this application. Why store it in two places?
-                if isinstance(shp_json, str):
-                    self.shapefile_json = json.loads(shp_json)
-                else:
-                    self.shapefile_json = shp_json
+            # Merge all GeoDataFrames into a single one
+            gdf_merged = gpd.GeoDataFrame(pd.concat(shp_gdfs).reset_index(drop=True))
 
-                self.save()
-                valid_geometry_saved = True
+            # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
+            shp_json = gdf_merged.to_json()
 
-            # Delete all shapefile documents so the user can upload another one if they wish.
-            self.shapefile_documents.all().delete()
+            # Todo: maybe axe this at some point as we are converting the shapefile into a proposalgeometry
+            # which is more useful in this application. Why store it in two places?
+            if isinstance(shp_json, str):
+                self.shapefile_json = json.loads(shp_json)
+            else:
+                self.shapefile_json = shp_json
 
-        except ValidationError:
-            raise
-        except Exception as e:
-            logger.exception(e)
-            raise ValidationError("Please upload a valid shapefile")
+            self.save()
+            valid_geometry_saved = True
+
+        # Delete all shapefile documents so the user can upload another one if they wish.
+        self.shapefile_documents.all().delete()
 
         return valid_geometry_saved
 
