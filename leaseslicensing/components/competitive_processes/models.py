@@ -331,7 +331,7 @@ class CompetitiveProcess(LicensingModelVersioned):
 
     def can_user_process(self, user):
         return (
-            self.status == CompetitiveProcess.STATUS_IN_PROGRESS
+            self.status != CompetitiveProcess.STATUS_DISCARDED
             and self.is_user_competitive_process_editor(user.id)
         )
 
