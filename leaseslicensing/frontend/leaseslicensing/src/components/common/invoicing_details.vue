@@ -148,8 +148,7 @@
                                 type="text"
                                 class="form-control"
                                 :readonly="
-                                    isMigrationProposal &&
-                                    custom_cpi_year.has_passed
+                                    customCPIYearReadonly(custom_cpi_year)
                                 "
                                 :required="
                                     !isMigrationProposal &&
@@ -169,8 +168,7 @@
                                 type="number"
                                 class="form-control"
                                 :readonly="
-                                    isMigrationProposal &&
-                                    custom_cpi_year.has_passed
+                                    customCPIYearReadonly(custom_cpi_year)
                                 "
                                 :required="
                                     !isMigrationProposal &&
@@ -569,6 +567,9 @@ export default {
             }
             return false;
         },
+        editingFromProposalPage: function () {
+            return this.context === 'Proposal';
+        },
         invoicingDetailsComputed: {
             get() {
                 return this.invoicingDetails;
@@ -833,6 +834,19 @@ export default {
                 periodStartDate = periodStartDate.add(1, 'year');
             }
             return rows;
+        },
+        customCPIYearReadonly: function (year) {
+            return (
+                // No need for back dated custom cpi year information for migrations
+                // as invoices are not generated for backdated periods
+                (this.isMigrationProposal && year.has_passed) ||
+                // When editing from the approval page and not a migration proposal and the year has passed
+                // In this case the custom cpi should have already been entered from the proposal page or
+                // by the finanace officer aftering getting reminders that an issue date was approaching
+                (!this.editingFromProposalPage &&
+                    !this.isMigrationProposal &&
+                    year.has_passed)
+            );
         },
         onChargeMethodChange: function (event) {
             this.$nextTick(() => {
