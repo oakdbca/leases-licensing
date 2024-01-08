@@ -153,15 +153,9 @@ export default {
                     button_title: 'Unlock',
                     function_when_clicked: vm.issueUnlock,
                     function_to_show_hide: () => {
-                        if (this.debug) {
-                            return true;
-                        }
                         return vm.user_is_eligible(this.action_roles('unlock'));
                     },
                     function_to_disable: () => {
-                        if (this.debug) {
-                            return false;
-                        }
                         // Disable Unlock button only on processing or discarded,
                         // but not on completed|declined
                         return this.processing || this.discarded;
@@ -177,15 +171,6 @@ export default {
                 constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID ==
                     this.competitiveProcess.processing_status_id
             );
-        },
-        proposal_form_url: function () {
-            return this.competitiveProcess
-                ? `/api/competitiveProcess/${this.competitiveProcess.id}/assessor_save.json`
-                : '';
-        },
-        canLimitedAction: function () {
-            // TOOD: refer to proposal_apiary.vue
-            return true;
         },
         debug: function () {
             return this.$route.query.debug && this.$route.query.debug == 'true'
@@ -231,9 +216,6 @@ export default {
             );
         },
     },
-    created: function () {
-        //this.fetchDeparmentUsers()
-    },
     mounted: function () {
         let vm = this;
         this.$nextTick(() => {
@@ -248,9 +230,9 @@ export default {
              */
 
             let status_id = this.competitiveProcess.status_id;
+
             if (status_id in status_roles) {
                 let eligible_roles = status_roles[status_id];
-
                 // Return true if the accessing user's roles are in the eligible roles
                 if (
                     eligible_roles.filter((role) =>
@@ -302,26 +284,6 @@ export default {
 
             return displayable_status_ids;
         },
-        absorb_type_difference: function (processing_status_id) {
-            let ret_value = '';
-
-            if (
-                Object.prototype.hasOwnProperty.call(processing_status_id, 'ID')
-            )
-                ret_value = processing_status_id.ID;
-            else if (
-                Object.prototype.hasOwnProperty.call(processing_status_id, 'id')
-            )
-                ret_value = processing_status_id.id;
-            else if (
-                Object.prototype.hasOwnProperty.call(processing_status_id, 'Id')
-            )
-                ret_value = processing_status_id.Id;
-            else ret_value = processing_status_id.toLowerCase();
-
-            return ret_value;
-        },
-        completeEditing: function () {},
         initialiseAssignedOfficerSelect: function (reinit = false) {
             let vm = this;
             if (reinit) {
