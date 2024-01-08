@@ -769,7 +769,7 @@ class InvoicingDetails(BaseModel):
             return math.floor(index / 12)
 
     def get_amount_by_repetition_type(self, amount):
-        # Modify the base fee based on the invoicing repetition type
+        # Modify the amount based on the invoicing repetition type
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
             amount = amount / 4
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
@@ -908,6 +908,9 @@ class InvoicingDetails(BaseModel):
                     if annual_increment_amount:
                         if annual_increment_amount.increment_amount:
                             increment_amount = annual_increment_amount.increment_amount
+                            increment_amount = self.get_amount_by_repetition_type(
+                                increment_amount
+                            )
                         base_fee_amount = base_fee_amount + increment_amount
                         suffix = ""
                 except IndexError:
