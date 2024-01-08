@@ -19,49 +19,65 @@
                 :center-of-screen="false"
             />
         </div>
-
-        <table v-else class="table table-sm table-striped text-left">
-            <thead>
-                <tr>
-                    <th class="text-left">Number</th>
-                    <th class="text-left">Issue Date</th>
-                    <th class="text-left">Time Period</th>
-                    <th class="text-left">Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                <template
-                    v-for="invoice in previewInvoices"
-                    :key="invoice.number"
-                >
-                    <tr v-if="!invoice.hide">
-                        <td>{{ invoice.number }}</td>
-                        <td>{{ invoice.issue_date }}</td>
-                        <td>{{ invoice.time_period }}</td>
-                        <td>
-                            {{ invoice.amount_object.prefix
-                            }}<span
-                                v-if="invoice.amount_object.amount != null"
-                                >{{
-                                    currency(invoice.amount_object.amount)
-                                }}</span
-                            >
-                            {{ invoice.amount_object.suffix }}
-                        </td>
+        <template v-if="previewInvoices && previewInvoices.length">
+            <table class="table table-sm table-striped text-left">
+                <thead>
+                    <tr>
+                        <th class="text-left">Number</th>
+                        <th class="text-left">Issue Date</th>
+                        <th class="text-left">Time Period</th>
+                        <th class="text-left">Amount</th>
                     </tr>
-                </template>
-                <tr v-if="showTotal">
-                    <td colspan="3" class="text-end fw-bold pt-2">
-                        {{
-                            pastInvoiceCount > 0 ? 'Remaining Balance' : 'Total'
-                        }}
-                    </td>
-                    <td>
-                        {{ totalAmount }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <template
+                        v-if="previewInvoices && previewInvoices.length > 0"
+                    >
+                        <template
+                            v-for="invoice in previewInvoices"
+                            :key="invoice.number"
+                        >
+                            <tr v-if="!invoice.hide">
+                                <td>{{ invoice.number }}</td>
+                                <td>{{ invoice.issue_date }}</td>
+                                <td>{{ invoice.time_period }}</td>
+                                <td>
+                                    {{ invoice.amount_object.prefix
+                                    }}<span
+                                        v-if="
+                                            invoice.amount_object.amount != null
+                                        "
+                                        >{{
+                                            currency(
+                                                invoice.amount_object.amount
+                                            )
+                                        }}</span
+                                    >
+                                    {{ invoice.amount_object.suffix }}
+                                </td>
+                            </tr>
+                        </template>
+                        <tr v-if="showTotal">
+                            <td colspan="3" class="text-end fw-bold pt-2">
+                                {{
+                                    pastInvoiceCount > 0
+                                        ? 'Remaining Balance'
+                                        : 'Total'
+                                }}
+                            </td>
+                            <td>
+                                {{ totalAmount }}
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </template>
+        <template v-else>
+            <div class="alert alert-secondary" role="alert">
+                There are no future invoices scheduled for this lease/license
+            </div>
+        </template>
     </div>
 </template>
 
