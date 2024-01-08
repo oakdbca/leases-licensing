@@ -30,7 +30,7 @@ class Command(BaseCommand):
         updates = []
         today = timezone.localtime(timezone.now()).date()
         logger.info(f"Running command {__name__}")
-        for a in Approval.objects.filter(status=Approval.APPROVAL_STATUS_CURRENT):
+        for a in Approval.objects.filter(status__in=Approval.CURRENT_APPROVAL_STATUSES):
             if a.suspension_details and a.set_to_suspend:
                 from_date = datetime.datetime.strptime(
                     a.suspension_details["from_date"], "%d/%m/%Y"

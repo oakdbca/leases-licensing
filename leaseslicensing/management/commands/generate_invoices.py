@@ -39,16 +39,6 @@ class Command(BaseCommand):
 
         testing = options["test"]
 
-        current_approval_statuses = [
-            Approval.APPROVAL_STATUS_CURRENT,
-            Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
-            Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL,
-        ]
-
-        approved_proposal_statuses = [
-            Proposal.PROCESSING_STATUS_APPROVED,
-        ]
-
         today = timezone.localtime(timezone.now()).date()
         if options["test_date"]:
             logger.info(f"Using test date {options['test_date']} instead of today")
@@ -60,12 +50,11 @@ class Command(BaseCommand):
                 Q(notification_email_sent=False)
                 & Q(attempts_to_send_notification_email__lte=4)
             ),
-            invoicing_details__proposal__approval__status__in=current_approval_statuses,
-            invoicing_details__proposal__processing_status__in=approved_proposal_statuses,
+            invoicing_details__proposal__approval__status__in=Approval.CURRENT_APPROVAL_STATUSES,
+            invoicing_details__proposal__processing_status=Proposal.PROCESSING_STATUS_APPROVED,
             date_to_generate__lte=today,
         )
 
-        # logger.debug(f"{scheduled_invoices.query}")
         logger.info(
             f"Found {scheduled_invoices.count()} scheduled invoices that need generation and or notification on {today}"
         )
