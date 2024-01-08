@@ -3,9 +3,11 @@ import copy
 import datetime
 import json
 import logging
+import os
 import subprocess
 from copy import deepcopy
 from decimal import Decimal
+from zipfile import ZipFile
 
 import geopandas as gpd
 import pandas as pd
@@ -1760,7 +1762,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def log_user_action(self, action, request):
         return ProposalUserAction.log_action(self, action, request.user.id)
 
-    # From DAS
     def validate_map_files(self, request):
         # Validates shapefiles uploaded with the proposal.
         # Shapefiles are valid when the shp, shx, and dbf extensions are provided
@@ -1778,7 +1779,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         # Validate shapefile and all the other related files are present
         if not shp_file_qs:
             raise ValidationError(
-                "Please attach at least a .shp, .shx, and .dbf file (the .prj file is optional but recommended)"
+                "You can only attach files with the following extensions: .shp, .shx, and .dbf"
             )
 
         shp_files = shp_file_qs.filter(name__endswith=".shp").count()
@@ -1787,8 +1788,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         if shp_files != 1 or shx_files != 1 or dbf_files != 1:
             raise ValidationError(
-                "Please upload a valid shapefile with at least .shp, .shx, and .dbf extensions"
+                "Please attach at least a .shp, .shx, and .dbf file (the .prj file is optional but recommended)"
             )
+
+        # Add the shapefiles to a zip file for archiving purposes
+        # (as they are deleted after being converted to proposal geometry)
+        shapefile_archive_name = (
+            os.path.splitext(self.shapefile_documents.first().path)[0]
+            + "-"
+            + timezone.now().strftime("%Y%m%d%H%M%S")
+            + ".zip"
+        )
+        shapefile_archive = ZipFile(shapefile_archive_name, "w")
+        for shp_file_obj in shp_file_qs:
+            shapefile_archive.write(shp_file_obj.path, shp_file_obj.name)
+        shapefile_archive.close()
 
         # A list of all uploaded shapefiles
         shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
