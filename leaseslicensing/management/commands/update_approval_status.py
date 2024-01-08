@@ -46,14 +46,14 @@ class Command(BaseCommand):
                         ApprovalUserAction.log_action(
                             a,
                             ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(a.id),
-                            user,
+                            user.id,
                         )
                         ProposalUserAction.log_action(
                             proposal,
                             ProposalUserAction.ACTION_SUSPEND_APPROVAL.format(
                                 proposal.id
                             ),
-                            user,
+                            user.id,
                         )
                         logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(suspended=a.lodgement_number))
@@ -75,14 +75,14 @@ class Command(BaseCommand):
                         ApprovalUserAction.log_action(
                             a,
                             ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(a.id),
-                            user,
+                            user.id,
                         )
                         ProposalUserAction.log_action(
                             proposal,
                             ProposalUserAction.ACTION_CANCEL_APPROVAL.format(
                                 proposal.id
                             ),
-                            user,
+                            user.id,
                         )
                         logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(cancelled=a.lodgement_number))
@@ -108,14 +108,14 @@ class Command(BaseCommand):
                         ApprovalUserAction.log_action(
                             a,
                             ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(a.id),
-                            user,
+                            user.id,
                         )
                         ProposalUserAction.log_action(
                             proposal,
                             ProposalUserAction.ACTION_SURRENDER_APPROVAL.format(
                                 proposal.id
                             ),
-                            user,
+                            user.id,
                         )
                         logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(surrender=a.lodgement_number))
@@ -140,14 +140,14 @@ class Command(BaseCommand):
                         ApprovalUserAction.log_action(
                             a,
                             ApprovalUserAction.ACTION_REINSTATE_APPROVAL.format(a.id),
-                            user,
+                            user.id,
                         )
                         ProposalUserAction.log_action(
                             proposal,
                             ProposalUserAction.ACTION_REINSTATE_APPROVAL.format(
                                 proposal.id
                             ),
-                            user,
+                            user.id,
                         )
                         logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(current=a.lodgement_number))
@@ -169,14 +169,14 @@ class Command(BaseCommand):
                         ApprovalUserAction.log_action(
                             a,
                             ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(a.id),
-                            user,
+                            user.id,
                         )
                         ProposalUserAction.log_action(
                             proposal,
                             ProposalUserAction.ACTION_CANCEL_APPROVAL.format(
                                 proposal.id
                             ),
-                            user,
+                            user.id,
                         )
                         logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(cancelled=a.lodgement_number))
@@ -202,14 +202,14 @@ class Command(BaseCommand):
                         ApprovalUserAction.log_action(
                             a,
                             ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(a.id),
-                            user,
+                            user.id,
                         )
                         ProposalUserAction.log_action(
                             proposal,
                             ProposalUserAction.ACTION_SURRENDER_APPROVAL.format(
                                 proposal.id
                             ),
-                            user,
+                            user.id,
                         )
                         logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(surrendered=a.lodgement_number))
