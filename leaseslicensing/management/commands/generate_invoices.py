@@ -54,9 +54,9 @@ class Command(BaseCommand):
             invoicing_details__proposal__processing_status=Proposal.PROCESSING_STATUS_APPROVED,
             date_to_generate__lte=today,
         )
-
+        scheduled_invoice_count = scheduled_invoices.count()
         logger.info(
-            f"Found {scheduled_invoices.count()} scheduled invoices that need generation and or notification on {today}"
+            f"Found {scheduled_invoice_count} scheduled invoices that need generation and or notification on {today}"
         )
 
         invoices_generated = []
@@ -96,7 +96,8 @@ class Command(BaseCommand):
 
                 scheduled_invoice.save()
 
-        logger.info(f"Generated the following invoices {invoices_generated}")
+        if scheduled_invoice_count > 0:
+            logger.info(f"Generated the following invoices {invoices_generated}")
         logger.info(f"Finished running command {__name__}")
 
     def generate_invoice(self, scheduled_invoice, invoices_generated, test=False):
@@ -107,9 +108,11 @@ class Command(BaseCommand):
             scheduled_invoice.date_to_generate
         )
         if not preview_invoice:
-            raise TypeError(
-                f"preview_invoice_by_date returned None for {scheduled_invoice.date_to_generate}"
+            logger.warning(
+                f"preview_invoice_by_date returned None for {scheduled_invoice.date_to_generate} "
+                f"(Approval: {approval.lodgement_number}, Scheduled Invoice: {scheduled_invoice.id})"
             )
+            return
 
         amount = preview_invoice["amount_object"]["amount"]
 
