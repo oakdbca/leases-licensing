@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -35,7 +36,7 @@ class Command(BaseCommand):
                     err_msg = "Error updating Approval {} status".format(
                         a.lodgement_number
                     )
-                    logger.error(f"{err_msg}\n{str(e)}")
+                    logger.error(f"{err_msg}\n{e}\n{traceback.format_exc()}")
                     errors.append(err_msg)
 
         cmd_name = __name__.split(".")[-1].replace("_", " ").upper()
