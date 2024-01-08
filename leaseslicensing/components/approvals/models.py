@@ -745,7 +745,7 @@ class Approval(LicensingModelVersioned):
         self.save()
 
     def log_user_action(self, action, request):
-        return ApprovalUserAction.log_action(self, action, request.user)
+        return ApprovalUserAction.log_action(self, action, request.user.id)
 
     @transaction.atomic
     def expire_approval(self, user):
@@ -1337,7 +1337,7 @@ class ApprovalUserAction(UserAction):
 
     @classmethod
     def log_action(cls, approval, action, user):
-        return cls.objects.create(approval=approval, who=user.id, what=str(action))
+        return cls.objects.create(approval=approval, who=user, what=str(action))
 
     approval = models.ForeignKey(
         Approval, related_name="action_logs", on_delete=models.CASCADE
