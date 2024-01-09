@@ -814,11 +814,21 @@ class InvoicingDetails(BaseModel):
 
         base_fee_amount = self.base_fee_amount.quantize(Decimal("0.01"))
 
-        # Ignore extra day in leap year so base fee is consistent
-        if days == 366:
-            days = 365
+        period_contains_leap_year_day = utils.period_contains_leap_year_day(
+            datetime.strptime(start_date, "%Y-%m-%d").date(),
+            datetime.strptime(end_date, "%Y-%m-%d").date(),
+        )
 
-        base_fee_amount = self.get_amount_by_repetition_type(base_fee_amount)
+        # Ignore extra day in leap year so base fee is consistent
+        if period_contains_leap_year_day:
+            logger.debug(
+                f"Ignoring extra day in leap year for period starting: {start_date} and ending: {end_date}"
+            )
+            days -= 1
+
+        base_fee_amount = days * (
+            base_fee_amount / 365
+        )  # self.get_amount_by_repetition_type(base_fee_amount)
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -882,6 +892,13 @@ class InvoicingDetails(BaseModel):
                     base_fee_amount = base_fee_amount * (1 + percentage / 100)
                     suffix = ""
                 except IndexError:
+                    if (
+                        not self.invoicing_repetition_type.key
+                        == settings.REPETITION_TYPE_ANNUALLY
+                    ):
+                        # There can be a situation when an approval that lasts say 5 years for example
+                        # When converted to quarters or months results in a year_sequence_index that is out of range
+                        suffix = ""
                     logger.warning(
                         f"Invoicing Details: {self.id} - No annual increment percentage for index "
                         f"{index}. Using base fee amount."
@@ -914,6 +931,13 @@ class InvoicingDetails(BaseModel):
                         base_fee_amount = base_fee_amount + increment_amount
                         suffix = ""
                 except IndexError:
+                    if (
+                        not self.invoicing_repetition_type.key
+                        == settings.REPETITION_TYPE_ANNUALLY
+                    ):
+                        # There can be a situation when an approval that lasts say 5 years for example
+                        # When converted to quarters or months results in a year_sequence_index that is out of range
+                        suffix = ""
                     logger.warning(
                         f"Invoicing Details: {self.id} - No annual increment amount for index "
                         f"{index}. Using base fee amount."
