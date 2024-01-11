@@ -1207,6 +1207,30 @@ class InvoicingDetails(BaseModel):
 
         gross_turnover_percentages.update(locked=True)
 
+    def turnover_entry_reminder_required(self, days_prior):
+        if (
+            not self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            return False
+        if not self.has_future_invoicing_periods:
+            return False
+
+        if not self.gross_turnover_percentages.filter(
+            estimated_gross_turnover__isnull=True, gross_turnover__isnull=True
+        ).exists():
+            return False
+
+        potential_issue_date = timezone.now().date() + relativedelta(days=days_prior)
+
+        for invoice in self.preview_invoices:
+            if not invoice["amount_object"]["amount"] is None:
+                continue
+
+            issue_date = datetime.strptime(invoice["issue_date"], "%d/%m/%Y").date()
+            if issue_date == potential_issue_date:
+                return True
+
 
 class ScheduledInvoice(BaseModel):
     """
