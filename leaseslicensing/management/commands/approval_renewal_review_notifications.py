@@ -36,7 +36,7 @@ class Command(BaseCommand):
         }
         logger.info(f"Running command {__name__}")
         approvals = Approval.objects.filter(
-            Q(status=Approval.APPROVAL_STATUS_CURRENT)
+            Q(status__in=Approval.CURRENT_APPROVAL_STATUSES)
             | Q(status=Approval.APPROVAL_STATUS_SUSPENDED)
         ).filter(**renewal_conditions)
 
