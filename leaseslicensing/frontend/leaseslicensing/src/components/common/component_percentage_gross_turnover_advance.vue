@@ -267,8 +267,12 @@ export default {
             console.log('grossAnnualTurnoverEstimateChanged', event, year);
         },
         grossAnnualTurnoverChanged: function (event, year, index) {
-            // Todo populate the next years estimate with this years actual
-            // If there is a next year and it hasn't passed then populate it with this years actual
+            if (!event.target.value) {
+                year.gross_turnover = null;
+                year.discrepency = null;
+                year.discrepency_invoice_amount = null;
+                return;
+            }
             if (
                 this.grossTurnoverPercentagesComputed[index + 1] &&
                 !this.financialYearHasPassed(
