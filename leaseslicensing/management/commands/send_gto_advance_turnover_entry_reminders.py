@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from leaseslicensing.components.approvals.email import (
-    send_approval_crown_land_rent_review_email_notification,
+    send_approval_gto_advance_turnover_entry_reminder_email_notification,
 )
 from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.proposals.models import Proposal
@@ -31,22 +31,19 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         charge_method = "current_proposal__invoicing_details__charge_method__key"
         filters = {
-            "status": Approval.APPROVAL_STATUS_CURRENT,
+            "status__in": Approval.CURRENT_APPROVAL_STATUSES,
             "current_proposal__processing_status": Proposal.PROCESSING_STATUS_APPROVED,
             charge_method: settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
         }
+        reminders_sent = []
         approvals = Approval.objects.filter(**filters)
         for approval in approvals:
-            logger.info(f"Checking approval: {approval}")
-            months_due_in = None
-
             for (
                 days_prior
             ) in settings.PERCENTAGE_OF_GROSS_TURNOVER_REMINDERS_DAYS_PRIOR:
-                if approval.turnover_entry_reminder_required(days_prior=days_prior):
-                    days_prior = days_prior
-
-                if months_due_in is not None:
+                if approval.invoicing_details.turnover_entry_reminder_required(
+                    days_prior=days_prior
+                ):
                     if options["test"]:
                         logger.info(
                             f"Test: Would have turnover entry reminder for approval: {approval}"
@@ -57,11 +54,19 @@ class Command(BaseCommand):
                         f"Sending turnover entry reminder for approval: {approval}"
                     )
                     try:
-                        send_approval_crown_land_rent_review_email_notification(
+                        send_approval_gto_advance_turnover_entry_reminder_email_notification(
                             approval, days_prior
                         )
+                        reminders_sent.append(approval.lodgement_number)
                     except Exception as e:
                         logger.error(
                             f"Error sending turnover entry reminder for approval: {approval}: {e}"
                         )
                         continue
+
+        if len(reminders_sent) > 0:
+            logger.info(
+                f"Turnover entry reminders sent for the following approvals: {reminders_sent}"
+            )
+        else:
+            logger.info("No turnover entry reminders were required today.")
