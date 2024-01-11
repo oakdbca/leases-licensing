@@ -3652,7 +3652,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         ):
             # Generate a single once off charge invoice
             invoice_amount = invoicing_details.once_off_charge_amount
-            if not invoice_amount or invoice_amount <= Decimal("0.00"):
+            if invoice_amount is None or invoice_amount <= Decimal("0.00"):
                 raise serializers.ValidationError(
                     _(f"Invalid invoice amount: {invoice_amount}", code="invalid")
                 )
