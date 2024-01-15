@@ -9,7 +9,7 @@
     - Convert it to a digital format &#40;i.e. pdf&#41;
     - Upload that invoice file to the invoice record
     - Enter the oracle invoice number on the invoice record
-    - You will be prompted to confirm sending the request for payment to the proponent
+    - You will be prompted to confirm sending the request for payment to the lease/licence holder
 
     View Invoice Records:
 

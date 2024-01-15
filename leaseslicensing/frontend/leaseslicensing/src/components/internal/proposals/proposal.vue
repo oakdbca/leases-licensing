@@ -1816,7 +1816,7 @@ export default {
                         title: 'Confirm Once Off Invoice',
                         text: 'You have selected to invoice as a once off charge, \
                         this will create a new invoice record. An oracle invoice must \
-                        be attached to the new invoice record before the system will send a payment request to the proponent.',
+                        be attached to the new invoice record before the system will send a payment request to the lease/licence holder.',
                         icon: 'info',
                         showCancelButton: true,
                         buttonsStyling: false,

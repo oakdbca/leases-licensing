@@ -281,7 +281,7 @@ export default {
         confirmUpload: function () {
             Swal.fire({
                 title: 'Confirm Ad Hoc Invoice Record Generation',
-                text: `You are about to generate an invoice record with the details entered. A payment request will be sent to the proponent immediately.`,
+                text: `You are about to generate an invoice record with the details entered. A payment request will be sent to the lease/licence holder immediately.`,
                 icon: 'warning',
                 showCancelButton: true,
                 reverseButtons: true,

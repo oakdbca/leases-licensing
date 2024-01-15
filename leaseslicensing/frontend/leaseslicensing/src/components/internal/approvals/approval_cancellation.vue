@@ -195,7 +195,7 @@ export default {
                     vm.close();
                     Swal.fire({
                         title: 'Cancelled',
-                        text: 'An email has been sent to the proponent regarding the cancellation of this approval',
+                        text: 'An email has been sent to the lease/licence holder regarding the cancellation of this approval',
                         icon: 'success',
                         showCancelButton: false,
                         confirmButtonText: 'Ok',
