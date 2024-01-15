@@ -1334,10 +1334,10 @@ class PercentageOfGrossTurnover(BaseModel):
         max_digits=4, decimal_places=1, default="0.0", null=True, blank=True
     )
     estimated_gross_turnover = models.DecimalField(
-        null=True, blank=True, max_digits=14, decimal_places=2
+        null=True, blank=True, max_digits=15, decimal_places=2
     )
     gross_turnover = models.DecimalField(
-        null=True, blank=True, max_digits=14, decimal_places=2
+        null=True, blank=True, max_digits=15, decimal_places=2
     )
     invoicing_details = models.ForeignKey(
         InvoicingDetails,
@@ -1431,7 +1431,7 @@ class FinancialQuarter(BaseModel):
         null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(4)]
     )
     gross_turnover = models.DecimalField(
-        null=True, blank=True, max_digits=10, decimal_places=2
+        null=True, blank=True, max_digits=15, decimal_places=2
     )
     locked = models.BooleanField(default=False)
 
@@ -1466,7 +1466,7 @@ class FinancialMonth(BaseModel):
         validators=[MinValueValidator(1950), MaxValueValidator(9999)],
     )
     gross_turnover = models.DecimalField(
-        null=True, blank=True, max_digits=10, decimal_places=2
+        null=True, blank=True, max_digits=15, decimal_places=2
     )
     locked = models.BooleanField(default=False)
 
@@ -1698,10 +1698,18 @@ class InvoiceTransaction(RevisionedMixin, models.Model):
         blank=False,
     )
     credit = models.DecimalField(
-        max_digits=9, decimal_places=2, blank=False, null=False, default=Decimal("0.00")
+        max_digits=12,
+        decimal_places=2,
+        blank=False,
+        null=False,
+        default=Decimal("0.00"),
     )
     debit = models.DecimalField(
-        max_digits=9, decimal_places=2, blank=False, null=False, default=Decimal("0.00")
+        max_digits=12,
+        decimal_places=2,
+        blank=False,
+        null=False,
+        default=Decimal("0.00"),
     )
     datetime_created = models.DateTimeField(auto_now_add=True)
     datetime_updated = models.DateTimeField(auto_now=True)

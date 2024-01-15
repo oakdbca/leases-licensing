@@ -138,7 +138,7 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
     is_referee = serializers.SerializerMethodField(read_only=True)
     gross_turnover_required = serializers.BooleanField(read_only=True)
     gross_turnover = serializers.DecimalField(
-        allow_null=True, max_digits=8, decimal_places=2
+        allow_null=True, max_digits=15, decimal_places=2
     )
 
     class Meta:

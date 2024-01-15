@@ -121,7 +121,7 @@ class Compliance(LicensingModelVersioned):
     reminder_sent = models.BooleanField(default=False)
     post_reminder_sent = models.BooleanField(default=False)
     gross_turnover = models.DecimalField(
-        max_digits=12, decimal_places=2, blank=True, null=True
+        max_digits=15, decimal_places=2, blank=True, null=True
     )
 
     class Meta:

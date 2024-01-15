@@ -124,13 +124,13 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
     discrepency = serializers.DecimalField(
         read_only=True,
         allow_null=True,
-        max_digits=9,
+        max_digits=15,
         decimal_places=2,
     )
     discrepency_invoice_amount = serializers.DecimalField(
         read_only=True,
         allow_null=True,
-        max_digits=9,
+        max_digits=15,
         decimal_places=2,
     )
     discrepency_invoice_type = serializers.CharField(read_only=True)
@@ -644,7 +644,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     transaction_count = serializers.IntegerField(
         source="transactions.count", read_only=True
     )
-    balance = serializers.DecimalField(max_digits=9, decimal_places=2, read_only=True)
+    balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
         model = Invoice
@@ -715,7 +715,7 @@ class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
 
 class InvoiceTransactionSerializer(serializers.ModelSerializer):
     cumulative_balance = serializers.DecimalField(
-        read_only=True, max_digits=9, decimal_places=2
+        read_only=True, max_digits=12, decimal_places=2
     )
 
     class Meta:
