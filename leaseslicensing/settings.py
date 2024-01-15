@@ -47,6 +47,7 @@ INSTALLED_APPS += [
     "reversion_compare",
     "webtemplate_dbca",
     "ledger_api_client",
+    "appmonitor_client",
     "leaseslicensing",
     "leaseslicensing.components.main",
     "leaseslicensing.components.organisations",
@@ -225,7 +226,7 @@ LEDGER_DEFAULT_LINE_STATUS = 1
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
 
-CRON_CLASSES = []
+CRON_CLASSES = ["appmonitor_client.cron.CronJobAppMonitorClient"]
 
 PROTECTED_MEDIA_ROOT = env(
     "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")
