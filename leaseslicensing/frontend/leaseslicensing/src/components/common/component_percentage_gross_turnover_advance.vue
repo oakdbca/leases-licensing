@@ -66,6 +66,7 @@
                                         v-model="year.estimated_gross_turnover"
                                         type="number"
                                         class="form-control"
+                                        max="1000000000000"
                                         :readonly="year.estimate_locked"
                                         :required="
                                             (editingFromProposalPage() &&
@@ -104,6 +105,7 @@
                                         v-model="year.gross_turnover"
                                         type="number"
                                         class="form-control"
+                                        max="1000000000000"
                                         :readonly="
                                             !financialYearHasPassed(
                                                 year.financial_year

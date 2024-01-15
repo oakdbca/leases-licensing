@@ -60,6 +60,7 @@
                                         v-model="year.gross_turnover"
                                         type="number"
                                         class="form-control"
+                                        max="1000000000000"
                                         :disabled="
                                             year.locked ||
                                             !financialYearHasPassed(
