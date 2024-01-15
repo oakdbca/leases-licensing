@@ -18,6 +18,7 @@ from leaseslicensing import helpers
 from leaseslicensing.components.invoicing import utils
 from leaseslicensing.components.invoicing.email import (
     send_new_invoice_raised_internal_notification,
+    send_new_invoices_raised_internal_notification,
 )
 from leaseslicensing.components.main.models import (
     LicensingModel,
@@ -614,22 +615,20 @@ class InvoicingDetails(BaseModel):
 
         gst_free = self.approval.approval_type.gst_free
 
-        for invoice_record in immediate_invoices:
+        generated_invoices = []
+
+        for immediate_invoice in immediate_invoices:
             invoice = Invoice.objects.create(
                 approval=self.approval,
-                amount=invoice_record["amount_object"]["amount"],
+                amount=immediate_invoice["amount_object"]["amount"],
                 gst_free=gst_free,
                 status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
             )
-
+            generated_invoices.append(invoice)
             logger.info(f"Immediate invoice created: {invoice}")
 
-            # send to the finance group so they can take action
-            # Todo: create a version of this email function that takes a list of invoices
-            # and just sends one email with the list of invoices as the request is blocked
-            # and it can take quite some time to send all the emails in the case of back dated
-            # leases / licences.
-            send_new_invoice_raised_internal_notification(invoice)
+        # send to the finance group so they can take action
+        send_new_invoices_raised_internal_notification(generated_invoices)
 
     def generate_immediate_invoices_gross_turnover_advance(self):
         """Select any annual gross turnover estimate amounts that are not locked
@@ -648,22 +647,20 @@ class InvoicingDetails(BaseModel):
 
         gst_free = self.approval.approval_type.gst_free
 
-        for invoice_record in immediate_invoices:
+        generated_invoices = []
+
+        for immediate_invoice in immediate_invoices:
             invoice = Invoice.objects.create(
                 approval=self.approval,
-                amount=invoice_record["amount_object"]["amount"],
+                amount=immediate_invoice["amount_object"]["amount"],
                 gst_free=gst_free,
                 status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
             )
-
+            generated_invoices.append(invoice)
             logger.info(f"Immediate invoice created: {invoice}")
 
-            # send to the finance group so they can take action
-            # Todo: create a version of this email function that takes a list of invoices
-            # and just sends one email with the list of invoices as the request is blocked
-            # and it can take quite some time to send all the emails in the case of back dated
-            # leases / licences.
-            send_new_invoice_raised_internal_notification(invoice)
+        # send to the finance group so they can take action
+        send_new_invoices_raised_internal_notification(generated_invoices)
 
         # Lock the gross turnover estimates so they are not processed again
         self.gross_turnover_percentages.filter(
