@@ -77,15 +77,17 @@
                                             )
                                         "
                                         @change="
-                                            $emit(
-                                                'onChangeGrossTurnoverEstimate',
-                                                year.estimated_gross_turnover
+                                            grossAnnualTurnoverEstimateChanged(
+                                                $event,
+                                                year,
+                                                index
                                             )
                                         "
                                         @keyup="
-                                            $emit(
-                                                'onChangeGrossTurnoverEstimate',
-                                                year.estimated_gross_turnover
+                                            grossAnnualTurnoverEstimateChanged(
+                                                $event,
+                                                year,
+                                                index
                                             )
                                         "
                                     />
@@ -262,9 +264,14 @@ export default {
         hasGrossTurnoverEntry: function (year) {
             return year.gross_turnover != null && year.gross_turnover != '';
         },
-        grossAnnualTurnoverEstimateChanged: function (year) {
-            // Todo populate the next years estimate with this years actual
-            console.log('grossAnnualTurnoverEstimateChanged', event, year);
+        grossAnnualTurnoverEstimateChanged: function (event, year) {
+            if (!event.target.value) {
+                year.estimated_gross_turnover = null;
+            }
+            this.$emit(
+                'onChangeGrossTurnoverEstimate',
+                year.estimated_gross_turnover
+            );
         },
         grossAnnualTurnoverChanged: function (event, year, index) {
             if (!event.target.value) {
