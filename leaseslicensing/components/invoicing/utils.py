@@ -280,3 +280,27 @@ def quarters_difference(start_date, end_date):
 
 def years_difference(start_date, end_date):
     return abs(math.ceil(months_difference(start_date, end_date) / 12))
+
+
+def period_contains_leap_year_day(start_date, end_date):
+    """Returns True if the period contains the 29th of February"""
+    if start_date.year != end_date.year:
+        if start_date.year % 4 == 0 and (
+            start_date.year % 100 != 0 or start_date.year % 400 == 0
+        ):
+            if start_date.month < 3 or (start_date.month == 2 and start_date.day == 29):
+                return True
+        if end_date.year % 4 == 0 and (
+            end_date.year % 100 != 0 or end_date.year % 400 == 0
+        ):
+            if end_date.month > 2 or (end_date.month == 2 and end_date.day == 29):
+                return True
+        if end_date.year - start_date.year > 1:
+            return True
+    elif start_date.year % 4 == 0 and (
+        start_date.year % 100 != 0 or start_date.year % 400 == 0
+    ):
+        if start_date.month < 3 or (start_date.month == 2 and start_date.day == 29):
+            if end_date.month > 2 or (end_date.month == 2 and end_date.day == 29):
+                return True
+    return False

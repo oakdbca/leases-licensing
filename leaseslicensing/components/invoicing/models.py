@@ -586,38 +586,6 @@ class InvoicingDetails(BaseModel):
         # Regenerate an invoice schedule for any future invoicing periods
         self.generate_invoice_schedule(invoiced_up_to=self.invoiced_up_to)
 
-    def generate_current_invoice(self):
-        """Generates only one invoice for the current invoicing period
-        (i.e. the invoicing period that has started but hasn't finished)
-        This is useful in cases when you don't want to generate any back dated invoices
-        (i.e. for migrating existing leases/licences that
-        have already been invoiced for past invoicing periods in a legacy system)"""
-        current_invoice_condition = (
-            i
-            for i in self.preview_invoices
-            if i["start_date_has_passed"] and not i["end_date_has_passed"]
-        )
-        current_invoice = next(current_invoice_condition, None)
-        if not current_invoice:
-            return
-
-        gst_free = self.approval.approval_type.gst_free
-
-        invoice, created = Invoice.objects.get_or_create(
-            approval=self.approval,
-            amount=current_invoice["amount_object"]["amount"],
-            gst_free=gst_free,
-            # Add status and datetime_created to avoid creating duplicate records
-            # the datetime value will be ignored when creating as it's an auto_now_add field
-            status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
-            datetime_created__date=timezone.now().date(),
-        )
-        if created:
-            logger.info(f"Immediate invoice created: {invoice}")
-
-        # send to the finance group so they can take action
-        send_new_invoice_raised_internal_notification(invoice)
-
     def generate_immediate_invoices(self):
         """Generate invoices for the next invoicing period and any invoicing periods that have already passed
         This should only be run once when the finance officer has just finished "editing invoicing" on the
@@ -636,7 +604,8 @@ class InvoicingDetails(BaseModel):
 
         immediate_invoices = []
         for preview_invoice in self.preview_invoices:
-            if preview_invoice["start_date_has_passed"]:
+            amount = preview_invoice["amount_object"]["amount"]
+            if amount != Decimal("0.00") and preview_invoice["start_date_has_passed"]:
                 immediate_invoices.append(preview_invoice)
 
         if len(immediate_invoices) == 0:
@@ -668,9 +637,10 @@ class InvoicingDetails(BaseModel):
 
         immediate_invoices = []
         for preview_invoice in self.preview_invoices:
-            amount_object = preview_invoice["amount_object"]
+            amount = preview_invoice["amount_object"]["amount"]
             if (
-                amount_object["amount"] is not None
+                amount is not None
+                and amount != Decimal("0.00")
                 and preview_invoice["start_date_has_passed"]
             ):
                 immediate_invoices.append(preview_invoice)
@@ -680,7 +650,7 @@ class InvoicingDetails(BaseModel):
         for invoice_record in immediate_invoices:
             invoice = Invoice.objects.create(
                 approval=self.approval,
-                amount=invoice_record["amount_object"]["amount"],
+                amount=amount,
                 gst_free=gst_free,
                 status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
             )
@@ -769,7 +739,7 @@ class InvoicingDetails(BaseModel):
             return math.floor(index / 12)
 
     def get_amount_by_repetition_type(self, amount):
-        # Modify the base fee based on the invoicing repetition type
+        # Modify the amount based on the invoicing repetition type
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
             amount = amount / 4
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
@@ -814,11 +784,21 @@ class InvoicingDetails(BaseModel):
 
         base_fee_amount = self.base_fee_amount.quantize(Decimal("0.01"))
 
-        # Ignore extra day in leap year so base fee is consistent
-        if days == 366:
-            days = 365
+        period_contains_leap_year_day = utils.period_contains_leap_year_day(
+            datetime.strptime(start_date, "%Y-%m-%d").date(),
+            datetime.strptime(end_date, "%Y-%m-%d").date(),
+        )
 
-        base_fee_amount = self.get_amount_by_repetition_type(base_fee_amount)
+        # Ignore extra day in leap year so base fee is consistent
+        if period_contains_leap_year_day:
+            logger.debug(
+                f"Ignoring extra day in leap year for period starting: {start_date} and ending: {end_date}"
+            )
+            days -= 1
+
+        base_fee_amount = days * (
+            base_fee_amount / 365
+        )  # self.get_amount_by_repetition_type(base_fee_amount)
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -882,6 +862,13 @@ class InvoicingDetails(BaseModel):
                     base_fee_amount = base_fee_amount * (1 + percentage / 100)
                     suffix = ""
                 except IndexError:
+                    if (
+                        not self.invoicing_repetition_type.key
+                        == settings.REPETITION_TYPE_ANNUALLY
+                    ):
+                        # There can be a situation when an approval that lasts say 5 years for example
+                        # When converted to quarters or months results in a year_sequence_index that is out of range
+                        suffix = ""
                     logger.warning(
                         f"Invoicing Details: {self.id} - No annual increment percentage for index "
                         f"{index}. Using base fee amount."
@@ -908,9 +895,19 @@ class InvoicingDetails(BaseModel):
                     if annual_increment_amount:
                         if annual_increment_amount.increment_amount:
                             increment_amount = annual_increment_amount.increment_amount
+                            increment_amount = self.get_amount_by_repetition_type(
+                                increment_amount
+                            )
                         base_fee_amount = base_fee_amount + increment_amount
                         suffix = ""
                 except IndexError:
+                    if (
+                        not self.invoicing_repetition_type.key
+                        == settings.REPETITION_TYPE_ANNUALLY
+                    ):
+                        # There can be a situation when an approval that lasts say 5 years for example
+                        # When converted to quarters or months results in a year_sequence_index that is out of range
+                        suffix = ""
                     logger.warning(
                         f"Invoicing Details: {self.id} - No annual increment amount for index "
                         f"{index}. Using base fee amount."
@@ -1085,8 +1082,11 @@ class InvoicingDetails(BaseModel):
             locked=False
         )
         for gross_turnover_percentage in gross_turnover_percentages:
-            if gross_turnover_percentage.gross_turnover:
-                if gross_turnover_percentage.discrepency:
+            if gross_turnover_percentage.gross_turnover is not None:
+                if (
+                    gross_turnover_percentage.discrepency
+                    and gross_turnover_percentage.discrepency != Decimal("0.00")
+                ):
                     invoice = Invoice.objects.create(
                         approval=self.approval,
                         amount=gross_turnover_percentage.discrepency_invoice_amount,
@@ -1107,6 +1107,9 @@ class InvoicingDetails(BaseModel):
                     amount = quarter.gross_turnover * (
                         gross_turnover_percentage.percentage / 100
                     )
+                    if amount == Decimal("0.00"):
+                        continue
+
                     invoice = Invoice.objects.create(
                         approval=self.approval, amount=amount, gst_free=gst_free
                     )
@@ -1124,6 +1127,9 @@ class InvoicingDetails(BaseModel):
                     amount = month.gross_turnover * (
                         gross_turnover_percentage.percentage / 100
                     )
+                    if amount == Decimal("0.00"):
+                        continue
+
                     invoice = Invoice.objects.create(
                         approval=self.approval, amount=amount, gst_free=gst_free
                     )
@@ -1154,6 +1160,9 @@ class InvoicingDetails(BaseModel):
             amount = gross_turnover_percentage.estimated_gross_turnover * (
                 gross_turnover_percentage.percentage / 100
             )
+            if amount == Decimal("0.00"):
+                continue
+
             invoice = Invoice.objects.create(
                 approval=self.approval, amount=amount, gst_free=gst_free
             )
@@ -1168,7 +1177,10 @@ class InvoicingDetails(BaseModel):
         )
         for gross_turnover_percentage in gross_turnover_percentages:
             # Deal with cases where an estimate and actual have been entered
-            if gross_turnover_percentage.discrepency:
+            if (
+                gross_turnover_percentage.discrepency
+                and gross_turnover_percentage.discrepency != Decimal("0.00")
+            ):
                 invoice = Invoice.objects.create(
                     approval=self.approval,
                     amount=gross_turnover_percentage.discrepency_invoice_amount,
@@ -1179,6 +1191,30 @@ class InvoicingDetails(BaseModel):
                 send_new_invoice_raised_internal_notification(invoice)
 
         gross_turnover_percentages.update(locked=True)
+
+    def turnover_entry_reminder_required(self, days_prior):
+        if (
+            not self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            return False
+        if not self.has_future_invoicing_periods:
+            return False
+
+        if not self.gross_turnover_percentages.filter(
+            estimated_gross_turnover__isnull=True, gross_turnover__isnull=True
+        ).exists():
+            return False
+
+        potential_issue_date = timezone.now().date() + relativedelta(days=days_prior)
+
+        for invoice in self.preview_invoices:
+            if not invoice["amount_object"]["amount"] is None:
+                continue
+
+            issue_date = datetime.strptime(invoice["issue_date"], "%d/%m/%Y").date()
+            if issue_date == potential_issue_date:
+                return True
 
 
 class ScheduledInvoice(BaseModel):

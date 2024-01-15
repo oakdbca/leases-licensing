@@ -2111,7 +2111,6 @@ export default {
             });
             // When the map mode changes between draw and anything else, update the style of the selected features
             selectSingleClick.addEventListener('map:modeChanged', (evt) => {
-                console.log('map mode changed', evt);
                 if (evt.details.new_mode === 'draw') {
                     vm.setStyleForUnAndSelectedFeatures(vm.modifySelectStyle);
                 } else {
@@ -2326,11 +2325,7 @@ export default {
                         vm.loadFeatures(vm.proposals),
                         vm.applyFiltersFrontEnd(),
                     ];
-                    Promise.all(initialisers).then(() => {
-                        console.log(
-                            'Done loading features and applying filters'
-                        );
-                    });
+                    await Promise.all(initialisers);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -2367,7 +2362,6 @@ export default {
             if (featureCollection == null) {
                 featureCollection = vm.featureCollection;
             }
-            console.log('Adding features to map:', featureCollection);
 
             for (let featureData of featureCollection['features']) {
                 let feature = vm.featureFromDict(
@@ -2389,7 +2383,6 @@ export default {
         },
         loadFeatures: function (proposals) {
             let vm = this;
-            console.log(proposals);
             // Remove all features from the layer
             vm.modelQuerySource.clear();
             proposals.forEach(function (proposal) {
@@ -2603,8 +2596,8 @@ export default {
             )
                 .then(async (response) => {
                     if (!response.ok) {
-                        const text = await response.json();
-                        throw new Error(text);
+                        const data = await response.json();
+                        throw new Error(data.errors[0].detail);
                     } else {
                         return response.json();
                     }

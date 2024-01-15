@@ -47,6 +47,7 @@ INSTALLED_APPS += [
     "reversion_compare",
     "webtemplate_dbca",
     "ledger_api_client",
+    "appmonitor_client",
     "leaseslicensing",
     "leaseslicensing.components.main",
     "leaseslicensing.components.organisations",
@@ -225,7 +226,7 @@ LEDGER_DEFAULT_LINE_STATUS = 1
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
 
-CRON_CLASSES = []
+CRON_CLASSES = ["appmonitor_client.cron.CronJobAppMonitorClient"]
 
 PROTECTED_MEDIA_ROOT = env(
     "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")
@@ -395,6 +396,10 @@ DEFAULT_DAYS_BEFORE_PAYMENT_DUE = 30  # Net 30 Payment terms
 DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD = 30
 
 CUSTOM_CPI_REMINDER_DAYS_PRIOR_TO_INVOICE_ISSUE_DATE = (30, 15)
+
+PERCENTAGE_OF_GROSS_TURNOVER_REMINDERS_DAYS_PRIOR = env(
+    "PERCENTAGE_OF_GROSS_TURNOVER_REMINDERS_DAYS_PRIOR", [30, 15]
+)
 
 COMPLIANCES_DAYS_PRIOR_TO_SEND_REMINDER = env(
     "COMPLIANCES_DAYS_PRIOR_TO_SEND_REMINDER", 14

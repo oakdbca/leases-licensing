@@ -1,0 +1,10 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+            <p>Approval {{ approval.lodgement_number }} requires an estimated (or actual) turnover entry in order
+            to calculate the amount for an invoice that is due to be issued in {{ days_prior }} days.</p>
+
+            <p>Please enter the estimated (or actual) turnover at soon as possible.</p>
+
+            <p><a href="{{ url }}">Enter Estimated (or Actual) Turnover for {{ approval.lodgement_number }}</a></p>
+{%  endblock %}

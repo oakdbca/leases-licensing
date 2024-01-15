@@ -39,16 +39,6 @@ class Command(BaseCommand):
 
         testing = options["test"]
 
-        current_approval_statuses = [
-            Approval.APPROVAL_STATUS_CURRENT,
-            Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
-            Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL,
-        ]
-
-        approved_proposal_statuses = [
-            Proposal.PROCESSING_STATUS_APPROVED,
-        ]
-
         today = timezone.localtime(timezone.now()).date()
         if options["test_date"]:
             logger.info(f"Using test date {options['test_date']} instead of today")
@@ -60,14 +50,13 @@ class Command(BaseCommand):
                 Q(notification_email_sent=False)
                 & Q(attempts_to_send_notification_email__lte=4)
             ),
-            invoicing_details__proposal__approval__status__in=current_approval_statuses,
-            invoicing_details__proposal__processing_status__in=approved_proposal_statuses,
+            invoicing_details__proposal__approval__status__in=Approval.CURRENT_APPROVAL_STATUSES,
+            invoicing_details__proposal__processing_status=Proposal.PROCESSING_STATUS_APPROVED,
             date_to_generate__lte=today,
         )
-
-        # logger.debug(f"{scheduled_invoices.query}")
+        scheduled_invoice_count = scheduled_invoices.count()
         logger.info(
-            f"Found {scheduled_invoices.count()} scheduled invoices that need generation and or notification on {today}"
+            f"Found {scheduled_invoice_count} scheduled invoices that need generation and or notification on {today}"
         )
 
         invoices_generated = []
@@ -107,7 +96,8 @@ class Command(BaseCommand):
 
                 scheduled_invoice.save()
 
-        logger.info(f"Generated the following invoices {invoices_generated}")
+        if scheduled_invoice_count > 0:
+            logger.info(f"Generated the following invoices {invoices_generated}")
         logger.info(f"Finished running command {__name__}")
 
     def generate_invoice(self, scheduled_invoice, invoices_generated, test=False):
@@ -118,9 +108,11 @@ class Command(BaseCommand):
             scheduled_invoice.date_to_generate
         )
         if not preview_invoice:
-            raise TypeError(
-                f"preview_invoice_by_date returned None for {scheduled_invoice.date_to_generate}"
+            logger.warning(
+                f"preview_invoice_by_date returned None for {scheduled_invoice.date_to_generate} "
+                f"(Approval: {approval.lodgement_number}, Scheduled Invoice: {scheduled_invoice.id})"
             )
+            return
 
         amount = preview_invoice["amount_object"]["amount"]
 

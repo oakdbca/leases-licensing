@@ -1,0 +1,12 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+            Approval {{ approval.lodgement_number }} requires an estimated (or actual) turnover entry in order
+            to calculate the amount for an invoice that is due to be issued in {{ days_prior }} days.
+
+            Please enter the estimated (or actual) turnover at soon as possible.
+
+            To enter estimated (or actual) turnover for {{ approval.lodgement_number }}, please visit:
+
+            {{ url }}
+{%  endblock %}

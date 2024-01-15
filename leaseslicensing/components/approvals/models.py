@@ -241,6 +241,13 @@ class Approval(LicensingModelVersioned):
     APPROVAL_STATUS_AWAITING_PAYMENT = "awaiting_payment"
     APPROVAL_STATUS_CURRENT_EDITING_INVOICING = "current_editing_invoicing"
 
+    CURRENT_APPROVAL_STATUSES = [
+        APPROVAL_STATUS_CURRENT,
+        APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
+        APPROVAL_STATUS_CURRENT_PENDING_RENEWAL,
+        APPROVAL_STATUS_CURRENT_EDITING_INVOICING,
+    ]
+
     STATUS_CHOICES = (
         (APPROVAL_STATUS_CURRENT, "Current"),
         (
@@ -745,7 +752,7 @@ class Approval(LicensingModelVersioned):
         self.save()
 
     def log_user_action(self, action, request):
-        return ApprovalUserAction.log_action(self, action, request.user)
+        return ApprovalUserAction.log_action(self, action, request.user.id)
 
     @transaction.atomic
     def expire_approval(self, user):
@@ -1337,7 +1344,7 @@ class ApprovalUserAction(UserAction):
 
     @classmethod
     def log_action(cls, approval, action, user):
-        return cls.objects.create(approval=approval, who=user.id, what=str(action))
+        return cls.objects.create(approval=approval, who=user, what=str(action))
 
     approval = models.ForeignKey(
         Approval, related_name="action_logs", on_delete=models.CASCADE

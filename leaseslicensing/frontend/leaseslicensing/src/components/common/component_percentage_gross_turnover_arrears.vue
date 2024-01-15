@@ -187,13 +187,15 @@
                                             ) || quarter.locked
                                         "
                                         @change="
-                                            $emit(
-                                                'onChangeQuarterlyGrossTurnover'
+                                            grossQuarterlyTurnoverChanged(
+                                                $event,
+                                                quarter
                                             )
                                         "
                                         @keyup="
-                                            $emit(
-                                                'onChangeQuarterlyGrossTurnover'
+                                            grossQuarterlyTurnoverChanged(
+                                                $event,
+                                                quarter
                                             )
                                         "
                                     />
@@ -263,13 +265,15 @@
                                             ) || month.locked
                                         "
                                         @change="
-                                            $emit(
-                                                'onChangeMonthlyGrossTurnover'
+                                            grossMonthlyTurnoverChanged(
+                                                $event,
+                                                month
                                             )
                                         "
                                         @keyup="
-                                            $emit(
-                                                'onChangeMonthlyGrossTurnover'
+                                            grossMonthlyTurnoverChanged(
+                                                $event,
+                                                month
                                             )
                                         "
                                     />
@@ -506,6 +510,20 @@ export default {
                 year.discrepency_invoice_amount = 0;
             }
             this.$emit('onChangeAnnualGrossTurnover');
+        },
+        grossQuarterlyTurnoverChanged: function (event, quarter) {
+            if (!event.target.value) {
+                quarter.gross_turnover = null;
+                return;
+            }
+            this.$emit('onChangeQuarterlyGrossTurnover');
+        },
+        grossMonthlyTurnoverChanged: function (event, month) {
+            if (!event.target.value) {
+                month.gross_turnover = null;
+                return;
+            }
+            this.$emit('onChangeMonthlyGrossTurnover');
         },
         getPeriods: function (year) {
             if (this.invoicingReptitionQuarterly) {
