@@ -1,0 +1,22 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+        The following new invoice records have been created for {{ approval.approval_type }} {{ approval.lodgement_number }}:
+
+        {% for invoice in invoices %}
+            - {{ invoice.lodgement_number }}
+        {% endfor %}
+
+        Before payment can be requested from the proponent, the following steps must be taken for each invoice record:
+
+        - Create an oracle invoice with details that match the invoice record
+        - Convert it to a digital format &#40;i.e. pdf&#41;
+        - Upload that invoice file to the invoice record
+        - Enter the oracle invoice number on the invoice record
+        - You will be prompted to confirm sending the request for payment to the lease/licence holder
+
+        View Invoice Records:
+
+        {{internal_invoices_url}}
+
+{%  endblock %}
