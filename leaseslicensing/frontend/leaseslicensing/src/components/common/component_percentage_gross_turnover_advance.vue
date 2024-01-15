@@ -271,6 +271,7 @@ export default {
                 year.gross_turnover = null;
                 year.discrepency = null;
                 year.discrepency_invoice_amount = null;
+                this.$emit('onChangeGrossTurnoverActual', year.gross_turnover);
                 return;
             }
             if (

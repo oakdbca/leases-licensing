@@ -490,6 +490,7 @@ export default {
                 year.gross_turnover = null;
                 year.discrepency = null;
                 year.discrepency_invoice_amount = null;
+                this.$emit('onChangeAnnualGrossTurnover');
                 return;
             }
             let total_of_quarters = year.quarters.reduce(
