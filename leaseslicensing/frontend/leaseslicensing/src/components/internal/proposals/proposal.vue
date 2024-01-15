@@ -1849,7 +1849,10 @@ export default {
                         .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID,
                 ].includes(chargeType) &&
                 previewInvoices.find(
-                    (invoice) => invoice.start_date_has_passed == true
+                    (invoice) =>
+                        invoice.start_date_has_passed == true &&
+                        invoice.amount_object.amount != null &&
+                        invoice.amount_object.amount != 0
                 ) &&
                 !(
                     this.proposal.proposal_type.code ==
