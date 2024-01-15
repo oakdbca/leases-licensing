@@ -633,6 +633,7 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "start_date",
             "expiry_date",
+            "issue_date",
             "approval_type",
             "approval_type_name",
             "holder",
