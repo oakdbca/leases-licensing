@@ -331,8 +331,9 @@ class InvoicingDetails(BaseModel):
                 yield reminder_date_2
 
     def preview_invoice_by_date(self, date):
+        date = datetime.strftime(date, "%d/%m/%Y")
         for invoice in self.preview_invoices:
-            if invoice["issue_date"] == datetime.strftime(date, "%d/%m/%Y"):
+            if invoice["issue_date"] == date:
                 return invoice
         return None
 
@@ -650,7 +651,7 @@ class InvoicingDetails(BaseModel):
         for invoice_record in immediate_invoices:
             invoice = Invoice.objects.create(
                 approval=self.approval,
-                amount=amount,
+                amount=invoice_record["amount_object"]["amount"],
                 gst_free=gst_free,
                 status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
             )
@@ -1213,6 +1214,7 @@ class InvoicingDetails(BaseModel):
                 continue
 
             issue_date = datetime.strptime(invoice["issue_date"], "%d/%m/%Y").date()
+            # logger.debug(f"potential_issue_date: {potential_issue_date}, issue_date: {issue_date}")
             if issue_date == potential_issue_date:
                 return True
 
