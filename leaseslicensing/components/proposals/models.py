@@ -2733,13 +2733,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             self.approved_by = request.user.id
 
-            # TODO: additional logic required for amendment, reissue, etc?
-
-            # Generate approval (license) document
-            # self.create_approval_pdf(request)
-            # TODO: Send notification email to approver after the finance team
-            # has created the invoice
-
             # Send notification email to applicant
             send_proposal_approval_email_notification(self, request)
 
