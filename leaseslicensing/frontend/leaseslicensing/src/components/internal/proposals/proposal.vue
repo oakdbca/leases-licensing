@@ -2744,7 +2744,9 @@ export default {
                     if (
                         this.proposal.processing_status_id ==
                             constants.PROPOSAL_STATUS.WITH_APPROVER.ID &&
-                        (new_status == 'with_assessor_requirements' || // FIXME What is this processing status for?
+                        (new_status ==
+                            constants.PROPOSAL_STATUS
+                                .WITH_ASSESSOR_CONDITIONS ||
                             new_status ==
                                 constants.PROPOSAL_STATUS.WITH_ASSESSOR)
                     ) {
