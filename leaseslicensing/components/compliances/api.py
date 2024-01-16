@@ -344,12 +344,6 @@ class ComplianceViewSet(viewsets.ModelViewSet):
             serializer = SaveComplianceSerializer(instance, data=data)
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
-            # FIXME Is the right place to submit the request. Invoking submit will also
-            # send out email notifications,
-            # so it would be plausible to do this last after everything else, but submitting
-            # at the end of this function
-            # will cause any document attached to this Compliance to be uploaded twice
-            # and appear twice in the view.
             instance.submit(request)
 
             serializer = self.get_serializer(instance)
