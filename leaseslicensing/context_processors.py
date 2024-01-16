@@ -5,7 +5,6 @@ from leaseslicensing.settings import template_group, template_title
 
 
 def leaseslicensing_url(request):
-    # TODO: Add these organisation to session for user when they login to improve performance
     organisations_user_can_admin = Organisation.organisations_user_can_admin(
         request.user.id
     )
