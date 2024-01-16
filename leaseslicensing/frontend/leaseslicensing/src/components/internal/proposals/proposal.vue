@@ -1723,11 +1723,9 @@ export default {
             //    }
         },
         canSeeSubmission: function () {
-            //return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)' && this.proposal.processing_status != 'With Approver' && !this.isFinalised)
             return (
                 this.proposal &&
                 ![
-                    'With Assessor (Requirements)', // FIXME What is this processing status for?
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.TEXT,
                 ].includes(this.proposal.processing_status)
             );
