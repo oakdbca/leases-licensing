@@ -68,8 +68,8 @@ export default {
             let groups_source = vm.approval.groups
                 ? vm.approval.groups
                 : vm.proposal.groups
-                ? vm.proposal.groups.map(({ id }) => id)
-                : [];
+                  ? vm.proposal.groups.map(({ id }) => id)
+                  : [];
             for (let group of vm.groups) {
                 if (group && groups_source.includes(group.id)) {
                     vm.selectedGroups.push(group);
