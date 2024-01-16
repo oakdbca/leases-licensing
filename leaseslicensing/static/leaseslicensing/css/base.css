@@ -309,7 +309,7 @@ table.dataTable a:hover {
     cursor: pointer;
 }
 
-/* Custom spinner - Todo: Make the bootstrap spinner component more robust in the gov vue3 utils package */
+/* Custom spinner */
 .invoice-preview-spinner .spinner-center-component {
     margin-top: 0px !important;
     margin-left: 0px !important;
