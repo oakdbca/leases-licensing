@@ -7,7 +7,6 @@ from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 from ledger_api_client.managed_models import SystemGroup, SystemGroupPermission
-from ledger_api_client.utils import get_all_organisation
 from rest_framework.serializers import ValidationError
 
 logger = logging.getLogger(__name__)
@@ -104,7 +103,6 @@ def in_dbca_domain(request):
 
 
 def is_in_organisation_contacts(request, organisation):
-    """Todo: Convert this to segregated"""
     return request.user.email in organisation.contacts.all().values_list(
         "email", flat=True
     )
@@ -136,72 +134,6 @@ def convert_internal_url_to_external_url(url):
         # remove '-internal'. This email is for external submitters
         url = "".join(url.split(settings.SITE_SUBDOMAIN_INTERNAL_SUFFIX))
     return url
-
-
-def get_leaseslicensing_organisation_ids():
-    """Since the organisations of leases and licensing are a small subset of those in ledger
-    we can cache the list of organisations to improve performance.
-
-    Todo: Must delete the cache whenever a new organisation is added to the system."""
-    from leaseslicensing.components.organisations.models import Organisation
-
-    cache_key = settings.CACHE_KEY_ORGANISATION_IDS
-    organisation_ids = cache.get(cache_key)
-    if organisation_ids is None:
-        organisation_ids = organisation_ids = (
-            Organisation.objects.all().values_list("organisation", flat=True).distinct()
-        )
-        cache.set(cache_key, organisation_ids, settings.CACHE_TIMEOUT_2_HOURS)
-    return organisation_ids
-
-
-def get_leaseslicensing_organisations():
-    """Since the organisations of leases and licensing are a small subset of those in ledger
-    we can cache the list of organisations to improve performance."""
-    cache_key = settings.CACHE_KEY_ORGANISATIONS
-    organisations = cache.get(cache_key)
-    if organisations is None:
-        leases_organisation_ids = get_leaseslicensing_organisation_ids()
-        all_organisations_response = get_all_organisation()
-        all_organisations = all_organisations_response["data"]
-        organisations = []
-        for org in all_organisations:
-            if org["organisation_id"] in leases_organisation_ids:
-                organisations.append(org)
-    cache.set(cache_key, organisations, settings.CACHE_TIMEOUT_2_HOURS)
-    return organisations
-
-
-def get_leaseslicensing_external_emailuser_ids():
-    """Since the users of leases and licensing are a small subset of those in ledger
-    we can cache the list of users to improve performance.
-
-    Todo:   Must delete the cache whenever a new user is added to the system.
-            Must add all possible user ids that can appear in the search results.
-    """
-    # Avoid circular imports
-    from leaseslicensing.components.approvals.models import Approval
-    from leaseslicensing.components.compliances.models import Compliance
-    from leaseslicensing.components.proposals.models import Proposal
-
-    cache_key = settings.CACHE_KEY_USER_IDS
-    user_ids = cache.get(cache_key)
-    if user_ids is None:
-        submitters = list(
-            Proposal.objects.all().values_list("submitter", flat=True).distinct()
-        )
-        approval_submitters = list(
-            Approval.objects.all().values_list("submitter", flat=True).distinct()
-        )
-        compliance_submitters = list(
-            Compliance.objects.all().values_list("submitter", flat=True).distinct()
-        )
-        # There are almost certainly other users that should be included here.
-
-        # combine lists and remove duplicates
-        user_ids = list(set(submitters + approval_submitters + compliance_submitters))
-        cache.set(cache_key, user_ids, settings.CACHE_TIMEOUT_2_HOURS)
-    return user_ids
 
 
 def get_instance_identifier(instance):
