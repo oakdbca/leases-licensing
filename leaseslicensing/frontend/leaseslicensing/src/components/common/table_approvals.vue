@@ -451,7 +451,6 @@ export default {
                 searchable: false, // FIXME: make searchable
                 visible: true,
                 render: function (row, type, full) {
-                    // TODO Site
                     return full.site_name;
                 },
             };
@@ -689,7 +688,6 @@ export default {
                             if (full.can_reinstate) {
                                 links += `<a href='#${full.id}' data-reinstate-approval='${full.id}'>Reinstate</a><br/>`;
                             }
-                            // Todo: Not yet totally sure under which circumstances this action should be visible
                             if (
                                 [
                                     constants.APPROVAL_STATUS.CURRENT.TEXT,
