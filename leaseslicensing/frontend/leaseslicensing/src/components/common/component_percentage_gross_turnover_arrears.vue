@@ -60,6 +60,7 @@
                                         v-model="year.gross_turnover"
                                         type="number"
                                         class="form-control"
+                                        max="1000000000000"
                                         :disabled="
                                             year.locked ||
                                             !financialYearHasPassed(
@@ -490,6 +491,7 @@ export default {
                 year.gross_turnover = null;
                 year.discrepency = null;
                 year.discrepency_invoice_amount = null;
+                this.$emit('onChangeAnnualGrossTurnover');
                 return;
             }
             let total_of_quarters = year.quarters.reduce(

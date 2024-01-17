@@ -1723,11 +1723,9 @@ export default {
             //    }
         },
         canSeeSubmission: function () {
-            //return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)' && this.proposal.processing_status != 'With Approver' && !this.isFinalised)
             return (
                 this.proposal &&
                 ![
-                    'With Assessor (Requirements)', // FIXME What is this processing status for?
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.TEXT,
                 ].includes(this.proposal.processing_status)
             );
@@ -1816,7 +1814,7 @@ export default {
                         title: 'Confirm Once Off Invoice',
                         text: 'You have selected to invoice as a once off charge, \
                         this will create a new invoice record. An oracle invoice must \
-                        be attached to the new invoice record before the system will send a payment request to the proponent.',
+                        be attached to the new invoice record before the system will send a payment request to the lease/licence holder.',
                         icon: 'info',
                         showCancelButton: true,
                         buttonsStyling: false,
@@ -1849,7 +1847,10 @@ export default {
                         .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID,
                 ].includes(chargeType) &&
                 previewInvoices.find(
-                    (invoice) => invoice.start_date_has_passed == true
+                    (invoice) =>
+                        invoice.start_date_has_passed == true &&
+                        invoice.amount_object.amount != null &&
+                        invoice.amount_object.amount != 0
                 ) &&
                 !(
                     this.proposal.proposal_type.code ==
@@ -2741,7 +2742,9 @@ export default {
                     if (
                         this.proposal.processing_status_id ==
                             constants.PROPOSAL_STATUS.WITH_APPROVER.ID &&
-                        (new_status == 'with_assessor_requirements' || // FIXME What is this processing status for?
+                        (new_status ==
+                            constants.PROPOSAL_STATUS
+                                .WITH_ASSESSOR_CONDITIONS ||
                             new_status ==
                                 constants.PROPOSAL_STATUS.WITH_ASSESSOR)
                     ) {

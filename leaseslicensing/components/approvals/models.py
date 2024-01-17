@@ -615,7 +615,7 @@ class Approval(LicensingModelVersioned):
     @property
     def can_amend(self):
         try:
-            # FIXME: As of now there are no Renewal Documents implemented for leases. Assuming we will add them,
+            # Note: As of now there are no Renewal Documents implemented for leases. Assuming we will add them,
             # at the time we do so, they will be implemented as a new ApprovalTypeDocumentType object
             # with a new boolean field `is_renewal_document`. We can already check the approval for a document
             # of that type with that field now and simply treat any approval as if it were not meant to have

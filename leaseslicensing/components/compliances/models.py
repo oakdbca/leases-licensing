@@ -121,7 +121,7 @@ class Compliance(LicensingModelVersioned):
     reminder_sent = models.BooleanField(default=False)
     post_reminder_sent = models.BooleanField(default=False)
     gross_turnover = models.DecimalField(
-        max_digits=12, decimal_places=2, blank=True, null=True
+        max_digits=15, decimal_places=2, blank=True, null=True
     )
 
     class Meta:
@@ -179,7 +179,7 @@ class Compliance(LicensingModelVersioned):
     @property
     def can_process(self):
         """
-        :return: True if the compliance is readtruey for assessment.
+        :return: True if the compliance is ready for assessment.
         """
         return self.processing_status == Compliance.PROCESSING_STATUS_WITH_ASSESSOR
 

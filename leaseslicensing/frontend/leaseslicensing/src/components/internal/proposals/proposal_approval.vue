@@ -200,17 +200,11 @@ export default {
                     constants.PROPOSAL_STATUS.APPROVED.ID
             );
         },
-        canAssess: function () {
-            return true; // TODO: Implement correctly.  May not be needed though
-        },
         hasAssessorMode: function () {
             return this.proposal &&
                 this.proposal.assessor_mode.has_assessor_mode
                 ? true
                 : false;
-        },
-        canAction: function () {
-            return true; // TODO: implement this.  This is just temporary solution
         },
         canSeeSubmission: function () {
             return (

@@ -221,7 +221,7 @@ export default {
                     vm.close();
                     Swal.fire(
                         'Suspend',
-                        'An email has been sent to the proponent about suspension of this approval',
+                        'An email has been sent to the lease/licence holder about suspension of this approval',
                         'success'
                     );
                     vm.$emit('refreshFromResponse', data);

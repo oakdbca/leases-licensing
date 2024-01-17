@@ -360,7 +360,7 @@
                         :is-finalised="isFinalised"
                         :referral_url="referralListURL"
                         :api_endpoint="referrals_api_endpoint"
-                        @switchStatus="switchStatus"
+                        @switch-status="switchStatus"
                     />
                 </div>
             </div>
@@ -408,7 +408,7 @@
             ref="AddExternalReferral"
             :proposal-id="proposal.id"
             :email="external_referral_email"
-            @externalRefereeInviteSent="externalRefereeInviteSent"
+            @external-referee-invite-sent="externalRefereeInviteSent"
         />
     </div>
     <div v-if="isAssessorOrApprover" class="card sticky-top">
@@ -593,7 +593,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -605,7 +604,6 @@ export default {
                         return this.isReferee;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -633,7 +631,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -671,7 +668,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -703,8 +699,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO: Propose Approve only available when DAS proposal has been approved or
-                        // when no DAS approval is required (047-1)
                         return false;
                     },
                 },
@@ -739,7 +733,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -767,7 +760,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -795,7 +787,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -823,7 +814,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -849,7 +839,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false;
                     },
                 },
@@ -869,7 +858,6 @@ export default {
                         return show;
                     },
                     function_to_disable: () => {
-                        // TODO
                         return false;
                     },
                 },

@@ -199,7 +199,7 @@ export default {
                     vm.close();
                     Swal.fire(
                         'Surrender',
-                        'An email has been sent to the proponent about surrender of this approval',
+                        'An email has been sent to the lease/licence holder about surrender of this approval',
                         'success'
                     );
                     vm.$emit('refreshFromResponse', data);

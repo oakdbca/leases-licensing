@@ -2,11 +2,17 @@
 
 {%  block content %}
         <p>
-            A new invoice record {{ invoice.lodgement_number }} has been created for {{ approval.approval_type }} {{ approval.lodgement_number }}.
+            The following new invoice records have been created for {{ approval.approval_type }} {{ approval.lodgement_number }}:
         </p>
 
+        <ul>
+            {% for invoice in invoices %}
+                <li>{{ invoice.lodgement_number }}</li>
+            {% endfor %}
+        </ul>
+
         <p>
-            Before payment can be requested from the lease/licence holder, the following steps must be taken:
+            Before payment can be requested from the lease/licence holder, the following steps must be taken for each invoice record:
         </p>
 
         <table>

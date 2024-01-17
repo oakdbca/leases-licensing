@@ -2733,13 +2733,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             self.approved_by = request.user.id
 
-            # TODO: additional logic required for amendment, reissue, etc?
-
-            # Generate approval (license) document
-            # self.create_approval_pdf(request)
-            # TODO: Send notification email to approver after the finance team
-            # has created the invoice
-
             # Send notification email to applicant
             send_proposal_approval_email_notification(self, request)
 
@@ -5781,7 +5774,7 @@ def copy_proposal_requirements(
             new_r.proposal = proposalTo
             new_r.copied_from = r
             new_r.copied_for_renewal = (
-                True  # FIXME what about this field when copying for amendment?
+                True  # Note: This field is not actually used in any business logic
             )
             if new_r.due_date:
                 new_r.due_date = None

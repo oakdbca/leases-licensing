@@ -613,7 +613,7 @@ export default {
                     !gross_turnover_percentage.estimate_locked &&
                     gross_turnover_percentage.estimated_gross_turnover !=
                         null &&
-                    gross_turnover_percentage == null
+                    gross_turnover_percentage.gross_turnover == null
                 ) {
                     let invoice_amount = currency(
                         gross_turnover_percentage.estimated_gross_turnover

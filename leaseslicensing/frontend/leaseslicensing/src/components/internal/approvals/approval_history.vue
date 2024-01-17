@@ -124,17 +124,6 @@ export default {
                 },
             };
         },
-        column_sticker_numbers: function () {
-            return {
-                data: 'id',
-                orderable: true,
-                searchable: true,
-                visible: true,
-                render: function (row, type, full) {
-                    return full.sticker_numbers;
-                },
-            };
-        },
         column_holder: function () {
             return {
                 data: 'id',
@@ -226,7 +215,6 @@ export default {
                 vm.column_id,
                 vm.column_lodgement_number,
                 vm.column_type,
-                // vm.column_sticker_numbers,
                 vm.column_holder,
                 vm.column_application,
                 // vm.column_approval_status,

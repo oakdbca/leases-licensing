@@ -503,7 +503,6 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
     cover_letter = serializers.SerializerMethodField()
     application = serializers.SerializerMethodField()
     approval_type = serializers.SerializerMethodField()
-    sticker_numbers = serializers.SerializerMethodField()
     holder = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     start_date_str = serializers.SerializerMethodField()
@@ -522,7 +521,6 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
             "cover_letter",
             "application",
             "approval_type",
-            "sticker_numbers",
             "holder",
             "status",
             "start_date_str",
@@ -578,11 +576,6 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
 
     def get_approval_type(self, obj):
         return ApprovalTypeSerializer(obj.approval_type).data
-        # return obj.approval_type
-        # return obj.current_proposal.application_type.name_display
-
-    def get_sticker_numbers(self, obj):
-        return "(todo) sticker_numbers"
 
     def get_holder(self, obj):
         return obj.holder
@@ -633,6 +626,7 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "start_date",
             "expiry_date",
+            "issue_date",
             "approval_type",
             "approval_type_name",
             "holder",

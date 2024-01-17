@@ -225,9 +225,6 @@ class UserViewSet(UserActionLoggingViewset):
     def get_referees(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
 
-        # Todo: Filter out referees that are already assigned to the application
-        # proposal_id = request.GET.get("proposal_id", "")
-
         # Allow for search of first name, last name and concatenation of both
         department_users = EmailUser.objects.annotate(
             search_term=Concat(

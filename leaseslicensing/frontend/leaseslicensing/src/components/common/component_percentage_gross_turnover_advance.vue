@@ -66,6 +66,7 @@
                                         v-model="year.estimated_gross_turnover"
                                         type="number"
                                         class="form-control"
+                                        max="1000000000000"
                                         :readonly="year.estimate_locked"
                                         :required="
                                             (editingFromProposalPage() &&
@@ -77,15 +78,17 @@
                                             )
                                         "
                                         @change="
-                                            $emit(
-                                                'onChangeGrossTurnoverEstimate',
-                                                year.estimated_gross_turnover
+                                            grossAnnualTurnoverEstimateChanged(
+                                                $event,
+                                                year,
+                                                index
                                             )
                                         "
                                         @keyup="
-                                            $emit(
-                                                'onChangeGrossTurnoverEstimate',
-                                                year.estimated_gross_turnover
+                                            grossAnnualTurnoverEstimateChanged(
+                                                $event,
+                                                year,
+                                                index
                                             )
                                         "
                                     />
@@ -102,6 +105,7 @@
                                         v-model="year.gross_turnover"
                                         type="number"
                                         class="form-control"
+                                        max="1000000000000"
                                         :readonly="
                                             !financialYearHasPassed(
                                                 year.financial_year
@@ -262,15 +266,21 @@ export default {
         hasGrossTurnoverEntry: function (year) {
             return year.gross_turnover != null && year.gross_turnover != '';
         },
-        grossAnnualTurnoverEstimateChanged: function (year) {
-            // Todo populate the next years estimate with this years actual
-            console.log('grossAnnualTurnoverEstimateChanged', event, year);
+        grossAnnualTurnoverEstimateChanged: function (event, year) {
+            if (!event.target.value) {
+                year.estimated_gross_turnover = null;
+            }
+            this.$emit(
+                'onChangeGrossTurnoverEstimate',
+                year.estimated_gross_turnover
+            );
         },
         grossAnnualTurnoverChanged: function (event, year, index) {
             if (!event.target.value) {
                 year.gross_turnover = null;
                 year.discrepency = null;
                 year.discrepency_invoice_amount = null;
+                this.$emit('onChangeGrossTurnoverActual', year.gross_turnover);
                 return;
             }
             if (

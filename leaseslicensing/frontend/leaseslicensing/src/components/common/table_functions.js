@@ -35,7 +35,7 @@ function collapse_row(vm, tr, first_td) {
     let nextElem = tr.next();
     // Collapse
     if (nextElem.is('tr') & nextElem.hasClass(vm.expandable_row_class_name)) {
-        // Sticker details row is already shown.  Remove it.
+        // Details row is already shown.  Remove it.
         nextElem.hide(0, function () {
             nextElem.remove();
         });
