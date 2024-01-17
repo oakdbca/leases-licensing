@@ -97,8 +97,8 @@
 </template>
 
 <script>
-import Modal from '@vue-utils/bootstrap-modal.vue'
-import { api_endpoints } from '@/utils/hooks.js'
+import Modal from '@vue-utils/bootstrap-modal.vue';
+import { api_endpoints } from '@/utils/hooks.js';
 
 export default {
     name: 'AddParty',
@@ -123,47 +123,47 @@ export default {
             // Organisation
             organisations: [],
             selected_organisation: null,
-        }
+        };
     },
     computed: {
         disableOkButton: function () {
-            let disabled = true
+            let disabled = true;
             if (this.selected_email_user || this.selected_organisation) {
-                disabled = false
+                disabled = false;
             }
-            return disabled
+            return disabled;
         },
     },
     watch: {
         isModalOpen: function (newVal) {
             if (newVal) {
                 this.$nextTick(() => {
-                    $(this.$refs.organisations).select2('open')
-                })
+                    $(this.$refs.organisations).select2('open');
+                });
             }
         },
         type_to_add: function (newVal) {
             if (newVal == 'person') {
                 this.$nextTick(() => {
-                    $(this.$refs.email_users).select2('open')
-                })
+                    $(this.$refs.email_users).select2('open');
+                });
             } else {
                 this.$nextTick(() => {
-                    $(this.$refs.organisations).select2('open')
-                })
+                    $(this.$refs.organisations).select2('open');
+                });
             }
         },
     },
     mounted: function async() {
-        let vm = this
+        let vm = this;
         vm.$nextTick(async () => {
-            vm.initialiseSelectPerson()
-            vm.initialiseSelectOrganisation()
-        })
+            vm.initialiseSelectPerson();
+            vm.initialiseSelectOrganisation();
+        });
     },
     methods: {
         initialiseSelectPerson: function () {
-            let vm = this
+            let vm = this;
             $(vm.$refs.email_users)
                 .select2({
                     dropdownParent: $('#modal_add_party .modal'),
@@ -178,25 +178,25 @@ export default {
                             var query = {
                                 term: params.term,
                                 type: 'public',
-                            }
-                            return query
+                            };
+                            return query;
                         },
                         processResults: function (data) {
-                            return data
+                            return data;
                         },
                     },
                 })
                 .on('select2:select', function (e) {
-                    vm.selected_email_user = e.params.data
+                    vm.selected_email_user = e.params.data;
                 })
                 .on('select2:unselect', function () {
-                    vm.selected_email_user = null
+                    vm.selected_email_user = null;
                 })
                 .empty()
-                .trigger('change')
+                .trigger('change');
         },
         initialiseSelectOrganisation: function () {
-            let vm = this
+            let vm = this;
             $(vm.$refs.organisations)
                 .select2({
                     dropdownParent: $('#modal_add_party .modal'),
@@ -212,53 +212,53 @@ export default {
                             var query = {
                                 term: params.term,
                                 type: 'public',
-                            }
-                            return query
+                            };
+                            return query;
                         },
                         processResults: function (data) {
-                            return data
+                            return data;
                         },
                     },
                 })
                 .on('select2:select', function (e) {
-                    let data = e.params.data
-                    vm.selected_organisation = data
+                    let data = e.params.data;
+                    vm.selected_organisation = data;
                 })
                 .on('select2:unselect', function () {
-                    vm.selected_organisation = null
+                    vm.selected_organisation = null;
                 })
                 .empty()
-                .trigger('change')
+                .trigger('change');
         },
         okClicked: function () {
-            let party_to_add = null
+            let party_to_add = null;
             if (this.type_to_add === 'person') {
-                party_to_add = this.selected_email_user
+                party_to_add = this.selected_email_user;
             } else if (this.type_to_add === 'organisation') {
-                party_to_add = this.selected_organisation
+                party_to_add = this.selected_organisation;
             }
             if (party_to_add) {
                 this.$emit('partyToAdd', {
                     // Issue an event with type and person/organisation
                     type: this.type_to_add,
                     party_to_add: party_to_add,
-                })
+                });
             }
-            this.close()
+            this.close();
         },
         cancel: function () {
-            this.close()
+            this.close();
         },
         close: function () {
-            this.selected_email_user = null
-            this.selected_organisation = null
-            $(this.$refs.email_users).empty()
-            $(this.$refs.organisations).empty()
-            this.type_to_add = 'organisation'
-            this.isModalOpen = false
-            $('.has-error').removeClass('has-error')
-            this.$emit('closeModal')
+            this.selected_email_user = null;
+            this.selected_organisation = null;
+            $(this.$refs.email_users).empty();
+            $(this.$refs.organisations).empty();
+            this.type_to_add = 'organisation';
+            this.isModalOpen = false;
+            $('.has-error').removeClass('has-error');
+            this.$emit('closeModal');
         },
     },
-}
+};
 </script>
