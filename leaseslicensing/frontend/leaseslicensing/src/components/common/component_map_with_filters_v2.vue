@@ -403,7 +403,6 @@
                     <template v-if="selectedModel">
                         <div class="toast-header">
                             <img src="" class="rounded me-2" alt="" />
-                            <!-- FIXME: Can this be standardised into the same field name? -->
                             <strong class="me-auto"
                                 >{{
                                     selectedModel.label ||
@@ -420,7 +419,6 @@
                                 <tbody>
                                     <tr>
                                         <th scope="row">Processing Status</th>
-                                        <!-- FIXME: Can this be standardised into the same field name? -->
                                         <td>
                                             {{
                                                 selectedModel.status ||
@@ -449,7 +447,6 @@
                                         <th v-else scope="row">
                                             Lodgement Date
                                         </th>
-                                        <!-- FIXME: Can this be standardised into the same field name? -->
                                         <td v-if="selectedModel.copied_from">
                                             {{
                                                 selectedModel.copied_from
@@ -1803,7 +1800,6 @@ export default {
                     model: model,
                     polygon_source: 'New',
                     name: model.id || -1,
-                    // FIXME: Can this be standardised into the same field name?
                     label:
                         model.label ||
                         model.application_type_name_display ||
