@@ -748,3 +748,37 @@ class CompetitiveProcessLGA(models.Model):
             f"Competitive Process: {self.competitive_process.lodgement_number} "
             f"includes land located in LGA: {self.lga}"
         )
+
+
+class CPShapefileDocumentQueryset(models.QuerySet):
+    """Using a custom manager to make sure shapfiles are removed when a bulk .delete is called
+    as having multiple files with the shapefile extensions in the same folder causes issues.
+    """
+
+    def delete(self):
+        for obj in self:
+            obj._file.delete()
+        super().delete()
+
+
+class CPShapefileDocument(Document):
+    objects = CPShapefileDocumentQueryset.as_manager()
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, related_name="shapefile_documents", on_delete=models.CASCADE
+    )
+    _file = SecureFileField(
+        upload_to=update_competitive_process_doc_filename, max_length=500
+    )
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    can_delete = models.BooleanField(
+        default=True
+    )  # after initial submit prevent document from being deleted
+    can_hide = models.BooleanField(
+        default=False
+    )  # after initial submit, document cannot be deleted but can be hidden
+    hidden = models.BooleanField(
+        default=False
+    )  # after initial submit prevent document from being deleted
+
+    class Meta:
+        app_label = "leaseslicensing"
