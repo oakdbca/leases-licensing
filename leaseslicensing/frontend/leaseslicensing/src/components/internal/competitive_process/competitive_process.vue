@@ -440,7 +440,7 @@ import CommsLogs from '@common-utils/comms_logs.vue';
 import Workflow from '@common-utils/workflow_competitive_process.vue';
 import FormSection from '@/components/forms/section_toggle.vue';
 import TableParties from '@common-utils/table_parties';
-import MapComponent from '@/components/common/component_map_with_filters_v2';
+import MapComponent from '@/components/common/component_map.vue';
 import RichText from '@/components/forms/richtext.vue';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import TableRelatedItems from '@/components/common/table_related_items.vue';

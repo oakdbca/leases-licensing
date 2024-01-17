@@ -349,7 +349,7 @@ import Applicant from '@/components/common/applicant.vue';
 import OrganisationApplicant from '@/components/common/organisation_applicant.vue';
 import FormSection from '@/components/forms/section_toggle.vue';
 import FileField from '@/components/forms/filefield_immediate.vue';
-import MapComponent from '@/components/common/component_map_with_filters_v2';
+import MapComponent from '@/components/common/component_map.vue';
 import RegistrationOfInterest from './form_registration_of_interest.vue';
 import LeaseLicence from './form_lease_licence.vue';
 import Multiselect from 'vue-multiselect';

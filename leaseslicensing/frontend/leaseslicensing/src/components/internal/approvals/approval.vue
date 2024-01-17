@@ -325,7 +325,7 @@ import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 import Swal from 'sweetalert2';
 import TableRelatedItems from '@/components/common/table_related_items.vue';
 import InvoicingDetails from '@/components/common/invoicing_details.vue';
-import MapComponent from '@/components/common/component_map_with_filters_v2';
+import MapComponent from '@/components/common/component_map.vue';
 import ApprovalDetails from '@/components/common/approval_details.vue';
 import currency from 'currency.js';
 export default {
