@@ -448,8 +448,9 @@ export default {
             return {
                 data: 'site_name',
                 orderable: true,
-                searchable: false, // FIXME: make searchable
+                searchable: true,
                 visible: true,
+                name: 'current_proposal__site_name__name',
                 render: function (row, type, full) {
                     return full.site_name;
                 },
@@ -459,8 +460,9 @@ export default {
             return {
                 data: 'groups_names_list',
                 orderable: true,
-                searchable: false, // FIXME: make it searchable
+                searchable: true,
                 visible: true,
+                name: 'current_proposal__groups__group__name',
                 render: function (row, type, full) {
                     let html = '';
                     if (full.groups_names_list) {
@@ -480,8 +482,9 @@ export default {
             return {
                 data: 'categories_list',
                 orderable: true,
-                searchable: false, // FIXME: make it searchable
+                searchable: true,
                 visible: true,
+                name: 'current_proposal__categories__category__name',
                 render: function (row, type, full) {
                     let html = '';
                     if (full.categories_list) {
