@@ -471,7 +471,7 @@ class InvoicingDetails(BaseModel):
             )
 
             # Find out if this is a backdated invoicing period
-            start_date_has_passed = issue_date <= timezone.now().date()
+            start_date_has_passed = issue_date < timezone.now().date()
             end_date_has_passed = (
                 datetime.strptime(invoicing_period["end_date"], "%Y-%m-%d").date()
                 <= timezone.now().date()
