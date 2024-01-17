@@ -59,6 +59,8 @@ def send_new_invoice_raised_notification(invoice):
 
     _log_approval_email(msg, approval, sender=sender_user)
 
+    return msg
+
 
 def send_new_invoice_raised_internal_notification(invoice):
     approval = invoice.approval
@@ -91,6 +93,8 @@ def send_new_invoice_raised_internal_notification(invoice):
     sender_user = EmailUser.objects.get(email=sender)
 
     _log_approval_email(msg, approval, sender=sender_user)
+
+    return msg
 
 
 def send_new_invoices_raised_internal_notification(invoices):
