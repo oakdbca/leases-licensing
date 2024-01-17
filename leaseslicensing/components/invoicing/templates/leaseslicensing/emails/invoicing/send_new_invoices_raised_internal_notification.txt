@@ -7,7 +7,7 @@
             - {{ invoice.lodgement_number }}
         {% endfor %}
 
-        Before payment can be requested from the proponent, the following steps must be taken for each invoice record:
+        Before payment can be requested from the lease/licence holder, the following steps must be taken for each invoice record:
 
         - Create an oracle invoice with details that match the invoice record
         - Convert it to a digital format &#40;i.e. pdf&#41;

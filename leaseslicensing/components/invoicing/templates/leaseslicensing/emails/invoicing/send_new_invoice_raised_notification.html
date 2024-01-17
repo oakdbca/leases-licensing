@@ -9,7 +9,9 @@
             <strong>Due Date: {{ invoice.date_due }}</strong>
         </p>
 
-        <a href="{{external_invoices_url}}">View All Your Invoices</a>
+        <ul>
+            <li><a href="{{external_invoices_url}}">View All Your Invoices</a></li>
+            <li><a href="{{pay_now_url}}">Pay This Invoice</a></li>
+        </ul>
 
-        <a href="{{pay_now_url}}">Pay This Invoice</a>
 {%  endblock %}
