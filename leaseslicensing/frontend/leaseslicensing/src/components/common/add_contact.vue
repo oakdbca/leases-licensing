@@ -149,6 +149,7 @@ export default {
     props: {
         org_id: {
             type: Number,
+            required: true,
         },
     },
     data: function () {
