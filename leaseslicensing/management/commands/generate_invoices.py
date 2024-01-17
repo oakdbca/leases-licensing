@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.invoicing.email import (
-    send_new_invoice_raised_notification,
+    send_new_invoice_raised_internal_notification,
 )
 from leaseslicensing.components.invoicing.models import Invoice, ScheduledInvoice
 from leaseslicensing.components.proposals.models import Proposal
@@ -85,7 +85,9 @@ class Command(BaseCommand):
                 and not scheduled_invoice.notification_email_sent
             ):
                 # send to the applicant and cc finance officer
-                msg = send_new_invoice_raised_notification(scheduled_invoice.invoice)
+                msg = send_new_invoice_raised_internal_notification(
+                    scheduled_invoice.invoice
+                )
                 scheduled_invoice.attempts_to_send_notification_email += 1
                 if msg:
                     scheduled_invoice.notification_email_sent = True
