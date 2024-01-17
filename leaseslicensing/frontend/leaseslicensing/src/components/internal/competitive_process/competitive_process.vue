@@ -581,7 +581,7 @@ export default {
         },
         finalised: function () {
             /** Returns whether this competitive process is finalized.
-             *  A CP is finalized when it is completed or discarded (TODO is that true?),
+             *  A CP is finalized when it is completed or discarded,
              *  when a winner has been selected and when the winner's license Proposal has
              *  been approved.
              *  A finalized CP can not be unlocked anymore.
