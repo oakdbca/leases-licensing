@@ -364,13 +364,13 @@ class Approval(LicensingModelVersioned):
 
     @property
     def linked_applications(self):
-        return Proposal.objects.filter(
-            Q(approval=self)
-            | Q(
-                previous_application__approval=self,
-                previous_application__proposal_type__code=settings.PROPOSAL_TYPE_AMENDMENT,
-            )
+        ids = Proposal.objects.filter(
+            approval__lodgement_number=self.lodgement_number
+        ).values_list("id", flat=True)
+        all_linked_ids = Proposal.objects.filter(
+            Q(previous_application__in=ids) | Q(id__in=ids)
         ).values_list("lodgement_number", flat=True)
+        return all_linked_ids
 
     @property
     def applicant_type(self):
@@ -727,14 +727,6 @@ class Approval(LicensingModelVersioned):
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.current_proposal.user_has_object_permission(user_id)
-
-    @property
-    def renewed_from_id(self):
-        return self.current_proposal.previous_application.approval.id
-
-    @property
-    def renewed_from(self):
-        return self.current_proposal.previous_application.approval
 
     @classmethod
     def get_approvals_for_emailuser(cls, emailuser_id):
