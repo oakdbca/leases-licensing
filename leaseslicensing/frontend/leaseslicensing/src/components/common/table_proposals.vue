@@ -348,8 +348,8 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     let text = full.application_type.name_display;
-                    if (full.proposal_type.code != 'new') {
-                        text += ` (${full.proposal_type.description})`;
+                    if (full.proposal_type?.code != 'new') {
+                        text += ` (${full.proposal_type?.description})`;
                     }
                     return text;
                 },

@@ -223,13 +223,6 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
             A searched in and ordered queryset
         """
 
-        # Keep a record of this queryset's relevant query parameters for annotations
-        queryset_query_dict = {
-            k: v
-            for k, v in queryset._query.__dict__.items()
-            if k
-            in ["alias_refcount", "alias_map", "alias_cols", "annotations", "table_map"]
-        }
         model = queryset.model
         if model is None:
             return serializers.ValidationError(
@@ -418,15 +411,19 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                 )
 
             # Convert back to Model Queryset using the sorting of `query_model_list`
+            # queryset = (
+            #     model.objects.filter(pk__in=pk_list)
+            #     .distinct()
+            #     .order_by(preserved_order)
+            # )
             queryset = (
-                model.objects.filter(pk__in=pk_list)
-                .distinct()
-                .order_by(preserved_order)
+                queryset.filter(pk__in=pk_list).distinct().order_by(preserved_order)
             )
         else:
             # Convert back to Model Queryset
             pk_list = [l_l.pk for l_l in query_model_list]
-            queryset = model.objects.filter(pk__in=pk_list).distinct()
+            # queryset = model.objects.filter(pk__in=pk_list).distinct()
+            queryset = queryset.filter(pk__in=pk_list).distinct()
             if len(orderings):
                 try:
                     queryset = queryset.order_by(*orderings[0].split(","))
@@ -439,8 +436,6 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                         code=500, detail=f"Could not order queryset by {orderings}"
                     )
 
-        # Restore the queryset's original query parameters
-        queryset._query.__dict__.update(queryset_query_dict)
         return queryset
 
     @basic_exception_handler
