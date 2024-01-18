@@ -83,17 +83,16 @@
                 </div>
             </div>
         </CollapsibleFilters>
-
         <div class="justify-content-end align-items-center mb-2">
-            <div v-if="mapInfoText.length > 0" class="row">
+            <div class="row">
                 <div class="col-md-6">
-                    <BootstrapAlert class="mb-0">
+                    <BootstrapAlert v-if="mapInfoText.length > 0" class="mb-0">
                         <!-- eslint-disable vue/no-v-html -->
                         <p><span v-html="mapInfoText"></span></p>
                         <!--eslint-enable-->
                     </BootstrapAlert>
                 </div>
-                <div class="col-md-6">
+                <div :class="mapInfoText.length > 0 ? 'col-md-6' : 'col-md-12'">
                     <div class="row" style="margin: auto">
                         <BootstrapAlert
                             v-if="hasErrorMessage"
