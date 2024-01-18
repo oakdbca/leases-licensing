@@ -461,20 +461,16 @@ export default {
         },
         renewalReview: function (canBeRenewed) {
             let vm = this;
+            let action = canBeRenewed ? 'Allow' : 'Disallow';
+            let confirmButtonColour = canBeRenewed ? '#226fbb' : '#dc143c';
             Swal.fire({
-                title: 'Are you sure?',
-                text:
-                    'You are about to ' +
-                    (canBeRenewed ? 'allow' : 'disallow') +
-                    ' renewal of approval ' +
-                    vm.approval.lodgement_number +
-                    '.',
-                icon: 'warning',
+                title: `${action} Renewal`,
+                text: `You are about to ${action} renewal of approval ${vm.approval.lodgement_number}.`,
+                icon: 'question',
                 reverseButtons: true,
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                confirmButtonText:
-                    (canBeRenewed ? 'Allow' : 'Disallow') + ' Renewal',
+                confirmButtonText: `${action} Renewal`,
+                confirmButtonColor: `${confirmButtonColour}`,
             }).then((result) => {
                 if (result.isConfirmed) {
                     let vm = this;
