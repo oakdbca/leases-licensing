@@ -448,8 +448,9 @@ export default {
             return {
                 data: 'site_name',
                 orderable: true,
-                searchable: false, // FIXME: make searchable
+                searchable: true,
                 visible: true,
+                name: 'current_proposal__site_name__name',
                 render: function (row, type, full) {
                     return full.site_name;
                 },
@@ -459,8 +460,9 @@ export default {
             return {
                 data: 'groups_names_list',
                 orderable: true,
-                searchable: false, // FIXME: make it searchable
+                searchable: true,
                 visible: true,
+                name: 'current_proposal__groups__group__name',
                 render: function (row, type, full) {
                     let html = '';
                     if (full.groups_names_list) {
@@ -480,8 +482,9 @@ export default {
             return {
                 data: 'categories_list',
                 orderable: true,
-                searchable: false, // FIXME: make it searchable
+                searchable: true,
                 visible: true,
+                name: 'current_proposal__categories__category__name',
                 render: function (row, type, full) {
                     let html = '';
                     if (full.categories_list) {
@@ -710,7 +713,9 @@ export default {
                             }
 
                             if (
-                                'current_pending_renewal_review' == full.status
+                                constants.APPROVAL_STATUS
+                                    .CURRENT_PENDING_RENEWAL_REVIEW.TEXT ==
+                                full.status
                             ) {
                                 links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
                             }
@@ -1456,16 +1461,11 @@ export default {
                 }
             });
         },
-        approvalReviewRenewal: function (
-            // eslint-disable-next-line no-unused-vars
-            approval_id,
-            // eslint-disable-next-line no-unused-vars
-            approval_lodgement_number
-        ) {
-            // Todo ??
-            alert(
-                'Will implement when we have an idea what is supposed to happen here.'
-            );
+        approvalReviewRenewal: function (approval_id) {
+            this.$router.push({
+                name: 'internal-approval-detail',
+                params: { approval_id: approval_id },
+            });
         },
         renewApproval: async function (proposal_id) {
             let vm = this;

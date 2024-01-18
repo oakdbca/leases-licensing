@@ -170,6 +170,19 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset, Select2ListMixin):
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def process_shapefile_document(self, request, *args, **kwargs):
+        instance = self.get_object()
+        returned_data = process_generic_document(
+            request, instance, document_type="shapefile_document"
+        )
+        if returned_data:
+            return Response(returned_data)
+        else:
+            return Response()
+
     @basic_exception_handler
     def perform_update(self, serializer):
         instance = serializer.save()

@@ -325,7 +325,7 @@ import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 import Swal from 'sweetalert2';
 import TableRelatedItems from '@/components/common/table_related_items.vue';
 import InvoicingDetails from '@/components/common/invoicing_details.vue';
-import MapComponent from '@/components/common/component_map_with_filters_v2';
+import MapComponent from '@/components/common/component_map.vue';
 import ApprovalDetails from '@/components/common/approval_details.vue';
 import currency from 'currency.js';
 export default {
@@ -461,20 +461,16 @@ export default {
         },
         renewalReview: function (canBeRenewed) {
             let vm = this;
+            let action = canBeRenewed ? 'Allow' : 'Disallow';
+            let confirmButtonColour = canBeRenewed ? '#226fbb' : '#dc143c';
             Swal.fire({
-                title: 'Are you sure?',
-                text:
-                    'You are about to ' +
-                    (canBeRenewed ? 'allow' : 'disallow') +
-                    ' renewal of approval ' +
-                    vm.approval.lodgement_number +
-                    '.',
-                icon: 'warning',
+                title: `${action} Renewal`,
+                text: `You are about to ${action} renewal of approval ${vm.approval.lodgement_number}.`,
+                icon: 'question',
                 reverseButtons: true,
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                confirmButtonText:
-                    (canBeRenewed ? 'Allow' : 'Disallow') + ' Renewal',
+                confirmButtonText: `${action} Renewal`,
+                confirmButtonColor: `${confirmButtonColour}`,
             }).then((result) => {
                 if (result.isConfirmed) {
                     let vm = this;

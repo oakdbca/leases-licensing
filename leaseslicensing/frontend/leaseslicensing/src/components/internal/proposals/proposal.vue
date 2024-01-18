@@ -2284,7 +2284,7 @@ export default {
             if (!vm.proposal.proposalgeometry.features.length > 0) {
                 swal.fire({
                     title: 'No Land Area Selected',
-                    text: 'You must indicate the land area before entering conditions. Please either draw one or more polygons on the map or upload a shapefile and then click the save button.',
+                    text: 'You must indicate the land area before entering conditions. Please either draw one or more polygons on the map or upload a shapefile and then click the save button. If you have already drawn a polygon, please save the proposal and then try again.',
                     icon: 'warning',
                     didClose: () => {
                         setTimeout(() => {
@@ -2382,7 +2382,7 @@ export default {
             if (!vm.proposal.proposalgeometry.features.length > 0) {
                 swal.fire({
                     title: 'No Land Area Selected',
-                    text: 'You must indicate the land area before entering conditions. Please either draw one or more polygons on the map or upload a shapefile and then click the save button.',
+                    text: 'You must indicate the land area before entering conditions. Please either draw one or more polygons on the map or upload a shapefile and then click the save button, please save the proposal and then try again.',
                     icon: 'warning',
                     didClose: () => {
                         setTimeout(() => {

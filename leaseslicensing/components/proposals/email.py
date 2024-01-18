@@ -267,9 +267,7 @@ def send_approver_decline_email_notification(reason, request, proposal):
     if proposal.org_applicant:
         _log_org_email(msg, proposal.org_applicant, proposal.submitter, sender=sender)
     elif proposal.ind_applicant:
-        # TODO: implement logging
-        # _log_user_email(msg, proposal.submitter, proposal.submitter, sender=sender)
-        pass
+        _log_user_email(msg, proposal.ind_applicant, proposal.submitter, sender=sender)
 
 
 def send_approver_approve_email_notification(request, proposal):
@@ -579,7 +577,7 @@ def _log_proposal_email(
             EmailMessage,
         ),
     ):
-        # TODO this will log the plain text body, should we log the html instead
+        # Note: this will log the plain text body
         text = email_message.body
         subject = email_message.subject
         fromm = smart_text(sender) if sender else smart_text(email_message.from_email)
@@ -641,7 +639,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
             EmailMessage,
         ),
     ):
-        # TODO this will log the plain text body, should we log the html instead
+        # Note: this will log the plain text body
         text = email_message.body
         subject = email_message.subject
         fromm = smart_text(sender) if sender else smart_text(email_message.from_email)
@@ -696,7 +694,7 @@ def _log_user_email(email_message, emailuser, customer, sender=None):
             EmailMessage,
         ),
     ):
-        # TODO this will log the plain text body, should we log the html instead
+        # Note: this will log the plain text body
         text = email_message.body
         subject = email_message.subject
         fromm = smart_text(sender) if sender else smart_text(email_message.from_email)

@@ -27,7 +27,6 @@
         <AddPartyModal
             ref="add_party"
             @close-modal="closeModal"
-            @refresh-datatable="refreshFromResponse"
             @party-to-add="addParty"
         />
     </div>
@@ -135,9 +134,10 @@ export default {
         column_organisation: () => {
             return {
                 data: null,
+                className: 'text-truncate',
                 render: function (row, type, full) {
                     if (full.is_organisation)
-                        return full.organisation.ledger_organisation_name;
+                        return `<span class="d-inline-block text-truncate" style="max-width:180px;">${full.organisation.ledger_organisation_name}</span>`;
                     return '';
                 },
             };
@@ -366,10 +366,6 @@ export default {
         },
         closeModal: function () {
             this.uuid++;
-        },
-        refreshFromResponse: async function () {
-            // await this.$refs.vessels_datatable.vmDataTable.ajax.reload();
-            // TODO: update table
         },
         number_of_columns: function () {
             // Return the number of visible columns

@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 from django.db.models import Q
@@ -48,7 +49,10 @@ class Command(BaseCommand):
             Q(invoice__isnull=True)
             | (
                 Q(notification_email_sent=False)
-                & Q(attempts_to_send_notification_email__lte=4)
+                & Q(
+                    attempts_to_send_notification_email__lte=settings.MAX_ATTEMPTS_TO_SEND_INVOICE_NOTIFICATION_EMAIL
+                    - 1
+                )
             ),
             invoicing_details__proposal__approval__status__in=Approval.CURRENT_APPROVAL_STATUSES,
             invoicing_details__proposal__processing_status=Proposal.PROCESSING_STATUS_APPROVED,
@@ -92,9 +96,19 @@ class Command(BaseCommand):
                 if msg:
                     scheduled_invoice.notification_email_sent = True
                 else:
-                    logger.error(
-                        f"Failed to send email notification for invoice {scheduled_invoice.invoice.id}"
-                    )
+                    if (
+                        scheduled_invoice.attempts_to_send_notification_email
+                        >= settings.MAX_ATTEMPTS_TO_SEND_INVOICE_NOTIFICATION_EMAIL
+                    ):
+                        logger.error(
+                            f"Failed to send email notification for invoice {scheduled_invoice.invoice.id} "
+                            f"after {settings.MAX_ATTEMPTS_TO_SEND_INVOICE_NOTIFICATION_EMAIL} "
+                            "attempts. Will not attempt again."
+                        )
+                    else:
+                        logger.error(
+                            f"Failed to send email notification for invoice {scheduled_invoice.invoice.id}"
+                        )
 
                 scheduled_invoice.save()
 
