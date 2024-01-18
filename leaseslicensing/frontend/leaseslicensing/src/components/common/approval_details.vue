@@ -96,6 +96,28 @@
                         </div>
 
                         <form
+                            v-if="approval_details.renewed_from"
+                            class="form-horizontal mb-2"
+                        >
+                            <div class="mb-3 row">
+                                <label
+                                    for="txt-start-date"
+                                    class="col-3 col-form-label"
+                                    >Renewed From</label
+                                >
+                                <div class="col-3">
+                                    <a
+                                        :href="
+                                            '/internal/approval/' +
+                                            approval_details.renewed_from_id
+                                        "
+                                        >{{ approval_details.renewed_from }}</a
+                                    >
+                                </div>
+                            </div>
+                        </form>
+
+                        <form
                             v-if="approval_details.start_date"
                             class="form-horizontal mb-2"
                         >
@@ -146,7 +168,7 @@
                             :searchable="false"
                             :readonly="true"
                             placeholder="N/A"
-                            @update:selectedData="
+                            @update:selected-data="
                                 approval_details.gis_data = $event // Update gis data example
                             "
                         />
