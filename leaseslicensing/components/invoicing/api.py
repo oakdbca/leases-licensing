@@ -334,22 +334,46 @@ class PayInvoiceSuccessCallbackView(APIView):
             ).exists()
         ):
             logger.info(
-                f"Invoice uuid: {uuid}.",
+                f"Looking for Invoice with uuid: {uuid}.",
             )
             invoice = Invoice.objects.get(uuid=uuid)
 
-            InvoiceTransaction.objects.create(
-                invoice=invoice,
-                debit=invoice.amount,
+            logger.info(
+                f"Found - Invoice: {invoice.id}",
             )
+
+            if invoice.amount > Decimal("0.00"):
+                it = InvoiceTransaction.objects.create(
+                    invoice=invoice,
+                    debit=invoice.amount,
+                )
+                logger.info(f"Created Invoice Transaction: {it.id} Debit: {it.debit}")
+            elif invoice.amount < Decimal("0.00"):
+                it = InvoiceTransaction.objects.create(
+                    invoice=invoice,
+                    credit=invoice.amount,
+                )
+                logger.info(f"Created Invoice Transaction: {it.id} Credit: {it.credit}")
 
             invoice.status = Invoice.INVOICE_STATUS_PAID
             invoice.date_paid = timezone.now()
             invoice.save()
 
+            logger.info(
+                f"Invoice: {invoice.id} - Marked as paid.",
+            )
+
+            logger.info(
+                f"Sending notifications for Invoice: {invoice.id}.",
+            )
+
             send_invoice_paid_external_notification(invoice)
 
             send_invoice_paid_internal_notification(invoice)
+
+            logger.info(
+                f"Notifications sent for Invoice: {invoice.id}.",
+            )
 
             logger.info(
                 "Returning status.HTTP_200_OK. Invoice marked as paid successfully.",
