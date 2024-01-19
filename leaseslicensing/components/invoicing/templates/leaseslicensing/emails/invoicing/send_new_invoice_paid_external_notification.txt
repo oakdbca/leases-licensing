@@ -3,8 +3,8 @@
 {%  block content %}
             We have received your payment of {{ invoice.amount }} for Invoice {{ invoice.lodgement_number }} in relation to {{ approval.approval_type }} {{ approval.lodgement_number }}.
 
-            Business Name: {{ dbca.name }}
-            ABN: {{ dbca.abn }}
+            Business Name: {{ dbca_name }}
+            ABN: {{ dbca_abn }}
 
             Invoice Number: {{ invoice.oracle_invoice_number }}
             Date Issued: {{ invoice.date_issued }}
