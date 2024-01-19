@@ -1,5 +1,5 @@
 <template>
-    <div :id="'invoiceEditOracleInvoiceNumber' + invoiceId">
+    <div :id="'invoiceEditOracleInvoiceNumber' + invoiceId" :key="invoiceId">
         <modal
             transition="modal fade"
             :title="title"
@@ -24,7 +24,10 @@
                                 >
                                 <div class="col-sm-8">
                                     <input
-                                        id="oracle-invoice-number"
+                                        :id="
+                                            'oracle-invoice-number' + invoiceId
+                                        "
+                                        v-model="oracleInvoiceNumber"
                                         type="text"
                                         class="form-control"
                                         required
@@ -43,7 +46,7 @@
                                 >
                                 <div class="col-sm-8">
                                     <input
-                                        id="oracle-invoice"
+                                        :id="'oracle-invoice' + invoiceId"
                                         class="form-control"
                                         type="file"
                                         data-filetype="application/pdf"
@@ -83,7 +86,7 @@ export default {
             type: String,
             default: null,
         },
-        oracleInvoiceNumber: {
+        selectedOracleInvoiceNumber: {
             type: String,
             default: null,
         },
@@ -92,7 +95,7 @@ export default {
     data: function () {
         return {
             isModalOpen: false,
-            transactions: null,
+            oracleInvoiceNumber: null,
         };
     },
     computed: {
@@ -108,11 +111,10 @@ export default {
             let vm = this;
             if (newVal) {
                 vm.$nextTick(function () {
-                    $('#oracle-invoice-number').focus();
-                    if (this.oracleInvoiceNumber) {
-                        $('#oracle-invoice-number').val(
-                            this.oracleInvoiceNumber
-                        );
+                    $('#oracle-invoice-number' + vm.invoiceId).focus();
+                    if (this.selectedOracleInvoiceNumber) {
+                        this.oracleInvoiceNumber =
+                            this.selectedOracleInvoiceNumber;
                     }
                 });
             }
@@ -172,45 +174,54 @@ export default {
         },
         updateOracleInvoiceNumber: function () {
             let vm = this;
-            let oracleInvoiceNumber = $('#oracle-invoice-number').val();
-            let oracleInvoice = $('#oracle-invoice').prop('files')[0];
+            let oracleInvoice = document.getElementById(
+                'oracle-invoice' + vm.invoiceId
+            );
+
             var data = new FormData();
-            for (let key in this.invoice) {
-                data.append(key, this.invoice[key]);
-            }
-            data.append('invoice_pdf', oracleInvoice);
-            if (oracleInvoiceNumber) {
-                const requestOptions = {
-                    method: 'PATCH',
-                    body: data,
-                };
-                fetch(
-                    api_endpoints.invoices +
-                        `${vm.invoiceId}/upload_oracle_invoice/`,
-                    requestOptions
-                )
-                    .then(async (response) => {
-                        const data = await response.json();
-                        if (!response.ok) {
-                            const error =
-                                (data && data.message) || response.statusText;
-                            console.error(error);
-                        }
+            data.append('oracle_invoice_number', vm.oracleInvoiceNumber);
+            data.append('invoice_pdf', oracleInvoice.files[0]);
+
+            const requestOptions = {
+                method: 'POST',
+                body: data,
+            };
+            fetch(
+                api_endpoints.invoices +
+                    `${vm.invoiceId}/upload_oracle_invoice/`,
+                requestOptions
+            )
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText;
+                        console.error(error);
                         Swal.fire({
-                            icon: 'success',
-                            title: `Upload Successful`,
-                            text: `Oracle Invoice Number Uploaded for Invoice Record: ${vm.invoiceLodgementNumber}`,
+                            icon: 'error',
+                            title: `Upload Failed`,
+                            text: JSON.stringify(data.errors),
                             buttonsStyling: false,
                             customClass: {
                                 confirmButton: 'btn btn-primary',
                             },
                         });
-                        vm.$emit('oracleInvoiceNumberUploaded');
-                    })
-                    .catch((error) => {
-                        console.error('There was an error!', error);
+                        return;
+                    }
+                    Swal.fire({
+                        icon: 'success',
+                        title: `Upload Successful`,
+                        text: `Oracle Invoice Number Uploaded for Invoice Record: ${vm.invoiceLodgementNumber}`,
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: 'btn btn-primary',
+                        },
                     });
-            }
+                    vm.$emit('oracleInvoiceNumberUploaded');
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error);
+                });
         },
     },
 };
