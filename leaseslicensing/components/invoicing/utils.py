@@ -388,7 +388,7 @@ def generate_ledger_invoice(invoice: Invoice) -> None:
             return
         fake_request.user = retrieve_email_user(admin_contact.user)
     else:
-        fake_request.user = approval.applicant.emailuser_id
+        fake_request.user = retrieve_email_user(approval.applicant.emailuser_id)
 
     logger.info(
         f"Setting request user {fake_request.user} for Invoice Record: {invoice.lodgement_number}"
