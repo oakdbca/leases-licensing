@@ -704,11 +704,9 @@ class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             "id",
-            "invoice_pdf",
             "oracle_invoice_number",
             "date_issued",
             "date_due",
-            "oracle_invoice_number",
             "status",
         ]
 
