@@ -273,13 +273,19 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             kwargs={"id": invoice.id},
         )
 
+        if settings.DEBUG and "localhost" in settings.SITE_URL:
+            # For local development, these urls need to have a full domain to be accepted by
+            # ledger as valid urls otherwise there will be a 'Payments Error'
+            return_url = settings.SITE_URL + return_url
+            fallback_url = settings.SITE_URL + fallback_url
+        else:
+            return_url = request.build_absolute_uri(return_url)
+            fallback_url = request.build_absolute_uri(fallback_url)
+
         logger.debug(f"Return URL: {request.build_absolute_uri(return_url)}")
         logger.debug(f"Fallback URL: {request.build_absolute_uri(fallback_url)}")
         payment_session = generate_payment_session(
-            request,
-            invoice.invoice_reference,
-            request.build_absolute_uri(return_url),
-            request.build_absolute_uri(fallback_url),
+            request, invoice.invoice_reference, return_url, fallback_url
         )
         logger.info(f"Payment session: {payment_session}")
 
