@@ -668,6 +668,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "date_due",
             "is_finance_officer",
             "is_customer",
+            "description",
         ]
         datatables_always_serialize = [
             "status",
