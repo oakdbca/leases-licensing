@@ -3,6 +3,7 @@
 {%  block content %}
     A new invoice has been raised for {{ approval.approval_type }} {{ approval.lodgement_number }}.
 
+    Amount: ${{ invoice.amount }}
     Due Date: {{ invoice.date_due }}
 
     To view all your invoices:

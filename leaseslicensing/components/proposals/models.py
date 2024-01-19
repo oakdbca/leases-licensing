@@ -2481,7 +2481,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         proposal_type_comment_names = {t1: t2 for t1, t2 in settings.PROPOSAL_TYPES}
 
         if (
-            self.proposal_type.code in [PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL]
+            self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
             and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
         ):
             # Lease License (Amendment or Renewal)
@@ -2531,10 +2531,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
             )
 
-            # TODO: Do compliances need to be created again for amended or renewed approvals?
+            # TODO: Do compliances need to be created again for amended approvals
             self.generate_compliances(approval, request)
-            # TODO: Do invoicing details need to be created again for amended or renewed approvals?
+
+            # TODO: Do invoicing details need to be created again for amended
             self.generate_invoicing_details()
+
             self.processing_status = (
                 Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
             )
@@ -2596,21 +2598,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
             )
 
-        elif (
-            self.proposal_type.code == PROPOSAL_TYPE_NEW
-            or self.proposal_type.code == PROPOSAL_TYPE_MIGRATION
-        ):
-            # TODO: could be PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST or
-            # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
-            # When Registration_of_Interest
-            #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST
-            #     or
-            #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
-            # When Lease Licence
-            #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
-
+        elif self.proposal_type.code in [
+            PROPOSAL_TYPE_NEW,
+            PROPOSAL_TYPE_RENEWAL,
+            PROPOSAL_TYPE_MIGRATION,
+        ]:
             if self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST:
-                # Registration of Interest (New)
                 if (
                     self.proposed_issuance_approval.get("decision")
                     == settings.APPROVE_LEASE_LICENCE
@@ -2693,7 +2686,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
                     )
             elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
-                # Lease Licence (New)
                 start_date = details.get("start_date", None)
                 expiry_date = details.get("expiry_date", None)
                 approval_type = ApprovalType.objects.get(id=details["approval_type"])
@@ -2730,6 +2722,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                 )
                 send_license_ready_for_invoicing_notification(self, request)
+
+                if self.proposal_type.code == PROPOSAL_TYPE_RENEWAL:
+                    # Update the status for the approval that is being renewed from pending renewal back to current
+                    self.previous_application.approval.status = (
+                        Approval.APPROVAL_STATUS_CURRENT
+                    )
+                    self.previous_application.approval.save()
 
             self.approved_by = request.user.id
 

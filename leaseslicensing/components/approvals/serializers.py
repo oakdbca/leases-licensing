@@ -203,6 +203,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
     gis_data = serializers.SerializerMethodField(read_only=True)
     geometry_objs = serializers.SerializerMethodField(read_only=True)
     approved_by = serializers.SerializerMethodField()
+    renewed_from_id = serializers.IntegerField(allow_null=True, read_only=True)
+    renewed_from = serializers.CharField(allow_null=True, read_only=True)
 
     class Meta:
         model = Approval
@@ -268,6 +270,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "gis_data",
             "geometry_objs",
             "approved_by",
+            "renewed_from_id",
+            "renewed_from",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -310,6 +314,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "submitter",
             "groups_comma_list",
             "invoicing_details",
+            "renewed_from_id",
+            "renewed_from",
         )
 
     def get_licence_document(self, obj):

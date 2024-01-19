@@ -13,7 +13,21 @@ import logging
 import math
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.utils import timezone
+from ledger_api_client import utils as ledger_api_client_utils
+from rest_framework import serializers
+
+from leaseslicensing.components.invoicing.email import (
+    send_new_invoice_raised_notification,
+)
+from leaseslicensing.components.invoicing.models import Invoice
+from leaseslicensing.components.organisations.models import (
+    Organisation,
+    OrganisationContact,
+)
+from leaseslicensing.helpers import gst_from_total
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
 
@@ -304,3 +318,138 @@ def period_contains_leap_year_day(start_date, end_date):
             if end_date.month > 2 or (end_date.month == 2 and end_date.day == 29):
                 return True
     return False
+
+
+def generate_ledger_invoice(invoice: Invoice) -> None:
+    """Takes a leases licensing invoice record and generates a future ledger invoice via api
+    Then attaches the oracle invoice pdf to the ledger invoice."""
+    logger.info(
+        f"Creating future ledger invoice for Invoice: {invoice.lodgement_number}"
+    )
+    approval = invoice.approval
+
+    description = f"{approval.approval_type} {approval.lodgement_number}: "
+    if invoice.ad_hoc:
+        description += invoice.description
+    else:
+        description += f"{approval.invoicing_details.charge_method}"
+
+    price_incl_tax = invoice.amount
+    price_excl_tax = invoice.amount
+
+    if not approval.approval_type.gst_free:
+        price_excl_tax = price_incl_tax - gst_from_total(price_incl_tax)
+
+    ledger_order_lines = []
+
+    oracle_code = None  # Todo add code to get oracle code
+    if settings.DEBUG:
+        oracle_code = settings.TEST_ORACLE_CODE
+
+    ledger_order_lines.append(
+        {
+            "ledger_description": description,
+            "quantity": 1,
+            "price_excl_tax": str(
+                price_excl_tax
+            ),  # Todo gst applies for leases but not for licences
+            "price_incl_tax": str(price_incl_tax),
+            "oracle_code": oracle_code,
+            "line_status": settings.LEDGER_DEFAULT_LINE_STATUS,
+        },
+    )
+    logger.info(
+        f"Setting ledger order lines {ledger_order_lines} for Invoice: {invoice.lodgement_number}"
+    )
+
+    # We need a fake request as we are adding the proponent as the request.user
+    fake_request = ledger_api_client_utils.FakeRequestSessionObj()
+
+    basket_params = {
+        "products": ledger_order_lines,
+        "vouchers": [],
+        "system": settings.PAYMENT_SYSTEM_PREFIX,
+        "tax_override": True,
+        "custom_basket": True,
+        "booking_reference": str(invoice.lodgement_number),
+        "no_payment": True,
+    }
+    logger.info(
+        f"Setting basket parameters: {basket_params} for Invoice: {invoice.lodgement_number}"
+    )
+
+    if isinstance(approval.applicant, Organisation):
+        organisation = approval.applicant
+        basket_params["organisation"] = organisation.ledger_organisation_id
+        admin_contact = organisation.contacts.filter(
+            user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
+            user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+        ).first()
+        if not admin_contact:
+            logger.error(
+                f"Unable to retrieve admin contact for organisation: {organisation}"
+            )
+            return
+        fake_request.user = retrieve_email_user(admin_contact.user)
+    else:
+        fake_request.user = retrieve_email_user(approval.applicant.emailuser_id)
+
+    logger.info(
+        f"Setting request user {fake_request.user} for Invoice Record: {invoice.lodgement_number}"
+    )
+
+    logger.info(
+        f"Creating basket session for Invoice Record: {invoice.lodgement_number}"
+    )
+    basket_hash = ledger_api_client_utils.create_basket_session(
+        fake_request, fake_request.user.id, basket_params
+    )
+    basket_hash = basket_hash.split("|")[0]
+    invoice_text = f"Leases Licensing Invoice {invoice.lodgement_number}"
+    if approval.current_proposal.proponent_reference_number:
+        invoice_text += (
+            f"(Proponent Ref: {approval.current_proposal.proponent_reference_number})"
+        )
+    return_preload_url = (
+        f"{settings.LEASES_LICENSING_EXTERNAL_URL}"
+        f"/api/invoicing/ledger-api-invoice-success-callback/{invoice.uuid}"
+    )
+
+    logger.info(
+        f"Creating future invoice for Invoice Record: {invoice.lodgement_number}"
+    )
+    future_invoice = ledger_api_client_utils.process_create_future_invoice(
+        basket_hash, invoice_text, return_preload_url
+    )
+
+    if 200 != future_invoice["status"]:
+        logger.error(
+            f"Failed to create future Invoice {invoice.lodgement_number} with basket_hash "
+            f"{basket_hash}, invoice_text {invoice_text}, return_preload_url {return_preload_url}"
+        )
+        return
+
+    data = future_invoice["data"]
+    invoice.order_number = data["order"]
+    invoice.basket_id = data["basket_id"]
+    invoice.invoice_reference = data["invoice"]
+    invoice.save()
+
+    # Attach the oracle invoice to ledger invoice
+    response = ledger_api_client_utils.update_ledger_oracle_invoice(
+        invoice.invoice_reference,
+        invoice.oracle_invoice_number,
+        invoice.invoice_pdf.path,
+    )
+
+    if 200 != response["status"]:
+        serializers.ValidationError(
+            {
+                "ledger api client error": [
+                    f"Failed to attach oracle invoice to ledger invoice: { response['message'] }"
+                ]
+            }
+        )
+
+    # Send request for payment to proponent
+    send_new_invoice_raised_notification(invoice)

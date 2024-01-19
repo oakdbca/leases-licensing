@@ -71,7 +71,6 @@ INSTALLED_APPS.pop(INSTALLED_APPS.index("django_cron"))
 
 ADD_REVERSION_ADMIN = True
 
-# maximum number of days allowed for a booking
 WSGI_APPLICATION = "leaseslicensing.wsgi.application"
 
 if DEBUG:
@@ -186,6 +185,7 @@ DEP_POSTAL = env(
 )
 DEP_NAME = env("DEP_NAME", "Department of Biodiversity, Conservation and Attractions")
 DEP_NAME_SHORT = env("DEP_NAME_SHORT", "DBCA")
+DEP_ABN = env("DEP_ABN", "38052249024")
 
 BRANCH_NAME = env("BRANCH_NAME", "Leases and Licensing Branch")
 DEP_ADDRESS = env("DEP_ADDRESS", "17 Dick Perry Avenue, Kensington WA 6151")
@@ -222,6 +222,8 @@ os.environ[
 ] = "('ledger_description','quantity','price_incl_tax','price_excl_tax','oracle_code')"
 
 LEDGER_DEFAULT_LINE_STATUS = 1
+
+TEST_ORACLE_CODE = env("TEST_ORACLE_CODE", "LEASES_LICENSING_TEST_ORACLE_CODE")
 
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
@@ -556,6 +558,7 @@ ACTION_LOGGING_IDENTIFIER_FIELDS = [
 
 LOV_CACHE_TIMEOUT = 60 * 60 * 3  # 3 hours
 
+CACHE_TIMEOUT_10_SECONDS = 10
 CACHE_TIMEOUT_1_MINUTE = 60
 CACHE_TIMEOUT_5_MINUTES = 60 * 5
 CACHE_TIMEOUT_2_HOURS = 60 * 60 * 2

@@ -107,7 +107,7 @@
         </div>
         <GenerateAdHocInvoiceRecord
             ref="invoice_raise_ad_hoc"
-            @adHocInvoiceRecordGenerated="adHocInvoiceRecordGenerated"
+            @ad-hoc-invoice-record-generated="adHocInvoiceRecordGenerated"
         >
         </GenerateAdHocInvoiceRecord>
         <InvoiceViewTransactions
@@ -121,8 +121,8 @@
             ref="invoice_upload_oracle_invoice"
             :invoice-id="selectedInvoiceId"
             :invoice-lodgement-number="selectedInvoiceLodgementNumber"
-            :oracle-invoice-number="selectedInvoiceOracleInvoiceNumber"
-            @oracleInvoiceNumberUploaded="oracleInvoiceNumberUploaded"
+            :selected-oracle-invoice-number="selectedInvoiceOracleInvoiceNumber"
+            @oracle-invoice-number-uploaded="oracleInvoiceNumberUploaded"
         >
         </UploadOracleInvoice>
         <InvoiceRecordTransaction
@@ -131,7 +131,7 @@
             :invoice_lodgement_number="selectedInvoiceLodgementNumber"
             :balance_remaining="selectedInvoiceBalanceRemaining"
             :force="true"
-            @transactionRecorded="transactionRecorded"
+            @transaction-recorded="transactionRecorded"
         >
         </InvoiceRecordTransaction>
     </div>
@@ -258,7 +258,6 @@ export default {
                     'Type',
                     'Holder',
                     'Status',
-                    'Oracle Invoice',
                     'Ledger Invoice',
                     'Amount',
                     'GST Free',
@@ -366,21 +365,6 @@ export default {
                     if ('void' == full.status) {
                         return `<span class="badge bg-secondary">${full.status_display}</span>`;
                     }
-                },
-            };
-        },
-        oracleInvoicePDFColumn: function () {
-            return {
-                data: 'invoice_pdf_secure_url',
-                orderable: true,
-                searchable: true,
-                visible: true,
-                name: 'oracle_invoice_number',
-                render: function (row, type, full) {
-                    if (!full.invoice_pdf_secure_url) {
-                        return 'Not Yet Uploaded';
-                    }
-                    return `<a href="${full.invoice_pdf_secure_url}" target="_blank">${full.oracle_invoice_number} <i class="fa-solid fa-file-pdf fa-lg ps-1" style="color:red;"></i></a>`;
                 },
             };
         },
@@ -493,10 +477,7 @@ export default {
                                 links += `<a href="#${full.id}" data-record-transaction="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-balance-remaining="${full.balance}">Record Transaction</a><br />`;
                             }
                         }
-                        if (
-                            !full.invoice_pdf_secure_url ||
-                            !full.oracle_invoice_number
-                        ) {
+                        if (!full.oracle_invoice_number) {
                             links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Upload Oracle Invoice</a><br />`;
                         }
                     }
@@ -527,7 +508,7 @@ export default {
                 this.approvalTypeColumn,
                 this.holderColumn,
                 this.statusColumn,
-                this.oracleInvoicePDFColumn,
+                this.ledgerInvoicePDFColumn,
                 this.amountColumn,
                 this.incGSTColumn,
                 this.dateDueColumn,
@@ -542,7 +523,6 @@ export default {
                     this.approvalTypeColumn,
                     this.holderColumn,
                     this.statusColumn,
-                    this.oracleInvoicePDFColumn,
                     this.ledgerInvoicePDFColumn,
                     this.amountColumn,
                     this.incGSTColumn,

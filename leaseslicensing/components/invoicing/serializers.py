@@ -668,6 +668,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "date_due",
             "is_finance_officer",
             "is_customer",
+            "description",
         ]
         datatables_always_serialize = [
             "status",
@@ -704,11 +705,9 @@ class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             "id",
-            "invoice_pdf",
             "oracle_invoice_number",
             "date_issued",
             "date_due",
-            "oracle_invoice_number",
             "status",
         ]
 

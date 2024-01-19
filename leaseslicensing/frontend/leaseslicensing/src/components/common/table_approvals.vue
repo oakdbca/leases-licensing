@@ -1476,7 +1476,14 @@ export default {
                 text: 'Are you sure you want to renew this approval?',
                 icon: 'warning',
                 showCancelButton: true,
+                reverseButtons: true,
                 confirmButtonText: 'Renew approval',
+                confirmButtonColor: '#226fbb',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2',
+                },
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     const requestOptions = {

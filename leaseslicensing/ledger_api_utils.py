@@ -19,8 +19,7 @@ def retrieve_email_user(email_user_id):
     email_user = cache.get(cache_key)
     if email_user is None:
         email_user = EmailUser.objects.get(id=email_user_id)
-        # Todo: A per request cache would be best here
-        cache.set(cache_key, email_user, settings.CACHE_TIMEOUT_1_MINUTE)
+        cache.set(cache_key, email_user, settings.CACHE_TIMEOUT_10_SECONDS)
     return email_user
 
 
@@ -39,18 +38,3 @@ def retrieve_default_from_email_user():
 
         cache.set(cache_key, default_from_email_user, settings.CACHE_TIMEOUT_NEVER)
     return default_from_email_user
-
-
-def retrieve_dbca_ledger_organisation():
-    cache_key = settings.CACHE_KEY_DBCA_LEDGER_ORGANISATION
-    dbca_ledger_organisation = cache.get(cache_key)
-    if dbca_ledger_organisation is None:
-        try:
-            dbca_ledger_organisation = EmailUser.objects.get(name=settings.DEP_NAME)
-        except EmailUser.DoesNotExist:
-            logger.critical(
-                f"DBCA Ledger Organisation does not exist: {settings.DEP_NAME}"
-            )
-
-        cache.set(cache_key, dbca_ledger_organisation, settings.CACHE_TIMEOUT_NEVER)
-    return dbca_ledger_organisation

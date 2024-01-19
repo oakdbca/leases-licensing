@@ -11,7 +11,6 @@ from leaseslicensing.components.approvals.email import (
 )
 from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.helpers import emails_list_for_group
-from leaseslicensing.ledger_api_utils import retrieve_dbca_ledger_organisation
 
 logger = logging.getLogger(__name__)
 
@@ -189,12 +188,11 @@ def send_invoice_paid_external_notification(invoice):
         f"{settings.LEASES_LICENSING_EXTERNAL_URL}{external_invoices_url}"
     )
 
-    dbca_ledger_organisation = retrieve_dbca_ledger_organisation()
-
     context = {
         "invoice": invoice,
         "approval": approval,
-        "dbca": dbca_ledger_organisation,
+        "dbca_name": settings.DEP_NAME,
+        "dbca_abn": settings.DEP_ABN,
         "settings": settings,
         "external_invoices_url": external_invoices_url,
     }
