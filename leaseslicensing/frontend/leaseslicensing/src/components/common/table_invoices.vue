@@ -258,7 +258,6 @@ export default {
                     'Type',
                     'Holder',
                     'Status',
-                    'Oracle Invoice',
                     'Ledger Invoice',
                     'Amount',
                     'GST Free',
@@ -366,21 +365,6 @@ export default {
                     if ('void' == full.status) {
                         return `<span class="badge bg-secondary">${full.status_display}</span>`;
                     }
-                },
-            };
-        },
-        oracleInvoicePDFColumn: function () {
-            return {
-                data: 'invoice_pdf_secure_url',
-                orderable: true,
-                searchable: true,
-                visible: true,
-                name: 'oracle_invoice_number',
-                render: function (row, type, full) {
-                    if (!full.invoice_pdf_secure_url) {
-                        return 'Not Yet Uploaded';
-                    }
-                    return `<a href="${full.invoice_pdf_secure_url}" target="_blank">${full.oracle_invoice_number} <i class="fa-solid fa-file-pdf fa-lg ps-1" style="color:red;"></i></a>`;
                 },
             };
         },
@@ -527,7 +511,6 @@ export default {
                 this.approvalTypeColumn,
                 this.holderColumn,
                 this.statusColumn,
-                this.oracleInvoicePDFColumn,
                 this.amountColumn,
                 this.incGSTColumn,
                 this.dateDueColumn,
@@ -542,7 +525,6 @@ export default {
                     this.approvalTypeColumn,
                     this.holderColumn,
                     this.statusColumn,
-                    this.oracleInvoicePDFColumn,
                     this.ledgerInvoicePDFColumn,
                     this.amountColumn,
                     this.incGSTColumn,
