@@ -342,6 +342,10 @@ def generate_ledger_invoice(invoice: Invoice) -> None:
 
     ledger_order_lines = []
 
+    oracle_code = None  # Todo add code to get oracle code
+    if settings.DEBUG:
+        oracle_code = settings.TEST_ORACLE_CODE
+
     ledger_order_lines.append(
         {
             "ledger_description": description,
@@ -350,7 +354,7 @@ def generate_ledger_invoice(invoice: Invoice) -> None:
                 price_excl_tax
             ),  # Todo gst applies for leases but not for licences
             "price_incl_tax": str(price_incl_tax),
-            "oracle_code": "Todo: Get Oracle Code",
+            "oracle_code": oracle_code,
             "line_status": settings.LEDGER_DEFAULT_LINE_STATUS,
         },
     )
@@ -364,7 +368,7 @@ def generate_ledger_invoice(invoice: Invoice) -> None:
     basket_params = {
         "products": ledger_order_lines,
         "vouchers": [],
-        "system": settings.PAYMENT_SYSTEM_ID,
+        "system": settings.PAYMENT_SYSTEM_PREFIX,
         "tax_override": True,
         "custom_basket": True,
         "booking_reference": str(invoice.lodgement_number),
