@@ -508,6 +508,7 @@ export default {
                 this.approvalTypeColumn,
                 this.holderColumn,
                 this.statusColumn,
+                this.ledgerInvoicePDFColumn,
                 this.amountColumn,
                 this.incGSTColumn,
                 this.dateDueColumn,
