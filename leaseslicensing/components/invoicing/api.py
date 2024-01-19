@@ -10,9 +10,8 @@ from django.http import FileResponse, Http404
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
-from ledger_api_client import utils as ledger_api_client_utils
 from ledger_api_client.utils import generate_payment_session
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
@@ -24,7 +23,6 @@ from leaseslicensing.components.approvals.serializers import ApprovalSerializer
 from leaseslicensing.components.invoicing.email import (
     send_invoice_paid_external_notification,
     send_invoice_paid_internal_notification,
-    send_new_invoice_raised_notification,
 )
 from leaseslicensing.components.invoicing.models import (
     CPICalculationMethod,
@@ -39,14 +37,10 @@ from leaseslicensing.components.invoicing.serializers import (
     InvoiceTransactionSerializer,
     InvoicingDetailsSerializer,
 )
+from leaseslicensing.components.invoicing.utils import generate_ledger_invoice
 from leaseslicensing.components.main.api import LicensingViewset, NoPaginationListMixin
-from leaseslicensing.components.organisations.models import (
-    Organisation,
-    OrganisationContact,
-)
 from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
-from leaseslicensing.helpers import gst_from_total, is_customer, is_finance_officer
-from leaseslicensing.ledger_api_utils import retrieve_email_user
+from leaseslicensing.helpers import is_customer, is_finance_officer
 from leaseslicensing.permissions import IsFinanceOfficer
 
 logger = logging.getLogger(__name__)
@@ -188,16 +182,24 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["POST"])
     @transaction.atomic
     def generate_ad_hoc_invoice(self, request, *args, **kwargs):
+        invoice_pdf = request.FILES.get("invoice_pdf", None)
+        if not invoice_pdf:
+            raise serializers.ValidationError(
+                {"invoice_pdf": ["This field is required."]}
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
+
+        instance.invoice_pdf = invoice_pdf
         instance.ad_hoc = True
         instance.gst_free = instance.approval.approval_type.gst_free
+        instance.status = Invoice.INVOICE_STATUS_UNPAID
         instance.save()
-        # Todo: Send oracle invoice and oracle invoice number to ledger
-        # send emails etc.
 
-        send_new_invoice_raised_notification(instance)
+        # Generate ledger invoice
+        generate_ledger_invoice(instance)
 
         # Log the creation of the invoice against the approval
         instance.approval.log_user_action(
@@ -209,7 +211,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
-    @action(detail=True, methods=["PATCH"])
+    @action(detail=True, methods=["POST"])
     @transaction.atomic
     def upload_oracle_invoice(self, request, *args, **kwargs):
         if not is_finance_officer(request):
@@ -219,9 +221,17 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
         instance = self.get_object()
 
+        invoice_pdf = request.FILES.get("invoice_pdf", None)
+        if not invoice_pdf:
+            raise serializers.ValidationError(
+                {"invoice_pdf": ["Please upload an Oracle Invoice .pdf file"]}
+            )
+
+        logger.info(f"Oracle Invoice uploaded for Invoice: {instance.lodgement_number}")
+
         # Once the finance user has uploaded an oracle invoice and entered the oracle invoice number
         # we can set the issue date and due date
-        date_issued = timezone.now()
+        date_issued = timezone.now().date()
         date_due = date_issued + timezone.timedelta(
             days=settings.DEFAULT_DAYS_BEFORE_PAYMENT_DUE
         )
@@ -240,113 +250,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
 
-        serializer.save()
-        logger.info(f"Oracle Invoice uploaded for Invoice: {instance.lodgement_number}")
+        instance = serializer.save()
 
-        # Create the 'future' ledger invoice
-        logger.info(
-            f"Creating future ledger invoice for Invoice: {instance.lodgement_number}"
-        )
-        approval = instance.approval
-
-        description = (
-            f"{approval.approval_type} {approval.lodgement_number}: "
-            f"{approval.invoicing_details.charge_method}"
-        )
-
-        price_incl_tax = instance.amount
-        price_excl_tax = instance.amount
-
-        if not approval.approval_type.gst_free:
-            price_excl_tax = price_incl_tax - gst_from_total(price_incl_tax)
-
-        ledger_order_lines = []
-
-        ledger_order_lines.append(
-            {
-                "ledger_description": description,
-                "quantity": 1,
-                "price_excl_tax": str(
-                    price_excl_tax
-                ),  # Todo gst applies for leases but not for licences
-                "price_incl_tax": str(price_incl_tax),
-                "oracle_code": "Todo: Get Oracle Code",
-                "line_status": settings.LEDGER_DEFAULT_LINE_STATUS,
-            },
-        )
-        logger.info(
-            f"Setting ledger order lines {ledger_order_lines} for Invoice: {instance.lodgement_number}"
-        )
-
-        # We need a fake request as we are adding the proponent as the request.user
-        fake_request = ledger_api_client_utils.FakeRequestSessionObj()
-
-        basket_params = {
-            "products": ledger_order_lines,
-            "vouchers": [],
-            "system": settings.PAYMENT_SYSTEM_ID,
-            "tax_override": True,
-            "custom_basket": True,
-            "booking_reference": str(instance.lodgement_number),
-            "no_payment": True,
-        }
-        logger.info(
-            f"Setting basket parameters: {basket_params} for Invoice: {instance.lodgement_number}"
-        )
-
-        if isinstance(approval.applicant, Organisation):
-            organisation = approval.applicant
-            basket_params["organisation"] = organisation.ledger_organisation_id
-            admin_contact = organisation.contacts.filter(
-                user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
-                user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
-            ).first()
-            if not admin_contact:
-                logger.error(
-                    f"Unable to retrieve admin contact for organisation: {organisation}"
-                )
-                return
-            fake_request.user = retrieve_email_user(admin_contact.user)
-        else:
-            fake_request.user = approval.applicant
-
-        logger.info(
-            f"Setting request user {fake_request.user} for Invoice: {instance.lodgement_number}"
-        )
-
-        logger.info(f"Creating basket session for Invoice: {instance.lodgement_number}")
-        basket_hash = ledger_api_client_utils.create_basket_session(
-            fake_request, fake_request.user.id, basket_params
-        )
-        basket_hash = basket_hash.split("|")[0]
-        invoice_text = f"Leases Licensing Invoice {instance.lodgement_number}"
-        if approval.current_proposal.proponent_reference_number:
-            invoice_text += f"(Proponent Ref: {approval.current_proposal.proponent_reference_number})"
-        return_preload_url = (
-            f"{settings.LEASES_LICENSING_EXTERNAL_URL}"
-            f"/api/invoicing/ledger-api-invoice-success-callback/{instance.uuid}"
-        )
-
-        logger.info(f"Creating future invoice for Invoice: {instance.lodgement_number}")
-        future_invoice = ledger_api_client_utils.process_create_future_invoice(
-            basket_hash, invoice_text, return_preload_url
-        )
-
-        if 200 != future_invoice["status"]:
-            logger.error(
-                f"Failed to create future Invoice {instance.lodgement_number} with basket_hash "
-                f"{basket_hash}, invoice_text {invoice_text}, return_preload_url {return_preload_url}"
-            )
-            return
-
-        data = future_invoice["data"]
-        instance.order_number = data["order"]
-        instance.basket_id = data["basket_id"]
-        instance.invoice_reference = data["invoice"]
+        instance.invoice_pdf = invoice_pdf
         instance.save()
 
-        # Send request for payment to proponent
-        send_new_invoice_raised_notification(instance)
+        # Generate ledger invoice
+        generate_ledger_invoice(instance)
 
         return Response(serializer.data)
 
