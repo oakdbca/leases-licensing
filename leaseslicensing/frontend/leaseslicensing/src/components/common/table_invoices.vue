@@ -107,7 +107,7 @@
         </div>
         <GenerateAdHocInvoiceRecord
             ref="invoice_raise_ad_hoc"
-            @adHocInvoiceRecordGenerated="adHocInvoiceRecordGenerated"
+            @ad-hoc-invoice-record-generated="adHocInvoiceRecordGenerated"
         >
         </GenerateAdHocInvoiceRecord>
         <InvoiceViewTransactions
@@ -121,8 +121,8 @@
             ref="invoice_upload_oracle_invoice"
             :invoice-id="selectedInvoiceId"
             :invoice-lodgement-number="selectedInvoiceLodgementNumber"
-            :oracle-invoice-number="selectedInvoiceOracleInvoiceNumber"
-            @oracleInvoiceNumberUploaded="oracleInvoiceNumberUploaded"
+            :selected-oracle-invoice-number="selectedInvoiceOracleInvoiceNumber"
+            @oracle-invoice-number-uploaded="oracleInvoiceNumberUploaded"
         >
         </UploadOracleInvoice>
         <InvoiceRecordTransaction
@@ -131,7 +131,7 @@
             :invoice_lodgement_number="selectedInvoiceLodgementNumber"
             :balance_remaining="selectedInvoiceBalanceRemaining"
             :force="true"
-            @transactionRecorded="transactionRecorded"
+            @transaction-recorded="transactionRecorded"
         >
         </InvoiceRecordTransaction>
     </div>
