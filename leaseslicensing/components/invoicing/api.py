@@ -273,8 +273,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             kwargs={"id": invoice.id},
         )
 
-        logger.info(f"Return URL: {request.build_absolute_uri(return_url)}")
-        logger.info(f"Fallback URL: {fallback_url}")
+        logger.debug(f"Return URL: {request.build_absolute_uri(return_url)}")
+        logger.debug(f"Fallback URL: {request.build_absolute_uri(fallback_url)}")
         payment_session = generate_payment_session(
             request,
             invoice.invoice_reference,
