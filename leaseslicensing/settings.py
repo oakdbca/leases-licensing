@@ -185,6 +185,7 @@ DEP_POSTAL = env(
 )
 DEP_NAME = env("DEP_NAME", "Department of Biodiversity, Conservation and Attractions")
 DEP_NAME_SHORT = env("DEP_NAME_SHORT", "DBCA")
+DEP_ABN = env("DEP_ABN", "38052249024")
 
 BRANCH_NAME = env("BRANCH_NAME", "Leases and Licensing Branch")
 DEP_ADDRESS = env("DEP_ADDRESS", "17 Dick Perry Avenue, Kensington WA 6151")
