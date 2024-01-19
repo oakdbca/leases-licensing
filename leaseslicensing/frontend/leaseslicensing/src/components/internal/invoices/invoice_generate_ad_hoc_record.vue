@@ -257,6 +257,8 @@ export default {
                 date_due: null,
                 oracle_invoice_number: null,
             };
+            // Clear the file field
+            $('#oracle-invoice').val('');
         },
         close: function () {
             var form = document.getElementById(
@@ -264,6 +266,7 @@ export default {
             );
             form.classList.remove('was-validated');
             this.errors = null;
+            this.resetInvoice();
             this.isModalOpen = false;
         },
         updateFieldRequired() {
