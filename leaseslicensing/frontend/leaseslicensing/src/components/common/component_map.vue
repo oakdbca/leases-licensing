@@ -605,7 +605,7 @@
             </div>
         </div>
         <!-- If no context provided, e.g. no proposal or cp, don't allow for shapefile upload -->
-        <div v-if="context" class="row shapefile-row">
+        <div v-if="context && drawable" class="row shapefile-row">
             <div class="col-sm-6 border p-2">
                 <div class="row mb-2">
                     <div class="col">
