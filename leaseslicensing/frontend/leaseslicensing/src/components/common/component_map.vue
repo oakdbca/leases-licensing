@@ -427,14 +427,13 @@
                                             }}
                                         </td>
                                     </tr>
-                                    <!-- TODO: `created_at` is not formatted to DD/MM/YYYY -->
                                     <tr
                                         v-if="
                                             selectedModel.copied_from ||
                                             selectedModel.lodgement_date_display ||
                                             selectedModel.lodgement_date ||
-                                            selectedModel.created_at ||
-                                            selectedModel.created_at_display
+                                            selectedModel.created_at_display ||
+                                            selectedModel.created_at
                                         "
                                     >
                                         <th
@@ -456,8 +455,8 @@
                                             {{
                                                 selectedModel.lodgement_date_display ||
                                                 selectedModel.lodgement_date ||
-                                                selectedModel.created_at ||
-                                                selectedModel.created_at_display
+                                                selectedModel.created_at_display ||
+                                                selectedModel.created_at
                                             }}
                                         </td>
                                     </tr>
