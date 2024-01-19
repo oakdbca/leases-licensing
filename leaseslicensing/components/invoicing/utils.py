@@ -330,7 +330,7 @@ def generate_ledger_invoice(invoice: Invoice) -> None:
 
     description = f"{approval.approval_type} {approval.lodgement_number}: "
     if invoice.ad_hoc:
-        description += "Ad Hoc Invoice"
+        description += invoice.description
     else:
         description += f"{approval.invoicing_details.charge_method}"
 
