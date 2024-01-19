@@ -71,7 +71,6 @@ INSTALLED_APPS.pop(INSTALLED_APPS.index("django_cron"))
 
 ADD_REVERSION_ADMIN = True
 
-# maximum number of days allowed for a booking
 WSGI_APPLICATION = "leaseslicensing.wsgi.application"
 
 if DEBUG:
