@@ -477,10 +477,7 @@ export default {
                                 links += `<a href="#${full.id}" data-record-transaction="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-balance-remaining="${full.balance}">Record Transaction</a><br />`;
                             }
                         }
-                        if (
-                            !full.invoice_pdf_secure_url ||
-                            !full.oracle_invoice_number
-                        ) {
+                        if (!full.oracle_invoice_number) {
                             links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Upload Oracle Invoice</a><br />`;
                         }
                     }
