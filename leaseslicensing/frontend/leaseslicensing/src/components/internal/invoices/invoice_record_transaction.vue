@@ -203,6 +203,7 @@ export default {
             let vm = this;
             if (newVal) {
                 vm.transaction.invoice_id = vm.invoice_id;
+                vm.transaction.credit = '0.00';
                 vm.$nextTick(function () {
                     $('#debit').focus();
                 });
@@ -211,6 +212,8 @@ export default {
     },
     methods: {
         close: function () {
+            this.transaction.credit = '0.00';
+            this.transaction.debit = '0.00';
             this.isModalOpen = false;
         },
         validateForm: function () {
