@@ -119,11 +119,6 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
     proposal = serializer.save()
 
     save_groups_data(proposal, proposal_data["groups"])
-
-    if proposal.groups.filter(group__name__iexact="tourism").exists():
-        # Todo: If we need to do any specific validation of the tourism proposal details
-        pass
-
     populate_gis_data(proposal, "proposalgeometry")
 
     if viewset.action == "submit":
