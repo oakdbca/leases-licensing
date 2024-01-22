@@ -431,7 +431,6 @@ export default {
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
             // Gross turnover is readonly if the financial year hasn't passed
             // or if the proposal is being edited from the proposal details page
-            // Todo: Only allow entry of the annual figure if all the quarterly figures are already entered
             return (
                 !this.financialYearHasPassed(
                     grossTurnoverPercentage.financial_year
