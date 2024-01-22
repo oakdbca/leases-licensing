@@ -60,7 +60,8 @@ class Command(BaseCommand):
         )
         scheduled_invoice_count = scheduled_invoices.count()
         logger.info(
-            f"Found {scheduled_invoice_count} scheduled invoices that need generation and or notification on {today}"
+            f"Found {scheduled_invoice_count} scheduled invoices that need generation "
+            f"and or notification today({today})"
         )
 
         invoices_generated = []
@@ -122,7 +123,7 @@ class Command(BaseCommand):
             f"\tGenerating Invoice for Approval: {invoicing_details.approval} from schedule: {scheduled_invoice.id}"
         )
         approval = invoicing_details.approval
-        preview_invoice = invoicing_details.preview_invoice_by_date(
+        preview_invoice = invoicing_details.preview_invoice_by_original_issue_date(
             scheduled_invoice.date_to_generate
         )
         if not preview_invoice:
