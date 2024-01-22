@@ -342,7 +342,6 @@ class Approval(LicensingModelVersioned):
 
     @property
     def holder(self):
-        # TODO Is it correct to return the applicant as the approval/license holder?
         if self.is_org_applicant:
             return self.applicant.ledger_organisation_name
         elif self.is_ind_applicant:
@@ -385,23 +384,19 @@ class Approval(LicensingModelVersioned):
     @property
     def is_org_applicant(self):
         return (
-            True
-            if self.current_proposal
+            self.current_proposal
             and self.current_proposal.org_applicant
             and isinstance(self.current_proposal.org_applicant, Organisation)
-            else False
         )
 
     @property
     def is_ind_applicant(self):
         return (
-            True
-            if self.current_proposal
+            self.current_proposal
             and self.current_proposal.ind_applicant
             and isinstance(
                 retrieve_email_user(self.current_proposal.ind_applicant), EmailUser
             )
-            else False
         )
 
     @property
