@@ -31,7 +31,6 @@ from leaseslicensing.components.tenure.models import (
     Tenure,
     Vesting,
 )
-from leaseslicensing.settings import GROUP_NAME_CHOICES
 
 logger = logging.getLogger(__name__)
 
@@ -107,24 +106,19 @@ def get_polygon_source(geometry_obj):
         .exclude(person_id__isnull=True)
         .values_list("person_id", flat=True)
     ):
-        # TODO: Check if this is correct. Can an applicant draw a CP geometry?
         source = "Applicant"
     else:
-        # System group names, e.g. lease_license_assessor
-        system_groups = SystemGroup.objects.filter(
-            name__in=[x for x in zip(*GROUP_NAME_CHOICES)][0]
-        )
-        # System groups member ids
-        system_group_member = list(
-            {
-                itm
-                for group in system_groups
-                for itm in group.get_system_group_member_ids()
-            }
-        )
-        if geometry_obj.drawn_by in system_group_member:
-            # Polygon drawn by assessor
+        assessor_group = SystemGroup.objects.get(name=settings.GROUP_NAME_ASSESSOR)
+        if geometry_obj.drawn_by in assessor_group.get_system_group_member_ids():
             source = "Assessor"
+        competitive_process_editor_group = SystemGroup.objects.get(
+            name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR
+        )
+        if (
+            geometry_obj.drawn_by
+            in competitive_process_editor_group.get_system_group_member_ids()
+        ):
+            source = "Competitive Process Editor"
 
     return source
 
