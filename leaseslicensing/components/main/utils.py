@@ -718,7 +718,6 @@ def _gis_property_to_model(instance, property):
     # Catches all GIS data property names currently returned by the geoserver
     # Groups 1 and 3 are non-capturing prefixes and suffixes, with group 2 being
     # the actual Xyz part of the class name.
-    # TODO: Likely needs to be adapted to the new GIS project?
     regex = r"^(?:leg_|drg_)?([a-zA-Z_]+?)(?:_name|_label)?$"
     match = re.match(regex, property)
     if match is None:
