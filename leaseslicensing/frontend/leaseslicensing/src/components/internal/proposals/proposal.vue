@@ -50,7 +50,6 @@
                     :on-current-revision="onCurrentRevision"
                     :is-finalised="isFinalised"
                     :can-action="canAction"
-                    :can-limited-action="canLimitedAction"
                     :can-assess="canAssess"
                     :is-referee="isReferee"
                     :can_user_edit="proposal.can_user_edit"
@@ -1692,38 +1691,6 @@ export default {
         },
         canAction: function () {
             return this.proposal.assessor_mode.assessor_can_assess;
-        },
-        canLimitedAction: function () {
-            // For now returning true when viewing the current version of the Proposal
-            return this.onCurrentRevision; // TODO: implement this.  This is just temporary solution
-
-            //    if (this.proposal.processing_status == 'With Approver'){
-            //        return
-            //            this.proposal
-            //            && (
-            //                this.proposal.processing_status == 'With Assessor' ||
-            //                //this.proposal.processing_status == 'With Referral' ||
-            //                this.proposal.processing_status == 'With Assessor (Requirements)'
-            //            )
-            //            && !this.isFinalised && !this.proposal.can_user_edit
-            //            && (
-            //                this.proposal.current_assessor.id == this.proposal.assigned_approver ||
-            //                this.proposal.assigned_approver == null
-            //            ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //    }
-            //    else{
-            //        return
-            //            this.proposal
-            //            && (
-            //                this.proposal.processing_status == 'With Assessor' ||
-            //                //this.proposal.processing_status == 'With Referral' ||
-            //                this.proposal.processing_status == 'With Assessor (Requirements)'
-            //            ) && !this.isFinalised && !this.proposal.can_user_edit
-            //            && (
-            //                this.proposal.current_assessor.id == this.proposal.assigned_officer ||
-            //                this.proposal.assigned_officer == null
-            //            ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //    }
         },
         canSeeSubmission: function () {
             return (

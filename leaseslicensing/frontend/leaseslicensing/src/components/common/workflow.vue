@@ -124,7 +124,7 @@
                     <div class="mb-3">
                         <select
                             ref="department_users"
-                            :disabled="!canLimitedAction"
+                            :disabled="!canAction"
                             class="form-select"
                         ></select>
                         <template v-if="!sendingReferral">
@@ -141,7 +141,7 @@
                                 ></textarea>
                                 <div class="text-end">
                                     <a
-                                        v-if="canLimitedAction"
+                                        v-if="canAction"
                                         class="actionBtn"
                                         @click.prevent="sendReferral()"
                                         >Send</a
@@ -151,7 +151,7 @@
                         </template>
                         <template v-else>
                             <span
-                                v-if="canLimitedAction"
+                                v-if="canAction"
                                 disabled
                                 class="actionBtn text-primary pull-right"
                                 @click.prevent="sendReferral()"
@@ -282,7 +282,7 @@
                                         "
                                     >
                                         <a
-                                            v-if="canLimitedAction"
+                                            v-if="canAction"
                                             role="button"
                                             data-bs-toggle="popover"
                                             data-bs-trigger="hover focus"
@@ -326,7 +326,7 @@
                                         </a>
                                     </template>
                                     <template v-else>
-                                        <small v-if="canLimitedAction"
+                                        <small v-if="canAction"
                                             ><a
                                                 role="button"
                                                 data-bs-toggle="popover"
@@ -356,7 +356,7 @@
                     </table>
                     <MoreReferrals
                         ref="more_referrals"
-                        :can-action="canLimitedAction"
+                        :can-action="canAction"
                         :is-finalised="isFinalised"
                         :referral_url="referralListURL"
                         :api_endpoint="referrals_api_endpoint"
@@ -497,10 +497,6 @@ export default {
             default: false,
         },
         canAction: {
-            type: Boolean,
-            default: false,
-        },
-        canLimitedAction: {
             type: Boolean,
             default: false,
         },
