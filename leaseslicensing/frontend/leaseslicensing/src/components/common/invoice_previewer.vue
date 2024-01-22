@@ -6,11 +6,15 @@
             generated</BootstrapAlert
         >
         <BootstrapAlert
-            v-if="chargeMethodKey == 'percentage_of_gross_turnover'"
+            v-if="
+                chargeMethodKey ==
+                constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+                    .ID
+            "
             type="warning"
             icon="exclamation-triangle-fill"
             >Additional invoices may be created if there is a discrepency
-            between the {{ billingCycleAdverb }} and annual
+            between the {{ invoicingRepetitionTypeKey }} and annual
             turnover</BootstrapAlert
         >
         <div v-if="loadingPreviewInvoices" class="text-center">
@@ -85,7 +89,7 @@
 // Todo: Remove all the code that was used to generate the invoice preview
 // as that is now done on the backend
 import currency from 'currency.js';
-import { helpers } from '@/utils/hooks';
+import { constants, helpers } from '@/utils/hooks';
 
 export default {
     name: 'InvoicePreviewer',
@@ -110,6 +114,10 @@ export default {
             type: String,
             required: true,
         },
+        invoicingRepetitionTypeKey: {
+            type: String,
+            required: true,
+        },
         loadingPreviewInvoices: {
             type: Boolean,
             required: true,
@@ -128,6 +136,7 @@ export default {
         return {
             ordinalSuffixOf: helpers.ordinalSuffixOf,
             defaultInvoiceDateSet: false,
+            constants: constants,
         };
     },
     computed: {
@@ -169,16 +178,22 @@ export default {
         },
         invoiceCount: function () {
             var invoiceCount = 0;
-            // Annually
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
+            ) {
                 invoiceCount = this.yearsDifference;
             }
-            // Quarterly
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            ) {
                 invoiceCount = this.quartersDifference;
             }
-            // Monthly
-            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.monthly.ID
+            ) {
                 invoiceCount = this.monthsDifference;
             }
             return invoiceCount;
@@ -198,37 +213,64 @@ export default {
             return `$${currency(totalAmount)}`;
         },
         billingCycle: function () {
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
+            ) {
                 return 'Annual';
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            ) {
                 return 'Quarter';
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.monthly.ID
+            ) {
                 return 'Month';
             }
             return 'Unknown';
         },
         billingCycleAdverb: function () {
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
+            ) {
                 return 'annually';
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            ) {
                 return 'quarterly';
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.monthly.ID
+            ) {
                 return 'monthly';
             }
             return 'Unknown';
         },
         invoicesPerYear: function () {
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
+            ) {
                 return 1;
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            ) {
                 return 4;
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.monthly.ID
+            ) {
                 return 12;
             }
             return 0;
@@ -409,14 +451,23 @@ export default {
             return amountObject;
         },
         getYearSequenceIndex(index) {
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
+            ) {
                 return index;
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            ) {
                 let quarterlyIndex = index / 4;
                 return Math.floor(quarterlyIndex);
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.monthly.ID
+            ) {
                 let monthlyIndex =
                     index / (12 / this.invoicingDetails.invoicing_once_every);
                 return Math.floor(monthlyIndex);
@@ -440,13 +491,22 @@ export default {
             return amountObject;
         },
         addRepetitionInterval(issueDate) {
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
+            ) {
                 return issueDate.add(1, 'years');
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            ) {
                 return issueDate.add(3, 'months');
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.monthly.ID
+            ) {
                 return issueDate.add(
                     this.invoicingDetails.invoicing_once_every,
                     'months'
@@ -483,13 +543,22 @@ export default {
             return this.getEndOfNextIntervalAnnual(startDate);
         },
         getEndOfNextIntervalAnnual(startDate) {
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
+            ) {
                 return startDate.clone().add(1, 'years').subtract(1, 'days');
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            ) {
                 return startDate.clone().add(1, 'quarters').subtract(1, 'days');
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.monthly.ID
+            ) {
                 return startDate
                     .clone()
                     .add(this.invoicingDetails.invoicing_once_every, 'months')
@@ -499,13 +568,22 @@ export default {
         },
         getEndOfNextIntervalGrossTurnover(startDate) {
             // Gross turnover intervals are based around financial years and quarters
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
+            ) {
                 return this.getEndOfNextFinancialYear(startDate);
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            ) {
                 return this.getEndOfNextFinancialQuarter(startDate);
             }
-            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+            if (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.monthly.ID
+            ) {
                 return moment(startDate)
                     .endOf('month')
                     .set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
