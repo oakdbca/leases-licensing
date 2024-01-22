@@ -260,7 +260,6 @@
                                             updateApprovalTypeForExisingDocuments
                                         "
                                     >
-                                        <option></option>
                                         <option
                                             v-for="atype in approvalTypes"
                                             :key="atype.name"
