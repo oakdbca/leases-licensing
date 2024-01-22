@@ -10,7 +10,6 @@ from decimal import Decimal
 from zipfile import ZipFile
 
 import geopandas as gpd
-import pandas as pd
 from ckeditor.fields import RichTextField
 from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
@@ -1240,7 +1239,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     key_milestones_text = models.TextField(blank=True)
     risk_factors_text = models.TextField(blank=True)
     legislative_requirements_text = models.TextField(blank=True)
-    shapefile_json = JSONField(blank=True, null=True)
     site_name = models.ForeignKey(
         SiteName, blank=True, null=True, on_delete=models.PROTECT
     )
@@ -1519,7 +1517,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def allowed_assessors(self):
         group = None
-        # TODO: Take application_type into account
         if self.processing_status in [
             Proposal.PROCESSING_STATUS_WITH_APPROVER,
         ]:
@@ -1595,11 +1592,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         )
 
     def get_assessor_group(self):
-        # TODO: Take application_type into account
         return SystemGroup.objects.get(name=GROUP_NAME_ASSESSOR)
 
     def get_approver_group(self):
-        # TODO: Take application_type into account
         return SystemGroup.objects.get(name=GROUP_NAME_APPROVER)
 
     def __check_proposal_filled_out(self):
@@ -1806,7 +1801,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         # A list of all uploaded shapefiles
         shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
-        shp_gdfs = []
 
         for shp_file_obj in shp_file_objs:
             gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
@@ -1853,21 +1847,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     intersects=True,
                     drawn_by=request.user.id,
                 )
-
-            shp_gdfs.append(gdf_transform)
-
-            # Merge all GeoDataFrames into a single one
-            gdf_merged = gpd.GeoDataFrame(pd.concat(shp_gdfs).reset_index(drop=True))
-
-            # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
-            shp_json = gdf_merged.to_json()
-
-            # Todo: maybe axe this at some point as we are converting the shapefile into a proposalgeometry
-            # which is more useful in this application. Why store it in two places?
-            if isinstance(shp_json, str):
-                self.shapefile_json = json.loads(shp_json)
-            else:
-                self.shapefile_json = shp_json
 
             self.save()
             valid_geometry_saved = True

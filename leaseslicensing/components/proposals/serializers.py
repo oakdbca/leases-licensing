@@ -535,7 +535,6 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "risk_factors_text",
             "legislative_requirements_text",
             "lodgement_date_display",
-            "shapefile_json",
             # Gis data fields
             "identifiers",
             "vestings",
