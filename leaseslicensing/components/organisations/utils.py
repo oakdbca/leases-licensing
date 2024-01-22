@@ -120,9 +120,6 @@ def has_atleast_one_admin(organisation):
 
 
 def get_organisation_ids_for_user(email_user_id):
-    # Todo: If we are using the UserDelegates model, then use this instead otherwise remove this code:
-    # from leaseslicensing.components.organisations.models import UserDelegation
-    # return UserDelegation.objects.filter(user=email_user_id).values_list("organisation__id", flat=True)
     from leaseslicensing.components.organisations.models import (
         Organisation,
         OrganisationContact,
