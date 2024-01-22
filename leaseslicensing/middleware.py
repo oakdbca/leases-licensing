@@ -1,10 +1,6 @@
-import re
-
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import urlquote_plus
-
-CHECKOUT_PATH = re.compile("^/ledger/checkout/checkout")
 
 
 class FirstTimeNagScreenMiddleware:
@@ -25,7 +21,8 @@ class FirstTimeNagScreenMiddleware:
             request.user.first_name
             and request.user.last_name
             and request.user.residential_address_id
-            and request.user.postal_address_id
+            and self.postal_address_fully_filled(request.user)
+            and self.residential_address_fully_filled(request.user)
         ):
             return self.get_response(request)
 
@@ -34,6 +31,26 @@ class FirstTimeNagScreenMiddleware:
             return self.get_response(request)
 
         return redirect(path_ft + "?next=" + urlquote_plus(request.get_full_path()))
+
+    def postal_address_fully_filled(self, user):
+        return (
+            user.postal_address_id
+            and user.postal_address.line1
+            and user.postal_address.locality
+            and user.postal_address.state
+            and user.postal_address.country
+            and user.postal_address.postcode
+        )
+
+    def residential_address_fully_filled(self, user):
+        return (
+            user.residential_address_id
+            and user.residential_address.line1
+            and user.residential_address.locality
+            and user.residential_address.state
+            and user.residential_address.country
+            and user.residential_address.postcode
+        )
 
 
 class CacheControlMiddleware:
