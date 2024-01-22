@@ -350,9 +350,7 @@ def generate_ledger_invoice(invoice: Invoice) -> None:
         {
             "ledger_description": description,
             "quantity": 1,
-            "price_excl_tax": str(
-                price_excl_tax
-            ),  # Todo gst applies for leases but not for licences
+            "price_excl_tax": str(price_excl_tax),
             "price_incl_tax": str(price_incl_tax),
             "oracle_code": oracle_code,
             "line_status": settings.LEDGER_DEFAULT_LINE_STATUS,
