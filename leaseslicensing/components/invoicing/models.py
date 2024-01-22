@@ -310,6 +310,10 @@ class InvoicingDetails(BaseModel):
         return [period["issue_date"] for period in self.preview_invoices]
 
     @property
+    def invoice_schedule_original_issue_dates(self):
+        return [period["original_issue_date"] for period in self.invoice_schedule()]
+
+    @property
     def custom_cpi_reminder_dates(self) -> list[date] | None:
         if not self.has_future_invoicing_periods:
             return None
@@ -331,10 +335,10 @@ class InvoicingDetails(BaseModel):
                 seen.add(reminder_date_2)
                 yield reminder_date_2
 
-    def preview_invoice_by_date(self, date):
+    def preview_invoice_by_original_issue_date(self, date):
         date = datetime.strftime(date, "%d/%m/%Y")
-        for invoice in self.preview_invoices:
-            if invoice["issue_date"] == date:
+        for invoice in self.invoice_schedule():
+            if invoice["original_issue_date"] == date:
                 return invoice
         return None
 
@@ -443,10 +447,10 @@ class InvoicingDetails(BaseModel):
 
         return True
 
-    @property
-    def preview_invoices(self):
+    def invoice_schedule(self, include_past_periods=True):
         """
-        Returns a preview array of invoices based on the invoicing periods for the invoicing details object
+        Returns a full preview array of invoices based on the invoicing periods for the invoicing details object
+        Including all past and future periods.
         """
         invoices = []
         days_running_total = 0
@@ -490,7 +494,7 @@ class InvoicingDetails(BaseModel):
                 and start_date_has_passed
             )
 
-            if not skip_adding:
+            if include_past_periods or not skip_adding:
                 if amount_object["amount"]:
                     amount_running_total = (
                         amount_running_total + amount_object["amount"]
@@ -534,6 +538,14 @@ class InvoicingDetails(BaseModel):
 
         return invoices
 
+    @property
+    def preview_invoices(self):
+        """
+        Returns a preview array of invoices based on the invoicing periods for the invoicing details object
+        To be used on the front end invoice previewer. Will exclude past preview invoiced under certain conditions.
+        """
+        return self.invoice_schedule(include_past_periods=False)
+
     def generate_invoice_schedule(self, invoiced_up_to=None):
         """Generate scheduled invoices for any invoicing periods"""
         if self.charge_method.key in [
@@ -556,7 +568,7 @@ class InvoicingDetails(BaseModel):
 
         for invoice in future_invoices:
             date_to_generate = datetime.strptime(
-                invoice["issue_date"], "%d/%m/%Y"
+                invoice["original_issue_date"], "%d/%m/%Y"
             ).date()
             start_date = datetime.strptime(invoice["start_date"], "%Y-%m-%d").date()
             end_date = datetime.strptime(invoice["end_date"], "%Y-%m-%d").date()
