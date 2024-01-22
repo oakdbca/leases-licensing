@@ -1453,9 +1453,12 @@ export default {
             );
         },
         collapseAssessmentComments: function () {
-            return false;
-            // Todo: Decide under which conditions to collapse the assessment comments
-            // return !(this.withReferral && this.profile.is_referee);
+            return ![
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
+                constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
+            ].includes(this.proposal.processing_status_id);
         },
         related_items_ajax_url: function () {
             return '/api/proposal/' + this.proposal.id + '/related_items/';
