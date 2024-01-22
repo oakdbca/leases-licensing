@@ -416,6 +416,11 @@
                         invoicingDetailsComputed.charge_method
                     )
                 "
+                :invoicing-repetition-type-key="
+                    getInvoicingRepetitionTypeKeyById(
+                        invoicingDetailsComputed.invoicing_repetition_type
+                    )
+                "
                 :show-past-invoices="context == 'Proposal'"
                 :loading-preview-invoices="loadingPreviewInvoices"
                 :context="context"
