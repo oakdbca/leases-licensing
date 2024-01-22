@@ -320,7 +320,7 @@ export default {
             return {
                 data: 'approval_type',
                 orderable: true,
-                searchable: false, // TODO: Change this once approvals have a proper approval type field
+                searchable: true,
                 visible: true,
                 name: 'approval__approval_type__name',
                 render: function (row, type, full) {
