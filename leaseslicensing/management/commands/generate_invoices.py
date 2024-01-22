@@ -1,4 +1,5 @@
 import logging
+import traceback
 from datetime import datetime
 
 from django.conf import settings
@@ -76,6 +77,7 @@ class Command(BaseCommand):
                 except (TypeError, IntegrityError) as e:
                     logger.exception(
                         f"Failed to generate invoice from scheduled invoice {scheduled_invoice.id}: {e}"
+                        f"\n{traceback.format_exc()}"
                     )
                     continue
 
