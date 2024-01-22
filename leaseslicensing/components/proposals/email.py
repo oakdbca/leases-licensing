@@ -720,7 +720,7 @@ def _log_user_email(email_message, emailuser, customer, sender=None):
     kwargs = {
         "subject": subject,
         "text": text,
-        "emailuser": emailuser,
+        "email_user": emailuser,
         "customer": customer,
         "staff": staff,
         "to": to,
