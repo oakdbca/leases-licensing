@@ -141,7 +141,6 @@ export default {
             const dateStart = moment(this.startDate);
             const dateEnd = moment(this.expiryDate);
             // Add one day to the end date so it is inclusive
-            // Todo: confirm with business that expiry date is inclusive
             return Math.ceil(dateEnd.diff(dateStart, 'days', true)) + 1;
         },
         monthsDifference: function () {
