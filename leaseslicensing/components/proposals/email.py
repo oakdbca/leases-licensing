@@ -682,10 +682,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
 
 
 def _log_user_email(email_message, emailuser, customer, sender=None):
-    return
-    # TODO: implement this
-
-    from ledger.accounts.models import EmailUserLogEntry
+    from leaseslicensing.components.users.models import EmailUserLogEntry
 
     if isinstance(
         email_message,
@@ -718,12 +715,12 @@ def _log_user_email(email_message, emailuser, customer, sender=None):
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,
         "text": text,
-        "emailuser": emailuser,
+        "email_user": emailuser,
         "customer": customer,
         "staff": staff,
         "to": to,

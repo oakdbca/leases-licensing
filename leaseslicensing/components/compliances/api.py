@@ -138,10 +138,6 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             )
 
         elif is_customer(self.request):
-            # TODO: fix EmailUserRO issue here
-            # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
-            # queryset =  Compliance.objects.filter( Q(proposal__org_applicant_id__in = user_orgs) |
-            # Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
             qs = Compliance.objects.filter(
                 Q(proposal__submitter=self.request.user.id)
             ).exclude(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
@@ -261,10 +257,6 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                 processing_status=Compliance.PROCESSING_STATUS_DISCARDED
             )
         elif is_customer(self.request):
-            # TODO: fix EmailUserRO issue here
-            # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
-            # queryset =  Compliance.objects.filter( Q(proposal__org_applicant_id__in = user_orgs) |
-            # Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
             queryset = Compliance.objects.filter(
                 Q(proposal__submitter=self.request.user.id)
             ).exclude(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)

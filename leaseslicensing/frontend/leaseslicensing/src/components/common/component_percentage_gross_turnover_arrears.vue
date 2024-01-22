@@ -315,7 +315,8 @@
                 The system will generate compliances to ask for an audited
                 financial statement for each
                 {{
-                    invoicingRepetitionTypeKey == 'quarterly'
+                    invoicingRepetitionTypeKey ==
+                    constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
                         ? 'quarter'
                         : 'month'
                 }}
@@ -327,7 +328,7 @@
 
 <script>
 import currency from 'currency.js';
-import { helpers } from '@/utils/hooks';
+import { constants, helpers } from '@/utils/hooks';
 
 export default {
     name: 'PercentageTurnover',
@@ -379,6 +380,7 @@ export default {
             getFinancialQuarterLabel: helpers.getFinancialQuarterLabel,
             helpers: helpers,
             currency: currency,
+            constants: constants,
         };
     },
     computed: {
@@ -391,14 +393,17 @@ export default {
             },
         },
         invoicingReptitionQuarterly: function () {
-            // Todo: Relying on ids like this is dangerous - need to use the key property instead
-            return this.invoicingRepetitionType == 2;
+            return (
+                this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
+            );
         },
         editingFromProposalPage: function () {
             return this.context == 'Proposal';
         },
         repetitionTypePlural: function () {
-            return this.invoicingRepetitionTypeKey == 'quarterly'
+            return this.invoicingRepetitionTypeKey ==
+                constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
                 ? 'quarters'
                 : 'months';
         },
@@ -426,7 +431,6 @@ export default {
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
             // Gross turnover is readonly if the financial year hasn't passed
             // or if the proposal is being edited from the proposal details page
-            // Todo: Only allow entry of the annual figure if all the quarterly figures are already entered
             return (
                 !this.financialYearHasPassed(
                     grossTurnoverPercentage.financial_year

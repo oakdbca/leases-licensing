@@ -596,9 +596,6 @@ export default {
         canAction: function () {
             return this.competitive_process.can_accessing_user_process;
         },
-        canLimitedAction: function () {
-            return this.competitive_process.can_accessing_user_process;
-        },
         canAssess: function () {
             return this.competitive_process.can_accessing_user_view;
         },

@@ -382,7 +382,7 @@ APPLICATION_TYPES = [
     (APPLICATION_TYPE_REGISTRATION_OF_INTEREST, "Registration of Interest"),
     (APPLICATION_TYPE_LEASE_LICENCE, "Lease Licence"),
 ]
-KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
+GIS_SERVER_URL = env("GIS_SERVER_URL", "https://kmi.dbca.wa.gov.au")
 
 ABS_API_URL = env("ABS_API_URL", "https://api.data.abs.gov.au")
 ABS_API_CPI_SUBDIRECTORY = env("ABD_API_CPI_PATH", "/data/CPI/")

@@ -50,7 +50,6 @@
                     :on-current-revision="onCurrentRevision"
                     :is-finalised="isFinalised"
                     :can-action="canAction"
-                    :can-limited-action="canLimitedAction"
                     :can-assess="canAssess"
                     :is-referee="isReferee"
                     :can_user_edit="proposal.can_user_edit"
@@ -1453,9 +1452,12 @@ export default {
             );
         },
         collapseAssessmentComments: function () {
-            return false;
-            // Todo: Decide under which conditions to collapse the assessment comments
-            // return !(this.withReferral && this.profile.is_referee);
+            return ![
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
+                constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
+            ].includes(this.proposal.processing_status_id);
         },
         related_items_ajax_url: function () {
             return '/api/proposal/' + this.proposal.id + '/related_items/';
@@ -1689,38 +1691,6 @@ export default {
         },
         canAction: function () {
             return this.proposal.assessor_mode.assessor_can_assess;
-        },
-        canLimitedAction: function () {
-            // For now returning true when viewing the current version of the Proposal
-            return this.onCurrentRevision; // TODO: implement this.  This is just temporary solution
-
-            //    if (this.proposal.processing_status == 'With Approver'){
-            //        return
-            //            this.proposal
-            //            && (
-            //                this.proposal.processing_status == 'With Assessor' ||
-            //                //this.proposal.processing_status == 'With Referral' ||
-            //                this.proposal.processing_status == 'With Assessor (Requirements)'
-            //            )
-            //            && !this.isFinalised && !this.proposal.can_user_edit
-            //            && (
-            //                this.proposal.current_assessor.id == this.proposal.assigned_approver ||
-            //                this.proposal.assigned_approver == null
-            //            ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //    }
-            //    else{
-            //        return
-            //            this.proposal
-            //            && (
-            //                this.proposal.processing_status == 'With Assessor' ||
-            //                //this.proposal.processing_status == 'With Referral' ||
-            //                this.proposal.processing_status == 'With Assessor (Requirements)'
-            //            ) && !this.isFinalised && !this.proposal.can_user_edit
-            //            && (
-            //                this.proposal.current_assessor.id == this.proposal.assigned_officer ||
-            //                this.proposal.assigned_officer == null
-            //            ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //    }
         },
         canSeeSubmission: function () {
             return (
@@ -2888,7 +2858,8 @@ export default {
                         if (
                             constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING
                                 .ID == vm.proposal.processing_status_id &&
-                            vm.profile.is_finance_officer
+                            vm.profile.is_finance_officer &&
+                            $('#invoicing-form').length
                         ) {
                             console.log('scrolling to invoicing form');
                             $(document).scrollTop(

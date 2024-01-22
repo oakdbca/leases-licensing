@@ -31,7 +31,6 @@ from leaseslicensing.components.tenure.models import (
     Tenure,
     Vesting,
 )
-from leaseslicensing.settings import GROUP_NAME_CHOICES
 
 logger = logging.getLogger(__name__)
 
@@ -107,24 +106,19 @@ def get_polygon_source(geometry_obj):
         .exclude(person_id__isnull=True)
         .values_list("person_id", flat=True)
     ):
-        # TODO: Check if this is correct. Can an applicant draw a CP geometry?
         source = "Applicant"
     else:
-        # System group names, e.g. lease_license_assessor
-        system_groups = SystemGroup.objects.filter(
-            name__in=[x for x in zip(*GROUP_NAME_CHOICES)][0]
-        )
-        # System groups member ids
-        system_group_member = list(
-            {
-                itm
-                for group in system_groups
-                for itm in group.get_system_group_member_ids()
-            }
-        )
-        if geometry_obj.drawn_by in system_group_member:
-            # Polygon drawn by assessor
+        assessor_group = SystemGroup.objects.get(name=settings.GROUP_NAME_ASSESSOR)
+        if geometry_obj.drawn_by in assessor_group.get_system_group_member_ids():
             source = "Assessor"
+        competitive_process_editor_group = SystemGroup.objects.get(
+            name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR
+        )
+        if (
+            geometry_obj.drawn_by
+            in competitive_process_editor_group.get_system_group_member_ids()
+        ):
+            source = "Competitive Process Editor"
 
     return source
 
@@ -169,18 +163,18 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
         "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
     }
     logger.info(
-        f"Requesting features from {settings.KMI_SERVER_URL}{server_path} with params: {params}"
+        f"Requesting features from {settings.GIS_SERVER_URL}{server_path} with params: {params}"
     )
     if "public" != namespace:
         logger.debug("Using Basic HTTP Auth to access namespace: %s", namespace)
-        url = f"{settings.KMI_SERVER_URL}{server_path}"
+        url = f"{settings.GIS_SERVER_URL}{server_path}"
         response = requests.post(
             url,
             data=params,
             auth=(settings.KMI_AUTH_USERNAME, settings.KMI_AUTH_PASSWORD),
         )
     else:
-        response = requests.post(f"{settings.KMI_SERVER_URL}{server_path}", data=params)
+        response = requests.post(f"{settings.GIS_SERVER_URL}{server_path}", data=params)
     if not response.ok:
         logger.error(f"Error getting features from KMI: {response.text}")
         raise serializers.ValidationError(
@@ -724,7 +718,6 @@ def _gis_property_to_model(instance, property):
     # Catches all GIS data property names currently returned by the geoserver
     # Groups 1 and 3 are non-capturing prefixes and suffixes, with group 2 being
     # the actual Xyz part of the class name.
-    # TODO: Likely needs to be adapted to the new GIS project?
     regex = r"^(?:leg_|drg_)?([a-zA-Z_]+?)(?:_name|_label)?$"
     match = re.match(regex, property)
     if match is None:

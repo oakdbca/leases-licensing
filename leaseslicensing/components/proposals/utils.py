@@ -119,11 +119,6 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
     proposal = serializer.save()
 
     save_groups_data(proposal, proposal_data["groups"])
-
-    if proposal.groups.filter(group__name__iexact="tourism").exists():
-        # Todo: If we need to do any specific validation of the tourism proposal details
-        pass
-
     populate_gis_data(proposal, "proposalgeometry")
 
     if viewset.action == "submit":
@@ -265,12 +260,14 @@ def proposal_submit(proposal, request):
     if (settings.WORKING_FROM_HOME and settings.DEBUG) or ret1 and ret2:
         proposal.processing_status = "with_assessor"
 
-        # The model returned by proposal.documents is a proposallogdocument model
-        # that doesn't even have the can_delete field however Todo: We must check if there are
-        # related documents fields on proposal that do have this field as we should
-        # set their can_delete field as false like below as once the proposal is submitted they
-        # should not be able to be deleted.
-        # proposal.documents.all().update(can_delete=False)
+        # Once submitted, mark any related documents as not delete-able
+        document_field_names = [
+            documents_field
+            for documents_field in proposal._meta.fields_map.keys()
+            if "documents" in documents_field
+        ]
+        for document_field_name in document_field_names:
+            getattr(proposal, document_field_name).all().update(can_delete=False)
 
         # Reason can be an object, e.g. `AmendmentReason`
         reasons = [r.reason if hasattr(r, "reason") else r for r in reasons]

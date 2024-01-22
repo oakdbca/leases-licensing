@@ -313,8 +313,7 @@ def cancel_document(request, instance, comms_instance, document_type, input_name
         "competitive_process_document",
     ]:
         pass
-        # document_id = request.data.get("document_id")
-    # TODO: check this logic
+
     if comms_instance:
         document_list = comms_instance.documents.all()
     else:

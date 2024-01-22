@@ -416,77 +416,17 @@
                         invoicingDetailsComputed.charge_method
                     )
                 "
+                :invoicing-repetition-type-key="
+                    getInvoicingRepetitionTypeKeyById(
+                        invoicingDetailsComputed.invoicing_repetition_type
+                    )
+                "
                 :show-past-invoices="context == 'Proposal'"
                 :loading-preview-invoices="loadingPreviewInvoices"
                 :context="context"
                 @update-default-invoicing-date="updateDefaultInvoicingDate"
             />
         </div>
-        <template v-if="show_ad_hoc_invoicing">
-            <div class="row mb-3">
-                <div class="col-3">
-                    <button class="btn btn-primary mb-1">
-                        + Add Ad Hoc Invoice
-                    </button>
-                </div>
-                <div class="col-9">
-                    <BootstrapAlert class="py-2">
-                        Use this option if there are funds in arrears that need
-                        invoicing immediately
-                    </BootstrapAlert>
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col">
-                    <ul class="list-group">
-                        <li class="list-group-item">
-                            <div class="d-flex">
-                                <div class="pe-3 w-100">
-                                    <label>Description</label>
-                                    <input type="text" class="form-control" />
-                                </div>
-                            </div>
-                        </li>
-                        <li class="list-group-item">
-                            <div class="d-flex">
-                                <div class="pe-3">
-                                    <label>Amount</label>
-                                    <input
-                                        type="number"
-                                        class="form-control"
-                                        step="0.1"
-                                    />
-                                </div>
-                                <div class="pe-3">
-                                    <label>Issue Date</label>
-                                    <input
-                                        type="date"
-                                        class="form-control"
-                                        :value="
-                                            new Date()
-                                                .toISOString()
-                                                .slice(0, 10)
-                                        "
-                                    />
-                                </div>
-                                <div class="pe-3">
-                                    <label>Due Date</label>
-                                    <input
-                                        type="date"
-                                        class="form-control"
-                                        :value="
-                                            new Date()
-                                                .toISOString()
-                                                .slice(0, 10)
-                                        "
-                                    />
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </template>
     </form>
 </template>
 
@@ -769,10 +709,6 @@ export default {
                 1 == this.invoicingDetailsComputed.invoicing_repetition_type &&
                 this.show_invoicing_frequency
             );
-        },
-        show_ad_hoc_invoicing: function () {
-            // Todo: add logic
-            return constants.APPROVAL_TYPE.LICENCE == this.approvalType;
         },
         filtered_repetition_types: function () {
             // Don't show annual invoicing option for gross turnover charge method

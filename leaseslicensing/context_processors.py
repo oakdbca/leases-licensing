@@ -9,7 +9,7 @@ def leaseslicensing_url(request):
         request.user.id
     )
     return {
-        "KMI_SERVER_URL": settings.KMI_SERVER_URL,
+        "GIS_SERVER_URL": settings.GIS_SERVER_URL,
         "template_group": template_group,
         "template_title": template_title,
         "organisations_user_can_admin": organisations_user_can_admin,

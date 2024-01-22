@@ -81,7 +81,8 @@
                                                         "
                                                         class="py-0"
                                                     >
-                                                        <!-- TODO Add compare and/or view button links to submission versions (see: internal/018) -->
+                                                        <!-- Note: Full django reversion UI support has been pushed back to phase 2..
+                                                             Add compare and/or view button links to submission versions (see: internal/018) -->
                                                         <span class="ml-2">
                                                             <a
                                                                 v-if="debug()"
@@ -114,7 +115,7 @@
                                                                         : ''
                                                                 "
                                                             >
-                                                                (todo)
+                                                                (to do)
                                                             </span>
                                                         </span>
                                                     </div>
