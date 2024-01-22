@@ -48,7 +48,7 @@ class ApprovalDocumentGenerator:
                 # allowing to sub-replace the pattern, but removing any formatting of that paragraph
                 # Adding placeholder to table cells in the template preserves the formatting in cells
                 p.text = regex.sub(regex.pattern, p.text)
-                # TODO Alternatively, can add sophisticated code to split the paragraph into runs
+                # Alternatively, can add sophisticated code to split the paragraph into runs
                 # first and `add_run` combine the pieces while preserving any formatting and adding
                 # inline formatting to the keys. Such code would need to take handle keys that span
                 # multiple runs, e.g. `{{key}}` may translate to three runs `{{`, `key`, and `}}`
