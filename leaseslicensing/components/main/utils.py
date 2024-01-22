@@ -163,18 +163,18 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
         "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
     }
     logger.info(
-        f"Requesting features from {settings.KMI_SERVER_URL}{server_path} with params: {params}"
+        f"Requesting features from {settings.GIS_SERVER_URL}{server_path} with params: {params}"
     )
     if "public" != namespace:
         logger.debug("Using Basic HTTP Auth to access namespace: %s", namespace)
-        url = f"{settings.KMI_SERVER_URL}{server_path}"
+        url = f"{settings.GIS_SERVER_URL}{server_path}"
         response = requests.post(
             url,
             data=params,
             auth=(settings.KMI_AUTH_USERNAME, settings.KMI_AUTH_PASSWORD),
         )
     else:
-        response = requests.post(f"{settings.KMI_SERVER_URL}{server_path}", data=params)
+        response = requests.post(f"{settings.GIS_SERVER_URL}{server_path}", data=params)
     if not response.ok:
         logger.error(f"Error getting features from KMI: {response.text}")
         raise serializers.ValidationError(
