@@ -3022,7 +3022,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             deleted = Compliance.objects.filter(
                 proposal=self,
                 requirement__standard_requirement=monthly_standard_requirement,
-                # Todo: If we end up supporting changing charge methods mid cycle
+                # Note: If we end up supporting changing charge methods mid cycle
                 # then we need to come up with a solution here so that we don't delete any past compliances
                 # that were submitted. Otherwise this comment block can be removed.
                 # due_date__gt=timezone.now().date(),
@@ -3092,7 +3092,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             deleted = Compliance.objects.filter(
                 proposal=self,
                 requirement__standard_requirement=quarterly_standard_requirement,
-                # Todo: If we end up supporting changing charge methods mid cycle
+                # Note: If we end up supporting changing charge methods mid cycle
                 # then we need to come up with a solution here so that we don't delete any past compliances
                 # that were submitted. Otherwise this comment block can be removed.
                 # due_date__gt=timezone.now().date(),
