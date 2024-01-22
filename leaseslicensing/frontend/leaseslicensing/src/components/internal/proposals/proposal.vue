@@ -2858,7 +2858,8 @@ export default {
                         if (
                             constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING
                                 .ID == vm.proposal.processing_status_id &&
-                            vm.profile.is_finance_officer
+                            vm.profile.is_finance_officer &&
+                            $('#invoicing-form').length
                         ) {
                             console.log('scrolling to invoicing form');
                             $(document).scrollTop(
