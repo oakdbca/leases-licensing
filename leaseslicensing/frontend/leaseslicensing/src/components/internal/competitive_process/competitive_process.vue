@@ -163,6 +163,7 @@
                                 :editable="true"
                                 level="internal"
                                 @validate-feature="validateFeature.bind(this)()"
+                                @refresh-from-response="refreshFromResponse"
                             />
                         </FormSection>
                     </div>
@@ -1068,6 +1069,10 @@ export default {
                     // When cancel
                 }
             });
+        },
+        refreshFromResponse: function (data) {
+            Object.assign(this.competitive_process, data);
+            this.incrementComponentMapKey();
         },
         updateTableByFeatures: function () {},
         featureGeometryUpdated: function () {},

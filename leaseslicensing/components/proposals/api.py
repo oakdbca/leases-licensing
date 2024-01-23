@@ -39,7 +39,7 @@ from leaseslicensing.components.main.serializers import (
     NewEmailuserSerializer,
     RelatedItemSerializer,
 )
-from leaseslicensing.components.main.utils import save_site_name
+from leaseslicensing.components.main.utils import save_site_name, validate_map_files
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.proposals.email import (
     send_external_referee_invite_email,
@@ -1295,7 +1295,7 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def validate_map_files(self, request, *args, **kwargs):
         instance = self.get_object()
-        valid_geometry_saved = instance.validate_map_files(request)
+        valid_geometry_saved = validate_map_files(request, instance)
         instance.save()
         if valid_geometry_saved:
             populate_gis_data(instance, "proposalgeometry")
@@ -2372,9 +2372,7 @@ class ProposalRequirementViewSet(LicensingViewset):
 
         # Set associated referral and source user on requirement creation
         serializer.save(referral=referral, source=user.id)
-        # instance = serializer.save()
-        # TODO: requirements documents in LL?
-        # instance.add_documents(request)
+
         return Response(serializer.data)
 
 
