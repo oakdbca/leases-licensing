@@ -276,7 +276,8 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
 
     # No logging action decorator for this one as once the user is unlinked the
     # logging action will throw an exception trying to call get object since the user
-    # no longer has permission to do so. Todo: Could log manually if we need to
+    # no longer has permission to do so. The unlinking of the user is logged in the
+    # unlink_user method on the organisation instance anyway.
     @action(
         methods=[
             "POST",
