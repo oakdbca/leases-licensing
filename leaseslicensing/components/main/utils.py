@@ -16,8 +16,8 @@ from django.contrib.gis.geos.collections import MultiPolygon
 from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroup
-from ledger_api_client.models import EmailUser
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -51,12 +51,7 @@ def handle_validation_error(e):
 
 
 def is_department_user(email):
-    if (
-        EmailUser.objects.filter(email__iexact=email.strip())
-        and EmailUser.objects.get(email__iexact=email.strip()).is_staff
-    ):
-        return True
-    return False
+    return EmailUser.objects.filter(email__iexact=email.strip(), is_staff=True).exists()
 
 
 def to_local_tz(_date):
