@@ -473,7 +473,6 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
-    # Todo: Implement for segregatted system
     @logging_action(
         methods=[
             "PUT",
