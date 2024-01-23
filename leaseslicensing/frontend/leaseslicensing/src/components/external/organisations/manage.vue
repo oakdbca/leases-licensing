@@ -28,6 +28,9 @@
                                         name="ledger_organisation_name"
                                         required
                                     />
+                                    <div class="invalid-feedback">
+                                        Please enter a an organisation name.
+                                    </div>
                                 </div>
                             </div>
 
@@ -79,6 +82,9 @@
                                         class="form-control"
                                         name="ledger_organisation_email"
                                     />
+                                    <div class="invalid-feedback">
+                                        Please enter a valid email address.
+                                    </div>
                                 </div>
                             </div>
 
@@ -1878,10 +1884,16 @@ export default {
                 organisation_name: vm.org.ledger_organisation_name
                     ? vm.org.ledger_organisation_name
                     : null,
-                organisation_abn: vm.org.ledger_organisation_abn,
-                organisation_email: vm.org.ledger_organisation_email,
-                organisation_trading_name:
-                    vm.org.ledger_organisation_trading_name,
+                organisation_abn: vm.org.ledger_organisation_abn
+                    ? vm.org.ledger_organisation_abn
+                    : null,
+                organisation_email: vm.org.ledger_organisation_email
+                    ? vm.org.ledger_organisation_email
+                    : null,
+                organisation_trading_name: vm.org
+                    .ledger_organisation_trading_name
+                    ? vm.org.ledger_organisation_trading_name
+                    : null,
             });
             fetch(
                 helpers.add_endpoint_json(
