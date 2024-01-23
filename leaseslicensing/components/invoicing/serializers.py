@@ -56,7 +56,6 @@ class CPICalculationMethodSerializer(serializers.ModelSerializer):
 
 
 class FixedAnnualIncrementAmountSerializer(serializers.ModelSerializer):
-    readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
 
     class Meta:
@@ -65,7 +64,6 @@ class FixedAnnualIncrementAmountSerializer(serializers.ModelSerializer):
             "id",
             "year",
             "increment_amount",
-            "readonly",
             "to_be_deleted",
         )
         extra_kwargs = {
@@ -80,7 +78,6 @@ class FixedAnnualIncrementAmountSerializer(serializers.ModelSerializer):
 
 
 class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
-    readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
 
     class Meta:
@@ -89,7 +86,6 @@ class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
             "id",
             "year",
             "increment_percentage",
-            "readonly",
             "to_be_deleted",
         )
         extra_kwargs = {
@@ -203,7 +199,6 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
 
 
 class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
-    readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
 
     class Meta:
@@ -211,7 +206,6 @@ class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "review_date",
-            "readonly",
             "to_be_deleted",
         )
         extra_kwargs = {

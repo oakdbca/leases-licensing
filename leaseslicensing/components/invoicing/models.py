@@ -1298,11 +1298,6 @@ class FixedAnnualIncrementAmount(BaseModel):
     def __str__(self):
         return f"Year: {self.year}, Increment Amount: {self.increment_amount}"
 
-    @property
-    def readonly(self):
-        # TODO: implement
-        return False
-
 
 class FixedAnnualIncrementPercentage(BaseModel):
     year = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -1333,11 +1328,6 @@ class FixedAnnualIncrementPercentage(BaseModel):
 
     def __str__(self):
         return f"Year: {self.year}, Increment Percentage: {self.increment_percentage}"
-
-    @property
-    def readonly(self):
-        # TODO: implement
-        return False
 
 
 class PercentageOfGrossTurnover(BaseModel):
@@ -1538,11 +1528,6 @@ class CrownLandRentReviewDate(BaseModel):
         ordering = [
             "review_date",
         ]
-
-    @property
-    def readonly(self):
-        # TODO: implement
-        return False
 
 
 def invoice_pdf_upload_path(instance, filename):

@@ -159,7 +159,6 @@ export default {
                     key: uuid(),
                     year: i + 1,
                     [this.getKeyName()]: 0.0,
-                    readonly: false,
                 });
             }
         }
