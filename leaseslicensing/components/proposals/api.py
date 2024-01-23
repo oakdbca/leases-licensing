@@ -268,12 +268,12 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
             ledger_lookup_fields += ["assigned_officer", "assigned_approver"]
 
         # Todo: This is still causing anomolies when using annotation. Get Karsten to fix this.
-        # queryset = self.apply_request(
-        #     request,
-        #     queryset,
-        #     view,
-        #     ledger_lookup_fields=ledger_lookup_fields,
-        # )
+        queryset = self.apply_request(
+            request,
+            queryset,
+            view,
+            ledger_lookup_fields=ledger_lookup_fields,
+        )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -386,70 +386,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             result_page, context={"request": request}, many=True
         )
 
-        return self.paginator.get_paginated_response(serializer.data)
-
-    # TODO: check if still required
-    @list_route(
-        methods=[
-            "GET",
-        ],
-        detail=False,
-    )
-    def proposals_internal(self, request, *args, **kwargs):
-        """
-        Used by the internal dashboard
-
-        http://localhost:8499/api/proposal_paginated/proposal_paginated_internal/?format=datatables&draw=1&length=2
-        """
-        qs = self.get_queryset()
-        # qs = self.filter_queryset(self.request, qs, self)
-        qs = self.filter_queryset(qs)
-
-        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables
-        # by applicant/organisation
-        applicant_id = request.GET.get("org_id")
-        if applicant_id:
-            qs = qs.filter(org_applicant_id=applicant_id)
-        submitter_id = request.GET.get("submitter_id", None)
-        if submitter_id:
-            qs = qs.filter(submitter=submitter_id)
-
-        self.paginator.page_size = qs.count()
-        result_page = self.paginator.paginate_queryset(qs, request)
-        serializer = ListProposalSerializer(
-            result_page, context={"request": request}, many=True
-        )
-        return self.paginator.get_paginated_response(serializer.data)
-
-    @list_route(
-        methods=[
-            "GET",
-        ],
-        detail=False,
-    )
-    def referrals_internal(self, request, *args, **kwargs):
-        """
-        Used by the internal dashboard
-
-        http://localhost:8499/api/proposal_paginated/referrals_internal/?format=datatables&draw=1&length=2
-        """
-        self.serializer_class = ReferralSerializer
-        # qs = Referral.objects.filter(referral=request.user) if is_internal(self.request) else Referral.objects.none()
-        qs = (
-            Referral.objects.filter(
-                referral_group__in=request.user.referralrecipientgroup_set.all()
-            )
-            if is_internal(self.request)
-            else Referral.objects.none()
-        )
-        # qs = self.filter_queryset(self.request, qs, self)
-        qs = self.filter_queryset(qs)
-
-        self.paginator.page_size = qs.count()
-        result_page = self.paginator.paginate_queryset(qs, request)
-        serializer = DTReferralSerializer(
-            result_page, context={"request": request}, many=True
-        )
         return self.paginator.get_paginated_response(serializer.data)
 
     @list_route(
