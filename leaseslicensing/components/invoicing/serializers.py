@@ -556,8 +556,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     def update_annual_increment_amounts(
         self, validated_annual_increment_amounts_data, instance
     ):
-        # Todo: Deal with the case where the approval duration is shortened
-        # and one or more annual increment amounts need to be deleted
+        years = []
         for annual_increment_amount_data in validated_annual_increment_amounts_data:
             (
                 annual_increment_amount,
@@ -574,12 +573,24 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
+            years.append(annual_increment_amount.year)
+
+        # Delete any annual increment amounts that are not in the validated data
+        deleted = (
+            FixedAnnualIncrementAmount.objects.filter(invoicing_details=instance)
+            .exclude(year__in=years)
+            .delete()
+        )
+        if deleted[0] > 0:
+            logger.info(
+                f"Deleted FixedAnnualIncrementAmount {deleted} from "
+                f"Invoicing Details: {instance}"
+            )
 
     def update_annual_increment_percentages(
         self, validated_annual_increment_percentages_data, instance
     ):
-        # Todo: Deal with the case where the approval duration is shortened
-        # and one or more annual increment amounts need to be deleted
+        years = []
         for (
             annual_increment_percentage_data
         ) in validated_annual_increment_percentages_data:
@@ -598,6 +609,19 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
+            years.append(annual_increment_percentage.year)
+
+        # Delete any annual increment percentages that are not in the validated data
+        deleted = (
+            FixedAnnualIncrementPercentage.objects.filter(invoicing_details=instance)
+            .exclude(year__in=years)
+            .delete()
+        )
+        if deleted[0] > 0:
+            logger.info(
+                f"Deleted FixedAnnualIncrementPercentage {deleted} from "
+                f"Invoicing Details: {instance}"
+            )
 
     def update_gross_turnover_percentages(
         self, validated_gross_turnover_percentages_data, instance
