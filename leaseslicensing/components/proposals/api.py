@@ -2143,22 +2143,6 @@ class ReferralViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(methods=["post"], detail=True)
-    @basic_exception_handler
-    def send_referral(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = SendReferralSerializer(
-            data=request.data, context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-        instance.send_referral(
-            request,
-            serializer.validated_data["email"],
-            serializer.validated_data["text"],
-        )
-        serializer = self.get_serializer(instance, context={"request": request})
-        return Response(serializer.data)
-
     @detail_route(
         methods=[
             "GET",
