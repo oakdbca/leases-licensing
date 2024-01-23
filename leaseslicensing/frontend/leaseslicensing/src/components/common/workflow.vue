@@ -1408,7 +1408,7 @@ export default {
                             `/${external_referee_invite.id}/retract/`
                         ),
                         {
-                            method: 'DELETE',
+                            method: 'PATCH',
                             headers: {
                                 Accept: 'application/json',
                                 'Content-Type': 'application/json',

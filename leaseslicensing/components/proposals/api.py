@@ -1548,7 +1548,9 @@ class ProposalViewSet(UserActionLoggingViewset):
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        if ExternalRefereeInvite.objects.filter(email=request.data["email"]).exists():
+        if ExternalRefereeInvite.objects.filter(
+            archived=False, email=request.data["email"]
+        ).exists():
             raise serializers.ValidationError(
                 _(
                     "An external referee invitation has already been sent to {email}".format(
@@ -2470,7 +2472,7 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
 
 
 class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
-    queryset = ExternalRefereeInvite.objects.all()
+    queryset = ExternalRefereeInvite.objects.filter(archived=False)
     serializer_class = ExternalRefereeInviteSerializer
     permission_classes = [IsAssessorOrReferrer]
 
@@ -2486,12 +2488,12 @@ class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
             data={"message": f"Reminder sent to {instance.email} successfully"},
         )
 
-    # Todo: Change this to a patch and archive the invite rather than delete
-    @detail_route(methods=["delete"], detail=True)
+    @detail_route(methods=["patch"], detail=True)
     @basic_exception_handler
     def retract(self, request, *args, **kwargs):
         instance = self.get_object()
         proposal = instance.proposal
-        instance.delete()
+        instance.archived = True
+        instance.save()
         serializer = InternalProposalSerializer(proposal, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)

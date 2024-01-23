@@ -1489,7 +1489,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def external_referral_invites(self):
         return self.external_referee_invites.filter(
-            datetime_first_logged_in__isnull=True
+            archived=False, datetime_first_logged_in__isnull=True
         )
 
     @property
@@ -4937,6 +4937,7 @@ class ExternalRefereeInvite(RevisionedMixin):
     )
     sent_by = models.IntegerField()
     invite_text = models.TextField(blank=True)
+    archived = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -4944,9 +4945,12 @@ class ExternalRefereeInvite(RevisionedMixin):
         verbose_name_plural = "External Referrals"
 
     def __str__(self):
-        return (
+        return_str = (
             f"{self.first_name} {self.last_name} ({self.email}) [{self.organisation}]"
         )
+        if self.archived:
+            return_str += " - Archived"
+        return return_str
 
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -5059,16 +5063,6 @@ class ProposalRequirement(RevisionedMixin):
             proposal_id=self.proposal_id, is_deleted=False
         ).order_by("req_order")[swap_increment]
 
-    # def _next_req(self):
-    #    increment = -1
-    #    for req in ProposalRequirement.objects
-    # .filter(proposal_id=self.proposal_id, is_deleted=False).order_by('-req_order'):
-    #        increment += 1
-    #        if req.id == self.id:
-    #            break
-    #    return ProposalRequirement.objects.filter(proposal_id=self.proposal_id,
-    # is_deleted=False).order_by('req_order')[increment]
-
     def move_up(self):
         # ignore deleted reqs
         if self.req_order == ProposalRequirement.objects.filter(
@@ -5076,7 +5070,6 @@ class ProposalRequirement(RevisionedMixin):
         ).aggregate(min_req_order=Min("req_order")).get("min_req_order"):
             pass
         else:
-            # self.swap(ProposalRequirement.objects.get(proposal=self.proposal, req_order=self.req_order-1))
             self.swap(self.swap_obj(True))
 
     def move_down(self):
@@ -5086,9 +5079,7 @@ class ProposalRequirement(RevisionedMixin):
         ).aggregate(max_req_order=Max("req_order")).get("max_req_order"):
             pass
         else:
-            # self.swap(ProposalRequirement.objects.get(proposal=self.proposal, req_order=self.req_order-1))
             self.swap(self.swap_obj(False))
-            # self.swap(self._next_req())
 
     def swap(self, other):
         new_self_position = other.req_order
