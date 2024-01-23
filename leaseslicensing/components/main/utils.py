@@ -387,8 +387,8 @@ def save_geometry(request, instance, component, geometry_data, foreign_key_field
 
 
 def populate_gis_data(instance, geometries_attribute, foreign_key_field=None):
-    """Fetches required GIS data from KMI and saves it to the instance (Proposal or Competitive Process)
-    Todo: Will need to update this to use the new KB GIS modernisation API"""
+    """Fetches required GIS data from the server defined in settings.GIS_SERVER_URL
+    and saves it to the instance (Proposal or Competitive Process)"""
     instance_name = instance._meta.model.__name__
 
     logger.info(
