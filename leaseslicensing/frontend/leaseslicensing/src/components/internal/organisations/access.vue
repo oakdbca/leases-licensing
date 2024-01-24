@@ -1,6 +1,6 @@
 <template>
     <div id="internalOrgAccess" class="container">
-        <div v-if="!loadingOrganisationRequest" class="row">
+        <div v-if="access" class="row">
             <h3>Organisation Access Request: {{ access.lodgement_number }}</h3>
             <div class="col-md-3">
                 <CommsLogs
@@ -242,9 +242,7 @@ export default {
             loading: [],
             profile: {},
             loadingOrganisationRequest: false,
-            access: {
-                requester: {},
-            },
+            access: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
             members: [],
             // Filters
@@ -376,11 +374,6 @@ export default {
                             }
 
                             return result;
-                        },
-                        createdCell: function (cell) {
-                            //TODO why this is not working?
-                            // the call to popover is done in the 'draw' event
-                            $(cell).popover();
                         },
                     },
                     {
