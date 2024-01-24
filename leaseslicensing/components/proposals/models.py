@@ -4507,10 +4507,6 @@ class Referral(RevisionedMixin):
     referral = models.IntegerField()  # EmailUserRO
     is_external = models.BooleanField(default=False)
     linked = models.BooleanField(default=False)
-    # Todo: We may be able to remove sent_from now that only assessors can send referral requests
-    sent_from = models.SmallIntegerField(
-        choices=SENT_CHOICES, default=SENT_CHOICES[0][0]
-    )
     processing_status = models.CharField(
         "Processing Status",
         max_length=30,
@@ -4696,7 +4692,6 @@ class Referral(RevisionedMixin):
         self.processing_status = Referral.PROCESSING_STATUS_WITH_REFERRAL
         self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
         self.proposal.save()
-        self.sent_from = 1
         self.save()
 
         # Create a log entry for the proposal
@@ -4764,14 +4759,7 @@ class Referral(RevisionedMixin):
             processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
         ).exists():
             # Change the status back to what it was before this referral was requested
-            if self.sent_from == 1:
-                self.proposal.processing_status = (
-                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-                )
-            else:
-                self.proposal.processing_status = (
-                    Proposal.PROCESSING_STATUS_WITH_APPROVER
-                )
+            self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_ASSESSOR
             self.proposal.save()
 
             send_pending_referrals_complete_email_notification(self, request)
@@ -4848,9 +4836,6 @@ class ExternalRefereeInvite(RevisionedMixin):
     datetime_first_logged_in = models.DateTimeField(null=True, blank=True)
     proposal = models.ForeignKey(
         Proposal, related_name="external_referee_invites", on_delete=models.CASCADE
-    )
-    sent_from = models.SmallIntegerField(
-        choices=Referral.SENT_CHOICES, default=Referral.SENT_CHOICES[0][0]
     )
     sent_by = models.IntegerField()
     invite_text = models.TextField(blank=True)
