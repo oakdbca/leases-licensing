@@ -141,22 +141,18 @@
                 </div>
                 <div class="optional-layers-wrapper">
                     <div style="position: relative">
-                        <transition>
+                        <div
+                            class="optional-layers-button-wrapper"
+                            :title="`There are ${optionalLayers.length} optional layers available`"
+                        >
                             <div
-                                class="optional-layers-button-wrapper"
-                                :title="`There are ${optionalLayers.length} optional layers available}`"
+                                class="optional-layers-button btn"
+                                :class="optionalLayers.length ? '' : 'disabled'"
+                                @mouseover="hover = true"
                             >
-                                <div
-                                    class="optional-layers-button btn"
-                                    :class="
-                                        optionalLayers.length ? '' : 'disabled'
-                                    "
-                                    @mouseover="hover = true"
-                                >
-                                    <img src="../../assets/layers.svg" />
-                                </div>
+                                <img src="../../assets/layers.svg" />
                             </div>
-                        </transition>
+                        </div>
                         <transition>
                             <div
                                 v-show="hover"
