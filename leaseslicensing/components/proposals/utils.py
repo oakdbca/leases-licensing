@@ -232,42 +232,36 @@ def proposal_submit(proposal, request):
 
     proposal.submitter = request.user.id
     proposal.lodgement_date = timezone.now()
-    proposal.training_completed = True
+
     reasons = []
-    if proposal.amendment_requests:
-        qs = proposal.amendment_requests.filter(status="requested")
-        if qs:
-            for q in qs:
-                if q.reason is not None:
-                    reasons.append(q.reason)
-                q.status = "amended"
-                q.save()
+    for amendment_request in proposal.amendment_requests.filter(
+        status=AmendmentRequest.STATUS_CHOICE_REQUESTED
+    ):
+        if amendment_request.reason is not None:
+            reasons.append(amendment_request.reason)
+        amendment_request.status = AmendmentRequest.STATUS_CHOICE_AMENDED
+        amendment_request.save()
 
     # Create a log entry for the proposal
     proposal.log_user_action(
         ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id), request
     )
+
     # Create a log entry for the organisation
-    # proposal.applicant.log_user_action(ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id),request)
-    # applicant_field = getattr(proposal, proposal.applicant_field)
-    # 20220128 Ledger to handle EmailUser logging?
-    # applicant_field.log_user_action(ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id),request)
-    # 20220128 - update ProposalAssessorGroup, ProposalApproverGroup as SystemGroups
+    proposal.applicant.log_user_action(
+        ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id), request
+    )
+
     ret1 = send_submit_email_notification(request, proposal)
     ret2 = send_external_submit_email_notification(request, proposal)
 
-    # proposal.save_form_tabs(request)
+    # Email sending fails when working from home so these environment variables
+    # allow the program to continue on the assumption that the email was sent
     if (settings.WORKING_FROM_HOME and settings.DEBUG) or ret1 and ret2:
         proposal.processing_status = "with_assessor"
 
         # Once submitted, mark any related documents as not delete-able
-        document_field_names = [
-            documents_field
-            for documents_field in proposal._meta.fields_map.keys()
-            if "documents" in documents_field
-        ]
-        for document_field_name in document_field_names:
-            getattr(proposal, document_field_name).all().update(can_delete=False)
+        proposal.mark_documents_not_deleteable()
 
         # Reason can be an object, e.g. `AmendmentReason`
         reasons = [r.reason if hasattr(r, "reason") else r for r in reasons]
