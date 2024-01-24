@@ -258,6 +258,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     invoicing_repetition_type_key = serializers.CharField(
         source="invoicing_repetition_type.key", read_only=True
     )
+    invoices_created = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = InvoicingDetails
@@ -282,6 +283,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "cpi_calculation_method",
             "comment_text",
             "context",
+            "invoices_created",
         )
 
     def set_default_values(self, attrs, fields_excluded):
