@@ -1969,6 +1969,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def move_to_status(self, request, status, approver_comment):
         if not self.can_assess(request.user) and not self.is_referee(request.user):
             raise exceptions.ProposalNotAuthorized()
+
+        if self.processing_status == status:
+            return
+
         if status in [
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
@@ -1981,49 +1985,44 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 raise ValidationError(
                     "You cannot change the current status at this time"
                 )
-            if self.processing_status != status:
-                if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
-                    self.approver_comment = ""
-                    if approver_comment:
-                        self.approver_comment = approver_comment
-                        self.save()
-                        send_proposal_approver_sendback_email_notification(
-                            request, self
-                        )
-                self.processing_status = status
-                self.save()
-                # Only add standard requirements if no requirements exist so far
-                if (
-                    status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
-                    and len(self.requirements.all()) == 0
-                ):
-                    self.add_default_requirements()
 
-                # Lock the proposal geometries associated with this proposal and owned by the current user
-                ProposalGeometry.objects.filter(proposal=self).exclude(
-                    Q(locked=True) | ~Q(drawn_by=request.user.id)
-                ).update(**{"locked": True})
+            if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
+                self.approver_comment = ""
+                if approver_comment:
+                    self.approver_comment = approver_comment
+                    self.save()
+                    send_proposal_approver_sendback_email_notification(request, self)
+            self.processing_status = status
+            self.save()
+            # Only add standard requirements if no requirements exist so far
+            if (
+                status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
+                and len(self.requirements.all()) == 0
+            ):
+                self.add_default_requirements()
 
-                # Create a log entry for the proposal
-                if self.processing_status == self.PROCESSING_STATUS_WITH_ASSESSOR:
-                    self.log_user_action(
-                        ProposalUserAction.ACTION_BACK_TO_PROCESSING.format(self.id),
-                        request,
-                    )
-                elif (
-                    self.processing_status
-                    == self.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
-                ):
-                    self.log_user_action(
-                        ProposalUserAction.ACTION_ENTER_REQUIREMENTS.format(self.id),
-                        request,
-                    )
+            # Lock the proposal geometries associated with this proposal and owned by the current user
+            ProposalGeometry.objects.filter(proposal=self).exclude(
+                Q(locked=True) | ~Q(drawn_by=request.user.id)
+            ).update(**{"locked": True})
+
+            # Create a log entry for the proposal
+            if self.processing_status == self.PROCESSING_STATUS_WITH_ASSESSOR:
+                self.log_user_action(
+                    ProposalUserAction.ACTION_BACK_TO_PROCESSING.format(self.id),
+                    request,
+                )
+            elif (
+                self.processing_status
+                == self.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
+            ):
+                self.log_user_action(
+                    ProposalUserAction.ACTION_ENTER_REQUIREMENTS.format(self.id),
+                    request,
+                )
         elif status in [
             self.PROCESSING_STATUS_WITH_REFERRAL,
         ]:
-            if self.processing_status == status:
-                return
-
             self.processing_status = status
             self.save()
         else:
@@ -3832,6 +3831,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def update_lease_licence_approval_documents_approval_type(self):
         self.lease_licence_approval_documents
 
+    def mark_documents_not_deleteable(self):
+        document_field_names = [
+            documents_field
+            for documents_field in self._meta.fields_map.keys()
+            if "documents" in documents_field
+        ]
+        for document_field_name in document_field_names:
+            getattr(self, document_field_name).all().update(can_delete=False)
+
 
 class ProposalApplicant(BaseApplicant):
     proposal = models.ForeignKey(
@@ -4260,8 +4268,9 @@ class AmendmentRequest(ProposalRequest):
                 proposal.save(
                     version_comment=f"Proposal amendment requested {request.data.get('reason', '')}"
                 )
-                # Todo: Do we need to update all the related document models to can_hide=True?
-                # proposal.documents.all().update(can_hide=True)
+
+                # Mark any related documents that the assessor may have attached to the proposal as not delete-able
+                self.mark_documents_not_deleteable()
 
             # Create a log entry for the proposal
             proposal.log_user_action(
@@ -4611,9 +4620,11 @@ class Referral(RevisionedMixin):
     def unassign(self, request):
         if not self.can_process(request.user):
             raise exceptions.ProposalNotAuthorized()
+
         if self.assigned_officer:
             self.assigned_officer = None
             self.save()
+
             # Create a log entry for the proposal
             self.proposal.log_user_action(
                 ProposalUserAction.ACTION_REFERRAL_UNASSIGN_ASSESSOR.format(
@@ -4689,6 +4700,7 @@ class Referral(RevisionedMixin):
     def resend(self, request):
         if not self.proposal.can_assess(request.user):
             raise exceptions.ProposalNotAuthorized()
+
         self.processing_status = Referral.PROCESSING_STATUS_WITH_REFERRAL
         self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
         self.proposal.save()
@@ -4715,8 +4727,6 @@ class Referral(RevisionedMixin):
         )
 
         # send email
-        # recipients = self.referral_group.members_list
-        # ~leaving the comment above here in case we need to send to the whole group
         send_referral_email_notification(
             self,
             [
@@ -4766,48 +4776,42 @@ class Referral(RevisionedMixin):
 
     @transaction.atomic
     def add_referral_document(self, request):
-        # if request.data.has_key('referral_document'):
-        if "referral_document" in request.data:
-            referral_document = request.data["referral_document"]
-            if referral_document != "null":
-                try:
-                    document = self.referral_documents.get(
-                        input_name=str(referral_document)
-                    )
-                except ReferralDocument.DoesNotExist:
-                    document, created = self.referral_documents.get_or_create(
-                        input_name=str(referral_document),
-                        name=str(referral_document),
-                    )[0]
-                document.name = str(referral_document)
-                # commenting out below tow lines - we want to retain all past attachments
-                # - reversion can use them
-                # if document._file and os.path.isfile(document._file.path):
-                #    os.remove(document._file.path)
-                document._file = referral_document
-                document.save()
-                d = ReferralDocument.objects.get(id=document.id)
-                # self.referral_document = d
-                self.document = d
-                comment = f"Referral Document Added: {document.name}"
-            else:
-                # self.referral_document = None
-                self.document = None
-                # comment = 'Referral Document Deleted: {}'.format(request.data['referral_document_name'])
-                comment = "Referral Document Deleted"
-            # self.save()
-            self.save(
-                version_comment=comment
-            )  # to allow revision to be added to reversion history
-            self.proposal.log_user_action(
-                ProposalUserAction.ACTION_REFERRAL_DOCUMENT.format(self.id),
-                request,
-            )
+        if "referral_document" not in request.data:
+            return self
 
-            # Log entry for applicant
-            self.proposal.applicant.log_user_action(
-                ProposalUserAction.ACTION_DECLINE.format(self.id), request
-            )
+        referral_document = request.data["referral_document"]
+        if referral_document != "null":
+            try:
+                document = self.referral_documents.get(
+                    input_name=str(referral_document)
+                )
+            except ReferralDocument.DoesNotExist:
+                document, created = self.referral_documents.get_or_create(
+                    input_name=str(referral_document),
+                    name=str(referral_document),
+                )[0]
+            document.name = str(referral_document)
+            document._file = referral_document
+            document.save()
+            d = ReferralDocument.objects.get(id=document.id)
+            self.document = d
+            comment = f"Referral Document Added: {document.name}"
+        else:
+            self.document = None
+            comment = "Referral Document Deleted"
+
+        # to allow revision to be added to reversion history
+        self.save(version_comment=comment)
+
+        self.proposal.log_user_action(
+            ProposalUserAction.ACTION_REFERRAL_DOCUMENT.format(self.id),
+            request,
+        )
+
+        # Log entry for applicant
+        self.proposal.applicant.log_user_action(
+            ProposalUserAction.ACTION_DECLINE.format(self.id), request
+        )
 
         return self
 
