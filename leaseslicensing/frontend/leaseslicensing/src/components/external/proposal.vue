@@ -59,8 +59,8 @@
             :submitter-id="submitterId"
             :registration-of-interest="registrationOfInterest"
             :lease-licence="leaseLicence"
-            @updateSubmitText="updateSubmitText"
-            @refreshFromResponse="refreshFromResponse"
+            @update-submit-text="updateSubmitText"
+            @refresh-from-response="refreshFromResponse"
         >
             <template #slot_additional_documents_assessment_comments>
                 <div class="row">
@@ -373,56 +373,14 @@ export default {
                 ? `/api/proposal/${this.proposal.id}/submit.json`
                 : '';
         },
-        canEditActivities: function () {
-            return this.proposal ? this.proposal.can_user_edit : 'false';
-        },
-        canEditPeriod: function () {
-            return this.proposal ? this.proposal.can_user_edit : 'false';
-        },
-        trainingCompleted: function () {
-            if (this.proposal.application_type == 'Event') {
-                return this.proposal.applicant_training_completed;
-            }
-            return this.proposal.training_completed;
-        },
-        showElectoralRoll: function () {
-            let show = false;
-            if (
-                this.proposal &&
-                ['wla', 'mla'].includes(this.proposal.application_type_code)
-            ) {
-                show = true;
-            }
-            return show;
-        },
         applicationTypeCode: function () {
             if (this.proposal) {
                 return this.proposal.application_type_code;
             }
             return null;
         },
-        amendmentOrRenewal: function () {
-            let amendRenew = false;
-            if (
-                this.proposal &&
-                this.proposal.proposal_type &&
-                this.proposal.proposal_type.code !== 'new'
-            ) {
-                amendRenew = true;
-            }
-            return amendRenew;
-        },
     },
     methods: {
-        updateMooringAuth: function (changed) {
-            this.mooringOptionsChanged = changed;
-        },
-        updateVesselChanged: function (vesselChanged) {
-            this.vesselChanged = vesselChanged;
-        },
-        updateMooringPreference: function (preferenceChanged) {
-            this.mooringPreferenceChanged = preferenceChanged;
-        },
         proposal_refs: function () {
             if (this.applicationTypeCode == 'wla') {
                 return this.$refs.waiting_list_application;
