@@ -1098,7 +1098,6 @@ export default {
             );
         },
         canRedoDrawnVertex: function () {
-            /* Todo: The redo button is partially implemented so it is disabled for now. */
             this.sketchCoordinates || this.unOrRedoing_sketchPoint; // Mentioned here to force update of the computed property
             return (
                 this.mode == 'draw' &&
@@ -2054,7 +2053,6 @@ export default {
                         return;
                     }
 
-                    // TODO: Return path from serializer
                     let model_path = model.details_url;
                     // Remove trailing slash from urls
                     let pathnames = [
