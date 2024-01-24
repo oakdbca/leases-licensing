@@ -130,8 +130,8 @@
                                             <input
                                                 id="postalAddressLine1"
                                                 v-model="
-                                                    org.postal_address
-                                                        .postal_line1
+                                                    org.address.postal_address
+                                                        .line1
                                                 "
                                                 type="text"
                                                 class="form-control"
@@ -155,8 +155,8 @@
                                             <input
                                                 id="postalLocality"
                                                 v-model="
-                                                    org.postal_address
-                                                        .postal_locality
+                                                    org.address.postal_address
+                                                        .locality
                                                 "
                                                 type="text"
                                                 class="form-control"
@@ -180,8 +180,8 @@
                                             <input
                                                 id="postalState"
                                                 v-model="
-                                                    org.postal_address
-                                                        .postal_state
+                                                    org.address.postal_address
+                                                        .state
                                                 "
                                                 type="text"
                                                 class="form-control"
@@ -205,8 +205,8 @@
                                             <input
                                                 id="postalPostcode"
                                                 v-model="
-                                                    org.postal_address
-                                                        .postal_postcode
+                                                    org.address.postal_address
+                                                        .postcode
                                                 "
                                                 type="text"
                                                 class="form-control"
@@ -231,8 +231,8 @@
                                             <select
                                                 id="country"
                                                 v-model="
-                                                    org.postal_address
-                                                        .postal_country
+                                                    org.address.postal_address
+                                                        .country
                                                 "
                                                 class="form-select"
                                                 name="Country"
@@ -293,8 +293,8 @@
                                             <input
                                                 id="billingAddressLine1"
                                                 v-model="
-                                                    org.billing_address
-                                                        .billing_line1
+                                                    org.address.billing_address
+                                                        .line1
                                                 "
                                                 type="text"
                                                 class="form-control billing-address"
@@ -316,8 +316,8 @@
                                             <input
                                                 id="billingLocality"
                                                 v-model="
-                                                    org.billing_address
-                                                        .billing_locality
+                                                    org.address.billing_address
+                                                        .locality
                                                 "
                                                 type="text"
                                                 class="form-control billing-address"
@@ -339,8 +339,8 @@
                                             <input
                                                 id="billingState"
                                                 v-model="
-                                                    org.billing_address
-                                                        .billing_state
+                                                    org.address.billing_address
+                                                        .state
                                                 "
                                                 type="text"
                                                 class="form-control billing-address"
@@ -361,8 +361,8 @@
                                             <input
                                                 id="billingPostcode"
                                                 v-model="
-                                                    org.billing_address
-                                                        .billing_postcode
+                                                    org.address.billing_address
+                                                        .postcode
                                                 "
                                                 type="text"
                                                 class="form-control billing-address"
@@ -384,8 +384,8 @@
                                             <select
                                                 id="country"
                                                 v-model="
-                                                    org.billing_address
-                                                        .billing_country
+                                                    org.address.billing_address
+                                                        .country
                                                 "
                                                 class="form-select billing-address"
                                                 name="Country"
@@ -663,25 +663,14 @@ export default {
         let initialisers = [
             utils.fetchCountries(),
             utils.fetchOrganisation(to.params.org_id),
-            utils.fetchOrganisationAddress(to.params.org_id),
             utils.fetchOrganisationPermissions(to.params.org_id),
         ];
         Promise.all(initialisers).then((data) => {
             next((vm) => {
                 vm.countries = data[0];
-                vm.org = Object.assign({}, data[1], data[2]);
-                vm.myorgperms = data[3];
-                vm.org.postal_address =
-                    vm.org.postal_address != null ? vm.org.postal_address : {};
-                vm.org.billing_address =
-                    vm.org.billing_address != null
-                        ? vm.org.billing_address
-                        : {};
-                vm.org.billing_same_as_postal =
-                    vm.isBillingAddressSame != null
-                        ? vm.isBillingAddressSame
-                        : false;
-                // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
+                vm.org = Object.assign({}, data[1]);
+                console.log(vm.org);
+                vm.myorgperms = data[2];
             });
         });
     },
@@ -689,24 +678,11 @@ export default {
         let initialisers = [
             utils.fetchOrganisation(to.params.org_id),
             utils.fetchOrganisationPermissions(to.params.org_id),
-            utils.fetchOrganisationAddress(to.params.org_id),
         ];
         Promise.all(initialisers).then((data) => {
             next((vm) => {
-                vm.org = Object.assign({}, data[0], data[2]);
+                Object.assign(vm.org, data[0]);
                 vm.myorgperms = data[1];
-                vm.org.postal_address =
-                    vm.org.postal_address != null ? vm.org.postal_address : {};
-                vm.org.billing_address =
-                    vm.org.billing_address != null
-                        ? vm.org.billing_address
-                        : {};
-                vm.org.billing_same_as_postal =
-                    vm.isBillingAddressSame != null
-                        ? vm.isBillingAddressSame
-                        : false;
-                // vm.org.address = vm.org.address != null ? vm.org.address : {};
-                // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
         });
     },
@@ -855,11 +831,6 @@ export default {
                             }
 
                             return result;
-                        },
-                        createdCell: function (cell) {
-                            //TODO why this is not working?
-                            // the call to popover is done in the 'draw' event
-                            $(cell).popover();
                         },
                     },
                     {
@@ -1030,8 +1001,8 @@ export default {
         },
         isBillingAddressSame: function () {
             return (
-                Object.values(this.org.postal_address).toString() ==
-                Object.values(this.org.billing_address).toString()
+                Object.values(this.org.address.postal_address).toString() ==
+                Object.values(this.org.address.billing_address).toString()
             );
         },
     },
@@ -1041,17 +1012,12 @@ export default {
         let initialisers = [
             utils.fetchCountries(),
             utils.fetchOrganisation(vm.$route.params.org_id),
-            // Todo: It shouldn't be necessary to do an additional fetch to get the address details
-            // Ledger gw api has been updated to return the address details in the fetchOrganisation call
-            utils.fetchOrganisationAddress(vm.$route.params.org_id),
             utils.fetchOrganisationPermissions(vm.$route.params.org_id),
         ];
         Promise.all(initialisers).then((data) => {
             vm.countries = data[0];
             vm.org = Object.assign({}, data[1], data[2]);
-            vm.myorgperms = data[3];
-            vm.org.postal_address = vm.org.postal_address || {};
-            vm.org.billing_address = vm.org.billing_address || {};
+            vm.myorgperms = data[2];
             vm.org.billing_same_as_postal = vm.isBillingAddressSame || false;
             if (vm.org.billing_same_as_postal) {
                 this.copyPostalAddressToBillingAddress();
@@ -1079,16 +1045,16 @@ export default {
             this.$refs.add_contact.isModalOpen = true;
         },
         copyPostalAddressToBillingAddress: function () {
-            this.org.billing_address.billing_line1 =
-                this.org.postal_address.postal_line1;
-            this.org.billing_address.billing_locality =
-                this.org.postal_address.postal_locality;
-            this.org.billing_address.billing_state =
-                this.org.postal_address.postal_state;
-            this.org.billing_address.billing_postcode =
-                this.org.postal_address.postal_postcode;
-            this.org.billing_address.billing_country =
-                this.org.postal_address.postal_country;
+            this.org.address.billing_address.line1 =
+                this.org.address.postal_address.line1;
+            this.org.address.billing_address.locality =
+                this.org.address.postal_address.locality;
+            this.org.address.billing_address.state =
+                this.org.address.postal_address.state;
+            this.org.address.billing_address.postcode =
+                this.org.address.postal_address.postcode;
+            this.org.address.billing_address.country =
+                this.org.address.postal_address.country;
         },
         updatePostalAddressFromBillingAddress: function () {
             if (this.org.billing_same_as_postal) {
@@ -1853,8 +1819,8 @@ export default {
 
             if (form.checkValidity()) {
                 if (formId == 'address-details') {
-                    const code1 = vm.org.postal_address.postal_postcode;
-                    const code2 = vm.org.billing_address.billing_postcode;
+                    const code1 = vm.org.address.postal_address.postcode;
+                    const code2 = vm.org.address.billing_address.postcode;
                     if (
                         isNaN(Number.parseInt(code1)) ||
                         isNaN(Number.parseInt(code2))
@@ -1981,18 +1947,18 @@ export default {
             let payload = JSON.stringify({
                 organisation_id: vm.org.ledger_organisation_id,
                 postal_address: {
-                    postal_line1: vm.org.postal_address.postal_line1,
-                    postal_locality: vm.org.postal_address.postal_locality,
-                    postal_state: vm.org.postal_address.postal_state,
-                    postal_postcode: vm.org.postal_address.postal_postcode,
-                    postal_country: vm.org.postal_address.postal_country,
+                    postal_line1: vm.org.address.postal_address.line1,
+                    postal_locality: vm.org.address.postal_address.locality,
+                    postal_state: vm.org.address.postal_address.state,
+                    postal_postcode: vm.org.address.postal_address.postcode,
+                    postal_country: vm.org.address.postal_address.country,
                 },
                 billing_address: {
-                    billing_line1: vm.org.billing_address.billing_line1,
-                    billing_locality: vm.org.billing_address.billing_locality,
-                    billing_state: vm.org.billing_address.billing_state,
-                    billing_postcode: vm.org.billing_address.billing_postcode,
-                    billing_country: vm.org.billing_address.billing_country,
+                    billing_line1: vm.org.address.billing_address.line1,
+                    billing_locality: vm.org.address.billing_address.locality,
+                    billing_state: vm.org.address.billing_address.state,
+                    billing_postcode: vm.org.address.billing_address.postcode,
+                    billing_country: vm.org.address.billing_address.country,
                 },
             });
 

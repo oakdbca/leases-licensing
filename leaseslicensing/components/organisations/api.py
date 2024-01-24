@@ -504,13 +504,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     )
     @basic_exception_handler
     def update_address(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if not can_admin_org(instance, request.user.id):
-            return {"status": status.HTTP_403_FORBIDDEN, "message": "Forbidden."}
-
-        response_ledger = update_organisation_obj(request.data)
-
-        return Response(response_ledger)
+        return self.update_details(request, *args, **kwargs)
 
     @logging_action(
         methods=[
