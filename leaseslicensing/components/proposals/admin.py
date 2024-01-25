@@ -198,9 +198,6 @@ class ApplicationTypeAdmin(admin.ModelAdmin):
         "name_display",
         "order",
         "visible",
-        "application_fee",
-        "oracle_code_application",
-        "oracle_code_licence",
         "is_gst_exempt",
     ]
     ordering = ("order",)

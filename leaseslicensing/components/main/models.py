@@ -118,12 +118,6 @@ class ApplicationType(models.Model):
     )
     order = models.PositiveSmallIntegerField(default=0)
     visible = models.BooleanField(default=True)
-
-    application_fee = models.DecimalField(
-        "Application Fee", max_digits=6, decimal_places=2, null=True
-    )
-    oracle_code_application = models.CharField(max_length=50)
-    oracle_code_licence = models.CharField(max_length=50)
     is_gst_exempt = models.BooleanField(default=True)
 
     class Meta:
