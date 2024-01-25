@@ -2358,11 +2358,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 raise ValidationError(
                     "The previous application's approval does not match the current approval."
                 )
-            proposal_type_comment_name = (
-                proposal_type_comment_names[PROPOSAL_TYPE_AMENDMENT]
-                if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
-                else proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]
-            )
+            proposal_type_comment_name = proposal_type_comment_names[
+                PROPOSAL_TYPE_AMENDMENT
+            ]
             logger.info(f"Approval {proposal_type_comment_name} for {self}")
 
             start_date = details.get("start_date", None)
@@ -2388,12 +2386,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 },
             )
             # Update the approval documents
-            reason = (
-                ApprovalDocument.REASON_AMENDED
-                if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
-                else ApprovalDocument.REASON_RENEWED
+            self.generate_license_documents(
+                approval, reason=ApprovalDocument.REASON_AMENDED
             )
-            self.generate_license_documents(approval, reason=reason)
 
             # Create a versioned approval save
             approval.save(
@@ -2410,11 +2405,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
             self.approved_by = request.user.id
+
             # Send notification email to applicant
             send_proposal_approval_email_notification(self, request)
             self.save(
                 version_comment=(
-                    f"Lease License Approval: {self.approval.lodgement_number} {reason}"
+                    f"Lease License Approval: {self.approval.lodgement_number} {ApprovalDocument.REASON_AMENDED}"
                 )
             )
         elif (
@@ -2464,6 +2460,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             approval.save(
                 version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
+            )
+            self.save(
+                version_comment=(
+                    f"Lease License Approval: {self.approval.lodgement_number} {ApprovalDocument.REASON_TRANSFERRED}"
+                )
             )
 
         elif self.proposal_type.code in [
