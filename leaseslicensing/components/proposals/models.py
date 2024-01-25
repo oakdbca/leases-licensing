@@ -2400,7 +2400,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
             )
 
-            # TODO: Refine Amendment Requirements (If the )
+            # TODO: Refine Amendment Requirements
+            # (If the start date can be amended then that will create complications for invoicing)
             self.generate_compliances(approval, request)
             self.generate_invoicing_details()
 
