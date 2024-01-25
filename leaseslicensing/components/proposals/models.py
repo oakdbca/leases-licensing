@@ -3532,6 +3532,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             # send to the finance group so they can take action
             send_new_invoice_raised_internal_notification(invoice)
+
+            self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
+            self.save()
+
             return
 
         if invoicing_details.charge_method.key in [
