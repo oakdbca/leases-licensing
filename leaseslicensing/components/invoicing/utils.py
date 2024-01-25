@@ -320,6 +320,28 @@ def period_contains_leap_year_day(start_date, end_date):
     return False
 
 
+def get_oracle_code(invoice):
+    """Returns the oracle code for the approval provided"""
+    if not invoice:
+        raise ValueError("Invoice must be provided")
+
+    # If the invoice itself has an oracle code, use that
+    if invoice.oracle_code.code:
+        return invoice.oracle_code.code
+
+    if not invoice.approval:
+        raise ValueError(f"Invoice: {invoice} has no approval")
+
+    if not invoice.approval.invoicing_details:
+        raise ValueError(f"Approval: {invoice.approval} has no invoicing details")
+
+    # If the approval has an oracle code, use that
+    if invoice.approval.invoicing_details.oracle_code:
+        return invoice.approval.invoicing_details.oracle_code
+
+    raise serializers.ValidationError(f"No oracle code found for Invoice: {invoice}")
+
+
 def generate_ledger_invoice(invoice: Invoice) -> None:
     """Takes a leases licensing invoice record and generates a future ledger invoice via api
     Then attaches the oracle invoice pdf to the ledger invoice."""
@@ -342,9 +364,7 @@ def generate_ledger_invoice(invoice: Invoice) -> None:
 
     ledger_order_lines = []
 
-    oracle_code = None  # Todo add code to get oracle code
-    if settings.DEBUG:
-        oracle_code = settings.TEST_ORACLE_CODE
+    oracle_code = get_oracle_code(invoice)
 
     ledger_order_lines.append(
         {
