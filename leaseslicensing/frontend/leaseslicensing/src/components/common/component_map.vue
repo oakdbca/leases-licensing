@@ -1825,7 +1825,7 @@ export default {
                     } else if (evt.originalEvent.buttons === 2) {
                         // If the right mouse button is pressed, undo the last point
                         if (vm.canUndoDrawnVertex) {
-                            vm.undoLeaseLicensePoint();
+                            vm.undoredo_forSketch.undo();
                         } else {
                             vm.set_mode('layer');
                         }
