@@ -12,12 +12,12 @@
         - prevent referrals from creating/editing polygons in the frontend (does not save in backend anyway)
         - disable draw tool for external when model is not in draft status
         - disable draw tool for referral when model is not in with referral status
-        - [] display polygons of approved proposal on new license proposal (external 017, internal 041)
-        - [] display polygons from the competitive process of an proposal that proceeded to a competitive process on the proposal page
-        - implement map on approval details page and map tab
+        - display polygons of approved proposal on new license proposal (external 017, internal 041)
+        - display polygons from the competitive process of an proposal that proceeded to a competitive process on the proposal page
+        - [DONE] implement map on approval details page and map tab
         - keyboard input (del to delete a feature, ctrl+z to undo, ctrl+y to redo, d to draw, etc.)
-        - delete old map files
-        - rename this file
+        - [DONE] delete old map files
+        - [DONE] rename this file
         - automatic zoom to all on map load
      -->
     <div>
