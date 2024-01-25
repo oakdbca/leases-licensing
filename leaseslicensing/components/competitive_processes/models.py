@@ -221,11 +221,11 @@ class CompetitiveProcess(LicensingModelVersioned):
             # TODO: Disarding the previous winnner's proposal should be
             # done when saving the competitive process only after unlocking
             # and changing the outcome.
-            # if generated_proposal:
-            #     generated_proposal.processing_status = (
-            #         Proposal.PROCESSING_STATUS_DISCARDED
-            #     )
-            #     generated_proposal.save()
+            if generated_proposal:
+                generated_proposal.processing_status = (
+                    Proposal.PROCESSING_STATUS_DISCARDED
+                )
+                generated_proposal.save()
 
             # Unlock the competitive process geometries (not those from the originating proposal)
             self.competitive_process_geometries.all().update(locked=False)
@@ -233,8 +233,8 @@ class CompetitiveProcess(LicensingModelVersioned):
             # Set the status of the competitive process to in progress
             self.status = CompetitiveProcess.STATUS_IN_PROGRESS
             # Remove the outcome data (winner, details, documents)
-            # self.winner = None
-            # self.winner_id = None
+            self.winner = None
+            self.winner_id = None
             self.details = ""
             self.competitive_process_documents.all().delete()
             self.save(version_comment=f"Unlocked competitive process {self.pk}")
