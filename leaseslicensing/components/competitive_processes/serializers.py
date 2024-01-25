@@ -405,6 +405,9 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
     can_accessing_user_view = serializers.SerializerMethodField()
     can_accessing_user_process = serializers.SerializerMethodField()
     details_url = serializers.SerializerMethodField(read_only=True)
+    created_at_display = serializers.DateTimeField(
+        read_only=True, format="%d/%m/%Y", source="created_at"
+    )
 
     # Gis data fields
     gis_data = serializers.SerializerMethodField()
@@ -418,6 +421,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
             "generated_proposal",
             "status",
             "created_at",
+            "created_at_display",
             "assigned_officer",
             "site_name",
             "site_comments",
@@ -534,6 +538,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             "status",
             "status_id",
             "created_at",
+            "created_at_display",
             "assigned_officer",
             "site_name",
             "site_comments",

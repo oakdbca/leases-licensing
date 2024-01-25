@@ -111,10 +111,9 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             filter_approval_type = int(filter_approval_type)
             queryset = queryset.filter(approval__approval_type__id=filter_approval_type)
 
-        # Todo: This is still causing anomolies when using annotation. Get Karsten to fix this.
-        # queryset = self.apply_request(
-        #     request, queryset, view, ledger_lookup_fields=["ind_applicant"]
-        # )
+        queryset = self.apply_request(
+            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+        )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset

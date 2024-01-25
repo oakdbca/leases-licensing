@@ -361,6 +361,7 @@ export default {
                     let error =
                         (data.constructor.name === 'Array' && data) ||
                         (data && data.message) ||
+                        (data && data.errors[0]?.detail) || // This is for DRF validation errors
                         response.statusText;
                     console.error(error);
                     reject(error);

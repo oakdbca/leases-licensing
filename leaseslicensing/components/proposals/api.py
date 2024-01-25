@@ -267,13 +267,12 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
         if is_internal(request):
             ledger_lookup_fields += ["assigned_officer", "assigned_approver"]
 
-        # Todo: This is still causing anomolies when using annotation. Get Karsten to fix this.
-        # queryset = self.apply_request(
-        #     request,
-        #     queryset,
-        #     view,
-        #     ledger_lookup_fields=ledger_lookup_fields,
-        # )
+        queryset = self.apply_request(
+            request,
+            queryset,
+            view,
+            ledger_lookup_fields=ledger_lookup_fields,
+        )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset

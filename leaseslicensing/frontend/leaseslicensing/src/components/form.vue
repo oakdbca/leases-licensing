@@ -43,8 +43,11 @@
                         @click="toggleComponentMapOn"
                     >
                         <template v-if="is_external"
-                            ><span class="fw-bold">Step 2:</span> Indicate Land
-                            Area (Map)
+                            ><span class="fw-bold">Step 2:</span>
+                            <span v-if="!is_internal && leaseLicence">
+                                View Land Area (Map)</span
+                            >
+                            <span v-else> Indicate Land Area (Map)</span>
                         </template>
                         <template v-else>Map</template>
                     </button>
@@ -129,7 +132,9 @@
                             :map-info-text="
                                 is_internal
                                     ? ''
-                                    : 'Use the <b>draw</b> tool to draw the area of the proposal you are interested in on the map.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the proposal and continue at a later time.'
+                                    : leaseLicence
+                                      ? 'You cannot change the area anymore at this stage.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the proposal and continue at a later time.'
+                                      : 'Use the <b>draw</b> tool to draw the area of the proposal you are interested in on the map.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the proposal and continue at a later time.'
                             "
                             @validate-feature="validateFeature.bind(this)()"
                             @refreshFromResponse="refreshFromResponse"

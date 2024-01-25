@@ -12,12 +12,12 @@
         - prevent referrals from creating/editing polygons in the frontend (does not save in backend anyway)
         - disable draw tool for external when model is not in draft status
         - disable draw tool for referral when model is not in with referral status
-        - [] display polygons of approved proposal on new license proposal (external 017, internal 041)
-        - [] display polygons from the competitive process of an proposal that proceeded to a competitive process on the proposal page
-        - implement map on approval details page and map tab
+        - display polygons of approved proposal on new license proposal (external 017, internal 041)
+        - display polygons from the competitive process of an proposal that proceeded to a competitive process on the proposal page
+        - [DONE] implement map on approval details page and map tab
         - keyboard input (del to delete a feature, ctrl+z to undo, ctrl+y to redo, d to draw, etc.)
-        - delete old map files
-        - rename this file
+        - [DONE] delete old map files
+        - [DONE] rename this file
         - automatic zoom to all on map load
      -->
     <div>
@@ -83,17 +83,16 @@
                 </div>
             </div>
         </CollapsibleFilters>
-
         <div class="justify-content-end align-items-center mb-2">
-            <div v-if="mapInfoText.length > 0" class="row">
+            <div class="row">
                 <div class="col-md-6">
-                    <BootstrapAlert class="mb-0">
+                    <BootstrapAlert v-if="mapInfoText.length > 0" class="mb-0">
                         <!-- eslint-disable vue/no-v-html -->
                         <p><span v-html="mapInfoText"></span></p>
                         <!--eslint-enable-->
                     </BootstrapAlert>
                 </div>
-                <div class="col-md-6">
+                <div :class="mapInfoText.length > 0 ? 'col-md-6' : 'col-md-12'">
                     <div class="row" style="margin: auto">
                         <BootstrapAlert
                             v-if="hasErrorMessage"
@@ -142,22 +141,18 @@
                 </div>
                 <div class="optional-layers-wrapper">
                     <div style="position: relative">
-                        <transition>
+                        <div
+                            class="optional-layers-button-wrapper"
+                            :title="`There are ${optionalLayers.length} optional layers available`"
+                        >
                             <div
-                                class="optional-layers-button-wrapper"
-                                :title="`There are ${optionalLayers.length} optional layers available}`"
+                                class="optional-layers-button btn"
+                                :class="optionalLayers.length ? '' : 'disabled'"
+                                @mouseover="hover = true"
                             >
-                                <div
-                                    class="optional-layers-button btn"
-                                    :class="
-                                        optionalLayers.length ? '' : 'disabled'
-                                    "
-                                    @mouseover="hover = true"
-                                >
-                                    <img src="../../assets/layers.svg" />
-                                </div>
+                                <img src="../../assets/layers.svg" />
                             </div>
-                        </transition>
+                        </div>
                         <transition>
                             <div
                                 v-show="hover"
@@ -333,7 +328,10 @@
                         <div
                             class="optional-layers-button btn"
                             :class="
-                                hasUndo || canUndoDrawnVertex ? '' : 'disabled'
+                                (mode !== 'draw' && hasUndo) ||
+                                (mode === 'draw' && canUndoDrawnVertex)
+                                    ? ''
+                                    : 'disabled'
                             "
                             :title="
                                 'Undo ' +
@@ -357,7 +355,10 @@
                         <div
                             class="optional-layers-button btn"
                             :class="
-                                hasRedo || canRedoDrawnVertex ? '' : 'disabled'
+                                (mode !== 'draw' && hasRedo) ||
+                                (mode === 'draw' && canRedoDrawnVertex)
+                                    ? ''
+                                    : 'disabled'
                             "
                             :title="
                                 'Redo ' +
@@ -428,14 +429,13 @@
                                             }}
                                         </td>
                                     </tr>
-                                    <!-- TODO: `created_at` is not formatted to DD/MM/YYYY -->
                                     <tr
                                         v-if="
                                             selectedModel.copied_from ||
                                             selectedModel.lodgement_date_display ||
                                             selectedModel.lodgement_date ||
-                                            selectedModel.created_at ||
-                                            selectedModel.created_at_display
+                                            selectedModel.created_at_display ||
+                                            selectedModel.created_at
                                         "
                                     >
                                         <th
@@ -457,8 +457,8 @@
                                             {{
                                                 selectedModel.lodgement_date_display ||
                                                 selectedModel.lodgement_date ||
-                                                selectedModel.created_at ||
-                                                selectedModel.created_at_display
+                                                selectedModel.created_at_display ||
+                                                selectedModel.created_at
                                             }}
                                         </td>
                                     </tr>
@@ -606,7 +606,7 @@
             </div>
         </div>
         <!-- If no context provided, e.g. no proposal or cp, don't allow for shapefile upload -->
-        <div v-if="context" class="row shapefile-row">
+        <div v-if="context && drawable" class="row shapefile-row">
             <div class="col-sm-6 border p-2">
                 <div class="row mb-2">
                     <div class="col">
@@ -1001,7 +1001,6 @@ export default {
             selectedFeatureIds: [],
             lastPoint: null,
             sketchCoordinates: [[]],
-            sketchCoordinatesHistory: [[]],
             defaultColor: '#eeeeee',
             clickSelectStroke: new Stroke({
                 color: 'rgba(255, 0, 0, 0.7)',
@@ -1020,6 +1019,8 @@ export default {
             overlayFeatureInfo: {},
             deletedFeatures: [], // keep track of deleted features
             undoredo: null,
+            undoredo_forSketch: null, // Undo/redo stack for the sketch layer
+            unOrRedoing_sketchPoint: false, // Whether currently undoing or redoing a sketch point
             modifiedFeaturesStack: [], // A stack of only those undoable actions that modified a feature
             drawing: false, // Whether the map is in draw (pencil icon) mode
             transforming: false, // Whether the map is in transform (resize, scale, rotate) mode
@@ -1083,23 +1084,24 @@ export default {
             return true;
         },
         canUndoDrawnVertex: function () {
+            this.sketchCoordinates || this.unOrRedoing_sketchPoint; // Mentioned here to force update of the computed property
             return (
                 this.mode == 'draw' &&
+                !this.unOrRedoing_sketchPoint &&
                 this.drawForModel &&
                 this.drawForModel.getActive() &&
-                this.sketchCoordinates.length > 1
+                this.undoredo_forSketch.getStack('undo').length > 0
             );
         },
         canRedoDrawnVertex: function () {
-            return false;
-            /* Todo: The redo button is partially implemented so it is disabled for now.
+            this.sketchCoordinates || this.unOrRedoing_sketchPoint; // Mentioned here to force update of the computed property
             return (
                 this.mode == 'draw' &&
+                !this.unOrRedoing_sketchPoint &&
                 this.drawForModel &&
                 this.drawForModel.getActive() &&
-                this.sketchCoordinatesHistory.length >
-                    this.sketchCoordinates.length
-            )*/
+                this.undoredo_forSketch.getStack('redo').length > 0
+            );
         },
         optionalLayersActive: function () {
             if (this.optionalLayers.length == 0) {
@@ -1617,6 +1619,31 @@ export default {
                         }
                     );
 
+                    // Setup a dedicated undo/redo for sketch points on the draw layer
+                    vm.undoredo_forSketch = new UndoRedo({
+                        layers: [vm.modelQueryLayer],
+                    });
+                    vm.undoredo_forSketch.clear();
+
+                    vm.undoredo_forSketch.setMaxLength(vm.undoStackMaxLength);
+                    vm.undoredo_forSketch.define(
+                        'add polygon point',
+                        function (s) {
+                            // Undo fn: set to the previous sketch coordinates
+                            vm.unOrRedoing_sketchPoint = true;
+                            vm.sketchCoordinates = s.before;
+                            vm.undoLeaseLicensePoint();
+                            vm.unOrRedoing_sketchPoint = false;
+                        },
+                        function (s) {
+                            // Redo fn: reset the sketch coordinates
+                            vm.unOrRedoing_sketchPoint = true;
+                            vm.sketchCoordinates = s.after;
+                            vm.redoLeaseLicensePoint();
+                            vm.unOrRedoing_sketchPoint = false;
+                        }
+                    );
+
                     for (let eventName of ['stack:add', 'stack:remove']) {
                         vm.undoredo.addEventListener(eventName, function () {
                             let undo_stack = vm.undoredo.getStack('undo');
@@ -1638,6 +1665,7 @@ export default {
                     }
 
                     vm.map.addInteraction(vm.undoredo);
+                    vm.map.addInteraction(vm.undoredo_forSketch);
                 }
             });
 
@@ -1743,14 +1771,49 @@ export default {
                             this.geometryLayout_
                         );
                     }
-                    vm.sketchCoordinates = coordinates[0].slice();
-                    if (
-                        coordinates[0].length >
-                        vm.sketchCoordinatesHistory.length
-                    ) {
-                        // Only reassign the sketchCoordinatesHistory if the new coordinates are longer than the previous
-                        // so we don't lose the history when the user undoes a point
-                        vm.sketchCoordinatesHistory = coordinates[0].slice();
+
+                    if (vm.unOrRedoing_sketchPoint) {
+                        // Don't run below undo stack logic while executing an undo/redo of sketch points
+                        return geometry;
+                    }
+
+                    // Current feature id list for undo stack
+                    let before = [...vm.sketchCoordinates];
+                    // Ignore the last coordinate that is the movable cursor point
+                    let drawnVertexCoords = coordinates[0].toSpliced(-1);
+                    if (before.length != drawnVertexCoords.length) {
+                        // Sort out back-to-back duplicate coordinates
+                        let sketchCoordinates = drawnVertexCoords
+                            .slice()
+                            .reduce((acc, cur) => {
+                                let prev = acc.slice(-1)[0] || [];
+                                if (prev[0] !== cur[0] && prev[1] !== cur[1]) {
+                                    acc.push(cur);
+                                }
+                                return acc;
+                            }, []);
+
+                        // Return from calculation if the new sketch coordinates are the same as the previous
+                        if (
+                            before.length === sketchCoordinates.length &&
+                            before
+                                .flat(1)
+                                .every(
+                                    (coord, index) =>
+                                        coord ===
+                                        sketchCoordinates.flat(1)[index]
+                                )
+                        ) {
+                            return geometry;
+                        }
+                        // Set new sketch coordinates
+                        vm.sketchCoordinates = sketchCoordinates;
+
+                        // Add to undo stack
+                        vm.undoredo_forSketch.push('add polygon point', {
+                            before: before,
+                            after: vm.sketchCoordinates,
+                        });
                     }
 
                     return geometry;
@@ -1762,7 +1825,7 @@ export default {
                     } else if (evt.originalEvent.buttons === 2) {
                         // If the right mouse button is pressed, undo the last point
                         if (vm.canUndoDrawnVertex) {
-                            vm.undoLeaseLicensePoint();
+                            vm.undoredo_forSketch.undo();
                         } else {
                             vm.set_mode('layer');
                         }
@@ -1814,7 +1877,6 @@ export default {
                 console.log('newFeatureId = ' + vm.newFeatureId);
                 vm.lastPoint = evt.feature;
                 vm.sketchCoordinates = [[]];
-                vm.sketchCoordinatesHistory = [[]];
             });
             vm.map.addInteraction(vm.drawForModel);
         },
@@ -1935,8 +1997,7 @@ export default {
             let vm = this;
             vm.map.on('singleclick', function (evt) {
                 if (vm.drawing || vm.measuring) {
-                    // TODO: must be a feature
-                    vm.lastPoint = new Point(evt.coordinate);
+                    vm.lastPoint = new Feature(new Point(evt.coordinate));
                     return;
                 }
 
@@ -1988,7 +2049,6 @@ export default {
                         return;
                     }
 
-                    // TODO: Return path from serializer
                     let model_path = model.details_url;
                     // Remove trailing slash from urls
                     let pathnames = [
@@ -2206,12 +2266,10 @@ export default {
         },
         undoLeaseLicensePoint: function () {
             let vm = this;
-            console.log(vm.drawForModel.sketchCoords_);
             if (vm.lastPoint) {
                 vm.modelQuerySource.removeFeature(vm.lastPoint);
                 vm.lastPoint = null;
                 vm.sketchCoordinates = [[]];
-                vm.sketchCoordinatesHistory = [[]];
                 this.selectedFeatureId = null;
             } else {
                 vm.drawForModel.removeLastPoint();
@@ -2219,15 +2277,22 @@ export default {
         },
         redoLeaseLicensePoint: function () {
             let vm = this;
-            if (
-                vm.sketchCoordinatesHistory.length > vm.sketchCoordinates.length
-            ) {
-                let nextCoordinate = vm.sketchCoordinatesHistory.slice(
-                    vm.sketchCoordinates.length,
-                    vm.sketchCoordinates.length + 1
-                );
-                vm.drawForLeaselicence.appendCoordinates([nextCoordinate[0]]);
+
+            const sketchLineGeom = vm.drawForModel.sketchLine_?.getGeometry();
+            let coordinates = vm.drawForModel.sketchCoords_[0];
+            // Redo finish coordinate
+            let finishCoordinate = vm.sketchCoordinates.slice(-1);
+
+            if (sketchLineGeom !== undefined) {
+                // No geometry, only the first sketch coordinates point present
+                sketchLineGeom.setCoordinates([coordinates]);
             }
+
+            if (finishCoordinate) {
+                vm.drawForModel.appendCoordinates(finishCoordinate);
+            }
+
+            vm.drawForModel.updateSketchFeatures_();
         },
         removeModelFeatures: function () {
             let vm = this;
@@ -2666,7 +2731,7 @@ export default {
         undo: function () {
             let vm = this;
             if (vm.canUndoDrawnVertex) {
-                vm.undoLeaseLicensePoint();
+                vm.undoredo_forSketch.undo();
             } else if (vm.canUndoAction) {
                 vm.undoredo.undo();
                 // Find the last feature in the redo stack and validate it (the last feature doesn't necessarily need to be the last item in the stack, as the last item could e.g. be a 'blockend' object)
@@ -2691,7 +2756,7 @@ export default {
         redo: function () {
             let vm = this;
             if (vm.canRedoDrawnVertex) {
-                vm.redoLeaseLicensePoint();
+                vm.undoredo_forSketch.redo();
             } else if (vm.canRedoAction) {
                 vm.undoredo.redo();
                 // Find the last feature in the undo stack and validate it

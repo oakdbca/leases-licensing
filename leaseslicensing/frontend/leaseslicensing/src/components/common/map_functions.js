@@ -82,7 +82,7 @@ export async function addOptionalLayers(map_component) {
 
                 let legend_url = null;
                 if (layer.Name == baselayer_name) {
-                    // TODO don't add the baselayer to the optional layer control
+                    // Don't add the baselayer to the optional layer control
                 } else {
                     if (typeof layer.Style != 'undefined') {
                         legend_url = layer.Style[0].LegendURL[0].OnlineResource;
@@ -184,6 +184,7 @@ export function set_mode(mode) {
         this.sketchCoordinates = [[]];
         this.sketchCoordinatesHistory = [[]];
         _helper.toggle_draw_measure_license.bind(this)(false, true);
+        this.undoredo_forSketch.clear(); // Clear the sketch coordinates undo/redo stack
         this.drawing = true;
     } else if (this.mode === 'transform') {
         this.clearMeasurementLayer();
@@ -278,7 +279,7 @@ export function validateFeature(feature, component_map) {
 }
 
 export let owsQuery = {
-    version: '1.0.0', // TODO: Change to 1.1.0 or 2.0.0 when supported by the geoserver
+    version: '1.0.0', // Note: Version 1.1.0 or 2.0.0 not supported by the geoserver
     landwater: {
         typeName: 'public:dbca_legislated_lands_and_waters',
         srsName: 'EPSG:4326',
