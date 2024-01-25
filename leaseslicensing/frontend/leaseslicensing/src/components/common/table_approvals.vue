@@ -1567,7 +1567,7 @@ export default {
             swal.fire({
                 title: `Transfer Lease/License`,
                 text: `Are you sure you want to transfer Lease/License ${lodgement_number}?`,
-                icon: 'info',
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Apply to Transfer',
                 reverseButtons: true,
