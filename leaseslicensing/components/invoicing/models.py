@@ -1717,3 +1717,15 @@ class InvoiceTransaction(RevisionedMixin, models.Model):
 
     def __str__(self):
         return f"Transaction: {self.id} for Invoice: {self.invoice} Credit: {self.credit}, Debit: {self.debit}"
+
+
+class OracleCode(models.Model):
+    code = models.CharField(max_length=50, null=False, blank=False)
+    description = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"Code: {self.code}, Description: {self.description}"
