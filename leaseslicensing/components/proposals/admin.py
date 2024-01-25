@@ -8,11 +8,7 @@ from django.http import HttpResponseRedirect
 from django.http.request import HttpRequest
 
 from leaseslicensing import helpers
-from leaseslicensing.components.main.models import (
-    ApplicationType,
-    OracleCode,
-    SystemMaintenance,
-)
+from leaseslicensing.components.main.models import ApplicationType, SystemMaintenance
 from leaseslicensing.components.proposals import forms, models
 from leaseslicensing.components.proposals.forms import SectionChecklistForm
 from leaseslicensing.components.proposals.models import ChecklistQuestion
@@ -202,14 +198,6 @@ class ApplicationTypeAdmin(admin.ModelAdmin):
     ]
     ordering = ("order",)
     readonly_fields = ["name"]
-
-
-class OracleCodeInline(admin.TabularInline):
-    model = OracleCode
-    exclude = ["archive_date"]
-    extra = 3
-    max_num = 3
-    can_delete = False
 
 
 @admin.register(models.ExternalRefereeInvite)

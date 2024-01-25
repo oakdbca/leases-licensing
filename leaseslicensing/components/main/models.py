@@ -151,34 +151,6 @@ class ApplicationType(models.Model):
 
 
 # @python_2_unicode_compatible
-class OracleCode(models.Model):
-    CODE_TYPE_CHOICES = (
-        (
-            settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
-            settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
-        ),
-        (
-            settings.APPLICATION_TYPE_LEASE_LICENCE,
-            settings.APPLICATION_TYPE_LEASE_LICENCE,
-        ),
-    )
-    code_type = models.CharField(
-        "Application Type",
-        max_length=64,
-        choices=CODE_TYPE_CHOICES,
-        default=CODE_TYPE_CHOICES[0][0],
-    )
-    code = models.CharField(max_length=50, blank=True)
-    archive_date = models.DateField(null=True, blank=True)
-
-    class Meta:
-        app_label = "leaseslicensing"
-
-    def __str__(self):
-        return f"{self.code_type} - {self.code}"
-
-
-# @python_2_unicode_compatible
 class Question(models.Model):
     CORRECT_ANSWER_CHOICES = (
         ("answer_one", "Answer one"),
