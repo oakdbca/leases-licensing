@@ -238,8 +238,15 @@ export default {
             return this.proposal.assessor_mode.referee_can_edit;
         },
         conditionsMissingDates() {
-            return this.proposal.requirements.filter(
-                (condition) => !condition.is_deleted && !condition.due_date
+            return (
+                this.proposal &&
+                this.proposal.requirements.filter(
+                    (condition) =>
+                        !condition.standard_requirement
+                            ?.gross_turnover_required &&
+                        !condition.is_deleted &&
+                        !condition.due_date
+                )
             );
         },
     },

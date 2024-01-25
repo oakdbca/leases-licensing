@@ -1723,7 +1723,11 @@ export default {
             return (
                 this.proposal &&
                 this.proposal.requirements.filter(
-                    (condition) => !condition.is_deleted && !condition.due_date
+                    (condition) =>
+                        !condition.standard_requirement
+                            ?.gross_turnover_required &&
+                        !condition.is_deleted &&
+                        !condition.due_date
                 )
             );
         },
