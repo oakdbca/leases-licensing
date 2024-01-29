@@ -667,6 +667,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
         source="transactions.count", read_only=True
     )
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    oracle_code__code = serializers.CharField(
+        source="oracle_code.code", read_only=True, allow_null=True
+    )
+    oracle_code = serializers.IntegerField(
+        source="oracle_code.id", read_only=True, allow_null=True
+    )
 
     class Meta:
         model = Invoice
@@ -691,6 +697,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "is_finance_officer",
             "is_customer",
             "description",
+            "oracle_code__code",
+            "oracle_code",
         ]
         datatables_always_serialize = [
             "status",
@@ -699,6 +707,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "is_finance_officer",
             "oracle_invoice_number",
             "is_customer",
+            "oracle_code",
         ]
 
     def get_approval_type(self, obj):
@@ -727,6 +736,7 @@ class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             "id",
+            "oracle_code",
             "oracle_invoice_number",
             "date_issued",
             "date_due",

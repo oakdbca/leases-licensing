@@ -122,6 +122,7 @@
             :invoice-id="selectedInvoiceId"
             :invoice-lodgement-number="selectedInvoiceLodgementNumber"
             :selected-oracle-invoice-number="selectedInvoiceOracleInvoiceNumber"
+            :selected-oracle-code="selectedInvoiceOracleCode"
             @oracle-invoice-number-uploaded="oracleInvoiceNumberUploaded"
         >
         </UploadOracleInvoice>
@@ -210,7 +211,7 @@ export default {
             selectedInvoiceAmount: null,
             selectedInvoiceOracleInvoiceNumber: null,
             selectedInvoiceBalanceRemaining: null,
-
+            selectedInvoiceOracleCode: null,
             dateFormat: 'DD/MM/YYYY',
             datepickerOptions: {
                 format: 'DD/MM/YYYY',
@@ -265,6 +266,7 @@ export default {
                     'Date Issued',
                     'Action',
                     'Oracle Invoice Number',
+                    'Receivable Activity Code',
                 ];
             }
             return [
@@ -478,7 +480,7 @@ export default {
                             }
                         }
                         if (!full.oracle_invoice_number) {
-                            links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Upload Oracle Invoice</a><br />`;
+                            links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}" data-oracle-code="${full.oracle_code}">Upload Oracle Invoice</a><br />`;
                         }
                     }
                     return links;
@@ -497,6 +499,22 @@ export default {
                         oracleInvoiceNumber = full.oracle_invoice_number;
                     }
                     return oracleInvoiceNumber;
+                },
+            };
+        },
+        oracleCodeColumn: function () {
+            return {
+                data: 'oracle_code__code',
+                name: 'oracle_code__code',
+                orderable: true,
+                searchable: false,
+                visible: true,
+                render: function (row, type, full) {
+                    let oracleCode = 'Not Yet Selected';
+                    if (full.oracle_code__code) {
+                        oracleCode = full.oracle_code__code;
+                    }
+                    return oracleCode;
                 },
             };
         },
@@ -530,6 +548,7 @@ export default {
                     this.dateIssuedColumn,
                     this.actionColumn,
                     this.oracleInvoiceNumberColumn,
+                    this.oracleCodeColumn,
                 ];
             }
             return columns;
@@ -704,12 +723,14 @@ export default {
         editOracleInvoiceNumber: function (
             id,
             lodgement_number,
-            oracle_invoice_number
+            oracle_invoice_number,
+            oracle_code
         ) {
             let vm = this;
             vm.selectedInvoiceId = parseInt(id);
             vm.selectedInvoiceLodgementNumber = lodgement_number;
             vm.selectedInvoiceOracleInvoiceNumber = oracle_invoice_number;
+            vm.selectedInvoiceOracleCode = oracle_code;
             vm.$refs.invoice_upload_oracle_invoice.isModalOpen = true;
         },
         oracleInvoiceNumberUploaded: function () {
@@ -758,13 +779,15 @@ export default {
                     let oracle_invoice_number = $(this).attr(
                         'data-oracle-invoice-number'
                     );
+                    let oracle_code = $(this).attr('data-oracle-code');
                     if (oracle_invoice_number == 'null') {
                         oracle_invoice_number = null;
                     }
                     vm.editOracleInvoiceNumber(
                         id,
                         lodgement_number,
-                        oracle_invoice_number
+                        oracle_invoice_number,
+                        oracle_code
                     );
                 }
             );
