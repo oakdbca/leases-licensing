@@ -326,7 +326,7 @@ def get_oracle_code(invoice):
         raise ValueError("Invoice must be provided")
 
     # If the invoice itself has an oracle code, use that
-    if invoice.oracle_code.code:
+    if invoice.oracle_code:
         return invoice.oracle_code.code
 
     if not invoice.approval:
