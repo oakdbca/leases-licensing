@@ -3,11 +3,7 @@
 {%  block content %}
     <p>All pending referrals for {{ proposal.application_type.name_display }} Application: <strong>{{ proposal.lodgement_number }}</strong> have been completed.</p>
 
-    {% if referral.sent_from == 1 %}
-        <p>The processing status has been changed back to 'With Assessor' and is ready for processing.</p>
-    {% else %}
-        <p>The processing status has been changed back to 'With Approver' and is ready for processing.</p>
-    {% endif %}
+    <p>The processing status has been changed back to 'With Assessor' and is ready for processing.</p>
 
     <p>You can access this {{ proposal.application_type.name_display }} Application using the following link:</p>
 

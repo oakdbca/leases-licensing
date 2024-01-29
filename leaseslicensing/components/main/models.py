@@ -118,12 +118,6 @@ class ApplicationType(models.Model):
     )
     order = models.PositiveSmallIntegerField(default=0)
     visible = models.BooleanField(default=True)
-
-    application_fee = models.DecimalField(
-        "Application Fee", max_digits=6, decimal_places=2, null=True
-    )
-    oracle_code_application = models.CharField(max_length=50)
-    oracle_code_licence = models.CharField(max_length=50)
     is_gst_exempt = models.BooleanField(default=True)
 
     class Meta:
@@ -154,34 +148,6 @@ class ApplicationType(models.Model):
 
     def __str__(self):
         return self.name
-
-
-# @python_2_unicode_compatible
-class OracleCode(models.Model):
-    CODE_TYPE_CHOICES = (
-        (
-            settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
-            settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
-        ),
-        (
-            settings.APPLICATION_TYPE_LEASE_LICENCE,
-            settings.APPLICATION_TYPE_LEASE_LICENCE,
-        ),
-    )
-    code_type = models.CharField(
-        "Application Type",
-        max_length=64,
-        choices=CODE_TYPE_CHOICES,
-        default=CODE_TYPE_CHOICES[0][0],
-    )
-    code = models.CharField(max_length=50, blank=True)
-    archive_date = models.DateField(null=True, blank=True)
-
-    class Meta:
-        app_label = "leaseslicensing"
-
-    def __str__(self):
-        return f"{self.code_type} - {self.code}"
 
 
 # @python_2_unicode_compatible

@@ -276,7 +276,8 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
 
     # No logging action decorator for this one as once the user is unlinked the
     # logging action will throw an exception trying to call get object since the user
-    # no longer has permission to do so. Todo: Could log manually if we need to
+    # no longer has permission to do so. The unlinking of the user is logged in the
+    # unlink_user method on the organisation instance anyway.
     @action(
         methods=[
             "POST",
@@ -472,7 +473,6 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
-    # Todo: Implement for segregatted system
     @logging_action(
         methods=[
             "PUT",
@@ -504,13 +504,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     )
     @basic_exception_handler
     def update_address(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if not can_admin_org(instance, request.user.id):
-            return {"status": status.HTTP_403_FORBIDDEN, "message": "Forbidden."}
-
-        response_ledger = update_organisation_obj(request.data)
-
-        return Response(response_ledger)
+        return self.update_details(request, *args, **kwargs)
 
     @logging_action(
         methods=[

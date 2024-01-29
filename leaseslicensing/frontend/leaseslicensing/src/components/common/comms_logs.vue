@@ -149,8 +149,6 @@ export default {
                         title: 'Date',
                         data: 'created',
                         render: function (date) {
-                            //return moment(date).format("DD-MMM-YYYY HH:mm:ss");
-                            //return moment(date).format(vm.DATE_TIME_FORMAT);
                             return moment(date).format(vm.dateFormat);
                         },
                     },
@@ -158,10 +156,6 @@ export default {
                         title: 'Type',
                         data: 'type',
                     },
-                    /*{
-                        title: 'Reference',
-                        data: 'reference'
-                    },*/
                     {
                         title: 'To',
                         data: 'to',
@@ -352,9 +346,10 @@ export default {
     },
     methods: {
         initialiseCommLogs: function () {
-            // To allow table elements (ref: https://getbootstrap.com/docs/5.1/getting-started/javascript/#sanitizer)
             var myDefaultAllowList = bootstrap.Tooltip.Default.allowList;
-            myDefaultAllowList.table = [];
+
+            // To allow table elements (ref: https://getbootstrap.com/docs/5.0/getting-started/javascript/#sanitizer)
+            myDefaultAllowList.table = ['class', 'cellspacing', 'width'];
 
             let vm = this;
             let commsLogId = 'comms-log-table' + vm.uuid;
@@ -370,14 +365,12 @@ export default {
                 '" role="tooltip"><div class="popover-arrow" style="top:110px;"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>';
 
             new bootstrap.Popover(popover_elem, {
-                sanitize: false,
                 html: true,
                 content: my_content,
                 template: my_template,
                 title: 'Communication logs',
                 container: 'body',
                 placement: 'right',
-                // trigger: "click focus",
                 trigger: 'click',
             });
             popover_elem.addEventListener('inserted.bs.popover', () => {
@@ -392,7 +385,6 @@ export default {
                             '#' + commsLogId + ' [data-bs-toggle="popover"]'
                         )
                     );
-                    console.log(popoverTriggerList);
                     popoverTriggerList.map(function (popoverTriggerEl) {
                         return new bootstrap.Popover(popoverTriggerEl, {
                             container: '#' + commsLogId,
@@ -417,9 +409,10 @@ export default {
             });
         },
         initialiseActionLogs: function () {
-            // To allow table elements (ref: https://getbootstrap.com/docs/5.1/getting-started/javascript/#sanitizer)
             var myDefaultAllowList = bootstrap.Tooltip.Default.allowList;
-            myDefaultAllowList.table = [];
+
+            // To allow table elements (ref: https://getbootstrap.com/docs/5.0/getting-started/javascript/#sanitizer)
+            myDefaultAllowList.table = ['class', 'cellspacing', 'width'];
 
             let vm = this;
             let actionLogId = 'actions-log-table' + vm.uuid;

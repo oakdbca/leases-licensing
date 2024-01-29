@@ -127,6 +127,18 @@ class CPICalculationMethod(models.Model):
         return f"{self.display_name}"
 
 
+class OracleCode(models.Model):
+    code = models.CharField(max_length=50, null=False, blank=False)
+    description = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"{self.code}"
+
+
 class InvoicingDetailsManager(models.Manager):
     def get_queryset(self):
         return (
@@ -213,6 +225,13 @@ class InvoicingDetails(BaseModel):
     )
     cpi_calculation_method = models.ForeignKey(
         CPICalculationMethod,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="invoicing_details",
+    )
+    oracle_code = models.ForeignKey(
+        OracleCode,
         null=True,
         blank=True,
         on_delete=models.PROTECT,
@@ -1298,11 +1317,6 @@ class FixedAnnualIncrementAmount(BaseModel):
     def __str__(self):
         return f"Year: {self.year}, Increment Amount: {self.increment_amount}"
 
-    @property
-    def readonly(self):
-        # TODO: implement
-        return False
-
 
 class FixedAnnualIncrementPercentage(BaseModel):
     year = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -1333,11 +1347,6 @@ class FixedAnnualIncrementPercentage(BaseModel):
 
     def __str__(self):
         return f"Year: {self.year}, Increment Percentage: {self.increment_percentage}"
-
-    @property
-    def readonly(self):
-        # TODO: implement
-        return False
 
 
 class PercentageOfGrossTurnover(BaseModel):
@@ -1539,11 +1548,6 @@ class CrownLandRentReviewDate(BaseModel):
             "review_date",
         ]
 
-    @property
-    def readonly(self):
-        # TODO: implement
-        return False
-
 
 def invoice_pdf_upload_path(instance, filename):
     return f"approvals/{instance.approval.id}/invoices/{instance.id}/{filename}"
@@ -1627,6 +1631,12 @@ class Invoice(LicensingModel):
         on_delete=models.PROTECT,
         related_name="invoice",
     )
+    oracle_code = models.ForeignKey(
+        OracleCode,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+    )
 
     class Meta:
         app_label = "leaseslicensing"
@@ -1640,6 +1650,15 @@ class Invoice(LicensingModel):
 
     def user_has_object_permission(self, user_id):
         return self.approval.user_has_object_permission(user_id)
+
+    def save(self, *args, **kwargs):
+        # If the invoice is being created without an oracle code
+        # and the invoicing details has an oracle code, use that instead
+        # This allows the user to not have to enter the oracle code twice
+        # but have the option to override it if they want to
+        if not self.oracle_code and self.invoicing_details.oracle_code:
+            self.oracle_code = self.invoicing_details.oracle_code
+        super().save(*args, **kwargs)
 
     @property
     def balance(self):

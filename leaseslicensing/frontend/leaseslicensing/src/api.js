@@ -29,6 +29,7 @@ module.exports = {
     invoices: '/api/invoices/',
     invoicing_details: '/api/invoicing_details/',
     my_organisations: '/api/my_organisations/',
+    oracle_codes: '/api/oracle_codes/',
     organisation_access_group_members: '/api/organisation_access_group_members',
     organisation_contacts: '/api/organisation_contacts.json',
     organisation_contacts_paginated: '/api/organisation_contacts_paginated/',

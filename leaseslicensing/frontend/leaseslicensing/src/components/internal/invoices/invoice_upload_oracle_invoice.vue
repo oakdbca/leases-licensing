@@ -59,6 +59,39 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="row mb-3">
+                                <label
+                                    for="crown_land_rent_review_date"
+                                    class="col-form-label col-sm-4"
+                                    >Receivable Activity Code</label
+                                >
+                                <div class="col-sm-8 mb-3">
+                                    <Multiselect
+                                        v-if="oracle_codes"
+                                        id="oracle_code"
+                                        ref="oracle_code"
+                                        v-model="oracleCode"
+                                        :custom-label="
+                                            (opt) =>
+                                                oracle_codes.find(
+                                                    (x) => x.id == opt
+                                                )?.code
+                                        "
+                                        placeholder="Start Typing to Search for a Code"
+                                        :options="
+                                            oracle_codes.map(
+                                                (oracle_code) => oracle_code.id
+                                            )
+                                        "
+                                        :allow-empty="false"
+                                        :hide-selected="true"
+                                        :multiple="false"
+                                        :searchable="true"
+                                        :loading="loadingOracleCodes"
+                                        :disabled="false"
+                                    />
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -71,11 +104,13 @@
 import modal from '@vue-utils/bootstrap-modal.vue';
 import { api_endpoints } from '@/utils/hooks.js';
 import Swal from 'sweetalert2';
+import Multiselect from 'vue-multiselect';
 
 export default {
     name: 'InvoiceTransactions',
     components: {
         modal,
+        Multiselect,
     },
     props: {
         invoiceId: {
@@ -90,12 +125,19 @@ export default {
             type: String,
             default: null,
         },
+        selectedOracleCode: {
+            type: String,
+            default: null,
+        },
     },
     emits: ['oracleInvoiceNumberUploaded'],
     data: function () {
         return {
             isModalOpen: false,
             oracleInvoiceNumber: null,
+            loadingOracleCodes: false,
+            oracle_codes: [],
+            oracleCode: null,
         };
     },
     computed: {
@@ -115,15 +157,39 @@ export default {
                     if (this.selectedOracleInvoiceNumber) {
                         this.oracleInvoiceNumber =
                             this.selectedOracleInvoiceNumber;
+                    } else {
+                        this.oracleInvoiceNumber = null;
+                    }
+                    if (this.selectedOracleCode) {
+                        this.oracleCode = this.selectedOracleCode;
+                    } else {
+                        this.oracleCode = null;
                     }
                 });
             }
         },
     },
+    created: function () {
+        this.fetchOracleCodes();
+    },
     methods: {
         close: function () {
             this.isModalOpen = false;
-            $('#oracle-invoice-number').val('');
+            $('#oracle-invoice-number' + this.invoiceId).val('');
+        },
+        fetchOracleCodes: async function () {
+            let vm = this;
+            try {
+                vm.loadingOracleCodes = true;
+                const res = await fetch(
+                    api_endpoints.oracle_codes + 'key-value-list/'
+                );
+                if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
+                vm.oracle_codes = await res.json();
+                vm.loadingOracleCodes = false;
+            } catch (err) {
+                console.error({ err });
+            }
         },
         confirmUpload: function () {
             Swal.fire({
@@ -179,6 +245,7 @@ export default {
             );
 
             var data = new FormData();
+            data.append('oracle_code', vm.oracleCode);
             data.append('oracle_invoice_number', vm.oracleInvoiceNumber);
             data.append('invoice_pdf', oracleInvoice.files[0]);
 

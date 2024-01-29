@@ -715,7 +715,6 @@ class ComplianceReferral(RevisionedMixin):
         self.processing_status = ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL
         self.compliance.processing_status = Compliance.PROCESSING_STATUS_WITH_REFERRAL
         self.compliance.save()
-        self.sent_from = 1
         self.save()
 
         # Create a log entry for the compliance

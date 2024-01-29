@@ -132,9 +132,6 @@ def send_pending_referrals_complete_email_notification(referral, request):
         "url": url,
     }
     recipients = proposal.assessor_recipients
-    if referral.sent_from == 2:
-        # Referral was requested by approver group
-        recipients = proposal.approver_recipients
 
     msg = email.send(recipients, context=context)
 

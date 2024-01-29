@@ -216,10 +216,16 @@ class OrganisationDetailsSerializer(serializers.ModelSerializer):
         default="",
     )
     organisation_email = serializers.EmailField(
-        source="ledger_organisation_email", required=False, allow_blank=True
+        source="ledger_organisation_email",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
     )
     organisation_trading_name = serializers.CharField(
-        source="ledger_organisation_trading_name", required=False, allow_blank=True
+        source="ledger_organisation_trading_name",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
     )
 
     class Meta:

@@ -17,6 +17,7 @@ from leaseslicensing.components.invoicing.models import (
     Invoice,
     InvoiceTransaction,
     InvoicingDetails,
+    OracleCode,
     PercentageOfGrossTurnover,
     RepetitionType,
 )
@@ -56,7 +57,6 @@ class CPICalculationMethodSerializer(serializers.ModelSerializer):
 
 
 class FixedAnnualIncrementAmountSerializer(serializers.ModelSerializer):
-    readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
 
     class Meta:
@@ -65,7 +65,6 @@ class FixedAnnualIncrementAmountSerializer(serializers.ModelSerializer):
             "id",
             "year",
             "increment_amount",
-            "readonly",
             "to_be_deleted",
         )
         extra_kwargs = {
@@ -80,7 +79,6 @@ class FixedAnnualIncrementAmountSerializer(serializers.ModelSerializer):
 
 
 class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
-    readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
 
     class Meta:
@@ -89,7 +87,6 @@ class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
             "id",
             "year",
             "increment_percentage",
-            "readonly",
             "to_be_deleted",
         )
         extra_kwargs = {
@@ -203,7 +200,6 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
 
 
 class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
-    readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
 
     class Meta:
@@ -211,7 +207,6 @@ class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "review_date",
-            "readonly",
             "to_be_deleted",
         )
         extra_kwargs = {
@@ -264,6 +259,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     invoicing_repetition_type_key = serializers.CharField(
         source="invoicing_repetition_type.key", read_only=True
     )
+    invoices_created = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = InvoicingDetails
@@ -288,6 +284,8 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "cpi_calculation_method",
             "comment_text",
             "context",
+            "invoices_created",
+            "oracle_code",
         )
 
     def set_default_values(self, attrs, fields_excluded):
@@ -556,8 +554,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     def update_annual_increment_amounts(
         self, validated_annual_increment_amounts_data, instance
     ):
-        # Todo: Deal with the case where the approval duration is shortened
-        # and one or more annual increment amounts need to be deleted
+        years = []
         for annual_increment_amount_data in validated_annual_increment_amounts_data:
             (
                 annual_increment_amount,
@@ -574,12 +571,24 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
+            years.append(annual_increment_amount.year)
+
+        # Delete any annual increment amounts that are not in the validated data
+        deleted = (
+            FixedAnnualIncrementAmount.objects.filter(invoicing_details=instance)
+            .exclude(year__in=years)
+            .delete()
+        )
+        if deleted[0] > 0:
+            logger.info(
+                f"Deleted FixedAnnualIncrementAmount {deleted} from "
+                f"Invoicing Details: {instance}"
+            )
 
     def update_annual_increment_percentages(
         self, validated_annual_increment_percentages_data, instance
     ):
-        # Todo: Deal with the case where the approval duration is shortened
-        # and one or more annual increment amounts need to be deleted
+        years = []
         for (
             annual_increment_percentage_data
         ) in validated_annual_increment_percentages_data:
@@ -598,6 +607,19 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
+            years.append(annual_increment_percentage.year)
+
+        # Delete any annual increment percentages that are not in the validated data
+        deleted = (
+            FixedAnnualIncrementPercentage.objects.filter(invoicing_details=instance)
+            .exclude(year__in=years)
+            .delete()
+        )
+        if deleted[0] > 0:
+            logger.info(
+                f"Deleted FixedAnnualIncrementPercentage {deleted} from "
+                f"Invoicing Details: {instance}"
+            )
 
     def update_gross_turnover_percentages(
         self, validated_gross_turnover_percentages_data, instance
@@ -645,6 +667,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
         source="transactions.count", read_only=True
     )
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    oracle_code__code = serializers.CharField(
+        source="oracle_code.code", read_only=True, allow_null=True
+    )
+    oracle_code = serializers.IntegerField(
+        source="oracle_code.id", read_only=True, allow_null=True
+    )
 
     class Meta:
         model = Invoice
@@ -669,6 +697,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "is_finance_officer",
             "is_customer",
             "description",
+            "oracle_code__code",
+            "oracle_code",
         ]
         datatables_always_serialize = [
             "status",
@@ -677,6 +707,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "is_finance_officer",
             "oracle_invoice_number",
             "is_customer",
+            "oracle_code",
         ]
 
     def get_approval_type(self, obj):
@@ -705,6 +736,7 @@ class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             "id",
+            "oracle_code",
             "oracle_invoice_number",
             "date_issued",
             "date_due",
@@ -720,3 +752,30 @@ class InvoiceTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = InvoiceTransaction
         fields = "__all__"
+
+
+class OracleCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OracleCode
+        fields = (
+            "id",
+            "code",
+            "description",
+        )
+
+
+class OracleCodeKeyValueSerializer(serializers.ModelSerializer):
+    code = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OracleCode
+        fields = (
+            "id",
+            "code",
+        )
+
+    def get_code(self, instance):
+        value = instance.code
+        if instance.description:
+            value += f" - {instance.description}"
+        return value

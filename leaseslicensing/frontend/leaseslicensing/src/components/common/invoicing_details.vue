@@ -42,6 +42,48 @@
                 </ul>
             </div>
         </div>
+        <div
+            v-if="show_oracle_code"
+            class="row mb-3 pt-3 border-top border-bottom"
+        >
+            <div>
+                <BootstrapAlert>
+                    <div class="mb-2">
+                        The <strong>Receivable Activity Code</strong> determines
+                        where the revenue from this {{ approvalType }} will be
+                        allocated
+                    </div>
+                    <div>
+                        If the code you need is not listed, contact a member of
+                        the 'Leases and Licensing Admin' group
+                    </div>
+                </BootstrapAlert>
+            </div>
+
+            <label
+                for="crown_land_rent_review_date"
+                class="col-form-label col-sm-4"
+                >Receivable Activity Code</label
+            >
+            <div class="col-sm-8 mb-3">
+                <Multiselect
+                    id="oracle_code"
+                    ref="oracle_code"
+                    v-model="selectedOracleCode"
+                    label="code"
+                    track-by="id"
+                    placeholder="Start Typing to Search for a Code"
+                    :options="oracle_codes"
+                    :hide-selected="true"
+                    :multiple="false"
+                    :searchable="true"
+                    :loading="loadingOracleCodes"
+                    :disabled="false"
+                    required
+                    @change="updateOracleCode"
+                />
+            </div>
+        </div>
         <div v-if="show_once_off_charge_amount" class="row mb-3">
             <div class="col-sm-4">
                 <label for="once_off_charge_amount" class="control-label"
@@ -79,6 +121,7 @@
                 />
             </div>
         </div>
+
         <div v-if="show_review_of_base_fee" class="row mb-3 pb-3 border-bottom">
             <label class="col-form-label col-sm-4"
                 >Crown Land Rent Review</label
@@ -435,6 +478,7 @@ import AnnualIncrement from '@/components/common/component_fixed_annual_amount.v
 import PercentageTurnoverAdvance from '@/components/common/component_percentage_gross_turnover_advance.vue';
 import PercentageTurnoverArrears from '@/components/common/component_percentage_gross_turnover_arrears.vue';
 import InvoicePreviewer from '@/components/common//invoice_previewer.vue';
+import Multiselect from 'vue-multiselect';
 
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 
@@ -445,6 +489,7 @@ export default {
         PercentageTurnoverAdvance,
         PercentageTurnoverArrears,
         InvoicePreviewer,
+        Multiselect,
     },
     props: {
         context: {
@@ -496,8 +541,11 @@ export default {
             charge_methods: [],
             repetition_types: [],
             cpi_calculation_methods: [],
+            oracle_codes: [],
+            selectedOracleCode: null,
             previewInvoices: null,
             loadingPreviewInvoices: false,
+            loadingOracleCodes: false,
         };
     },
     computed: {
@@ -536,6 +584,15 @@ export default {
                 });
             }
             return rows;
+        },
+        show_oracle_code: function () {
+            if (this.invoicingDetails && this.invoicingDetails.charge_method)
+                if (
+                    this.invoicingDetails.charge_method !=
+                    this.getChargeMethodIdByKey('no_rent_or_licence_charge')
+                )
+                    return true;
+            return false;
         },
         show_once_off_charge_amount: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -735,6 +792,7 @@ export default {
         this.fetchChargeMethods();
         this.fetchRepetitionTypes();
         this.fetchCPICalculationMethods();
+        this.fetchOracleCodes();
         if (!this.invoicingDetailsComputed.invoicing_quarters_start_month) {
             // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
             this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
@@ -784,14 +842,7 @@ export default {
                     year.has_passed)
             );
         },
-        onChargeMethodChange: function (event) {
-            this.$nextTick(() => {
-                $(event.target)
-                    .closest('.row')
-                    .next('.row')
-                    .find('input')
-                    .focus();
-            });
+        onChargeMethodChange: function () {
             const chargeMethodKey = this.getChargeMethodKeyById(
                 this.invoicingDetailsComputed.charge_method
             );
@@ -993,6 +1044,26 @@ export default {
                 requestOptions
             );
             this.loadingPreviewInvoices = false;
+        },
+        fetchOracleCodes: async function () {
+            let vm = this;
+            try {
+                vm.loadingOracleCodes = true;
+                const res = await fetch(
+                    api_endpoints.oracle_codes + 'key-value-list/'
+                );
+                if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
+                let oracle_codes = await res.json();
+                vm.oracle_codes = oracle_codes;
+                vm.loadingOracleCodes = false;
+            } catch (err) {
+                console.error({ err });
+            }
+        },
+        updateOracleCode() {
+            this.invoicingDetailsComputed.oracle_code = this.selectedOracleCode
+                ? this.selectedOracleCode.id
+                : null;
         },
     },
 };

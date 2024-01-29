@@ -13,7 +13,7 @@ develop = false
 type = "git"
 url = "https://github.com/dbca-wa/appmonitor_client.git"
 reference = "main"
-resolved_reference = "5b64a457af0d3ffe7de828a5d285c6424c73974d"
+resolved_reference = "f4041739e061d73ccc8eaa0977203828cb8d7597"
 
 [[package]]
 name = "asgiref"
@@ -389,17 +389,18 @@ dev = ["attribution (==1.6.2)", "black (==23.3.0)", "flit (==3.8.0)", "mypy (==1
 
 [[package]]
 name = "dill"
-version = "0.3.7"
+version = "0.3.8"
 description = "serialize all of Python"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "dill-0.3.7-py3-none-any.whl", hash = "sha256:76b122c08ef4ce2eedcd4d1abd8e641114bfc6c2867f49f3c41facf65bf19f5e"},
-    {file = "dill-0.3.7.tar.gz", hash = "sha256:cc1c8b182eb3013e24bd475ff2e9295af86c1a38eb1aff128dac8962a9ce3c03"},
+    {file = "dill-0.3.8-py3-none-any.whl", hash = "sha256:c36ca9ffb54365bdd2f8eb3eff7d2a21237f8452b57ace88b1ac615b7e815bd7"},
+    {file = "dill-0.3.8.tar.gz", hash = "sha256:3ebe3c479ad625c4553aca177444d89b486b1d84982eeacded644afc0cf797ca"},
 ]
 
 [package.extras]
 graph = ["objgraph (>=1.7.2)"]
+profile = ["gprof2dot (>=2022.7.29)"]
 
 [[package]]
 name = "distlib"
@@ -1022,7 +1023,7 @@ files = [
 
 [[package]]
 name = "ledger_api_client"
-version = "1.28"
+version = "1.29"
 description = "Ledger API Client"
 optional = false
 python-versions = "*"
@@ -1033,7 +1034,7 @@ develop = false
 type = "git"
 url = "https://github.com/dbca-wa/ledger_api_client.git"
 reference = "HEAD"
-resolved_reference = "c1c0f82a7ae462604354a5115e054d31c7c204f0"
+resolved_reference = "a380af985211f9a04684c1d447351243cb84fe5c"
 
 [[package]]
 name = "lxml"
@@ -1337,13 +1338,13 @@ ptyprocess = ">=0.5"
 
 [[package]]
 name = "phonenumbers"
-version = "8.13.28"
+version = "8.13.29"
 description = "Python version of Google's common library for parsing, formatting, storing and validating international phone numbers."
 optional = false
 python-versions = "*"
 files = [
-    {file = "phonenumbers-8.13.28-py2.py3-none-any.whl", hash = "sha256:ad7bc7d7fd6599a124423ffb840409630777c72d0ee58ba8070cc8e7efcb4c38"},
-    {file = "phonenumbers-8.13.28.tar.gz", hash = "sha256:e22f276b0c4a70bd5b3f6d668d19cab2578f660b8df44d6418f81d64320151b9"},
+    {file = "phonenumbers-8.13.29-py2.py3-none-any.whl", hash = "sha256:9d7863dc8a37e8127f3c9dde65be93a5b46649b779184f8b0a85bdd043b0b293"},
+    {file = "phonenumbers-8.13.29.tar.gz", hash = "sha256:a6c85b53e28410aba2f312255cc8015f384a43e7e241ffb84ca5cde80f094cdf"},
 ]
 
 [[package]]

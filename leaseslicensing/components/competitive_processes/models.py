@@ -213,6 +213,7 @@ class CompetitiveProcess(LicensingModelVersioned):
         if generated_proposal and generated_proposal.processing_status in [
             Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST,
             Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING,
+            Proposal.PROCESSING_STATUS_APPROVED,
         ]:
             raise ValidationError("The generated proposal has already been approved.")
 
@@ -232,6 +233,7 @@ class CompetitiveProcess(LicensingModelVersioned):
 
             # Set the status of the competitive process to in progress
             self.status = CompetitiveProcess.STATUS_IN_PROGRESS
+
             # Remove the outcome data (winner, details, documents)
             self.winner = None
             self.winner_id = None

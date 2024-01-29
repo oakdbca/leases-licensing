@@ -37,6 +37,7 @@ from leaseslicensing.components.main.utils import (
     save_geometry,
     save_groups_data,
     save_site_name,
+    validate_map_files,
 )
 from leaseslicensing.components.proposals.models import Proposal
 from leaseslicensing.helpers import is_internal
@@ -182,6 +183,23 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset, Select2ListMixin):
             return Response(returned_data)
         else:
             return Response()
+
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def validate_map_files(self, request, *args, **kwargs):
+        instance = self.get_object()
+        valid_geometry_saved = validate_map_files(
+            request, instance, "competitive_process"
+        )
+        instance.save()
+        if valid_geometry_saved:
+            populate_gis_data(
+                instance, "competitive_process_geometries", "competitive_process"
+            )
+        serializer = self.get_serializer(instance)
+        logger.debug(f"validate_map_files response: {serializer.data}")
+        return Response(serializer.data)
 
     @basic_exception_handler
     def perform_update(self, serializer):

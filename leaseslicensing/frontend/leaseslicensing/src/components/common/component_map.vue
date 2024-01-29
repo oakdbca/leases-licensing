@@ -2644,13 +2644,17 @@ export default {
             let vm = this;
             vm.isValidating = true;
             vm.errorString = '';
+            let endpoint = api_endpoints.proposal;
+            if (this.context?.model_name == 'competitiveprocess') {
+                endpoint = api_endpoints.competitive_process;
+            }
             const options = {
                 method: 'POST',
                 'content-type': 'application/json',
             };
             fetch(
                 helpers.add_endpoint_json(
-                    api_endpoints.proposals,
+                    endpoint,
                     vm.context.id + '/validate_map_files'
                 ),
                 options
@@ -2664,12 +2668,15 @@ export default {
                     }
                 })
                 .then((data) => {
-                    vm.$emit('refreshFromResponse', data);
                     // Once the shapefile is converted to a proposal geometry the files are deleted
                     // so calling this will remove the file list from the front end
+
+                    vm.$emit('refreshFromResponse', data);
                     vm.$refs.shapefile_document.get_documents();
                     vm.$nextTick(() => {
-                        vm.loadFeatures([data]);
+                        if (this.context?.model_name == 'proposal') {
+                            vm.loadFeatures([data]);
+                        }
                         vm.displayAllFeatures();
                         swal.fire(
                             'Success',

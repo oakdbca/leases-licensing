@@ -39,7 +39,7 @@ from leaseslicensing.components.main.serializers import (
     NewEmailuserSerializer,
     RelatedItemSerializer,
 )
-from leaseslicensing.components.main.utils import save_site_name
+from leaseslicensing.components.main.utils import save_site_name, validate_map_files
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.proposals.email import (
     send_external_referee_invite_email,
@@ -385,70 +385,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             result_page, context={"request": request}, many=True
         )
 
-        return self.paginator.get_paginated_response(serializer.data)
-
-    # TODO: check if still required
-    @list_route(
-        methods=[
-            "GET",
-        ],
-        detail=False,
-    )
-    def proposals_internal(self, request, *args, **kwargs):
-        """
-        Used by the internal dashboard
-
-        http://localhost:8499/api/proposal_paginated/proposal_paginated_internal/?format=datatables&draw=1&length=2
-        """
-        qs = self.get_queryset()
-        # qs = self.filter_queryset(self.request, qs, self)
-        qs = self.filter_queryset(qs)
-
-        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables
-        # by applicant/organisation
-        applicant_id = request.GET.get("org_id")
-        if applicant_id:
-            qs = qs.filter(org_applicant_id=applicant_id)
-        submitter_id = request.GET.get("submitter_id", None)
-        if submitter_id:
-            qs = qs.filter(submitter=submitter_id)
-
-        self.paginator.page_size = qs.count()
-        result_page = self.paginator.paginate_queryset(qs, request)
-        serializer = ListProposalSerializer(
-            result_page, context={"request": request}, many=True
-        )
-        return self.paginator.get_paginated_response(serializer.data)
-
-    @list_route(
-        methods=[
-            "GET",
-        ],
-        detail=False,
-    )
-    def referrals_internal(self, request, *args, **kwargs):
-        """
-        Used by the internal dashboard
-
-        http://localhost:8499/api/proposal_paginated/referrals_internal/?format=datatables&draw=1&length=2
-        """
-        self.serializer_class = ReferralSerializer
-        # qs = Referral.objects.filter(referral=request.user) if is_internal(self.request) else Referral.objects.none()
-        qs = (
-            Referral.objects.filter(
-                referral_group__in=request.user.referralrecipientgroup_set.all()
-            )
-            if is_internal(self.request)
-            else Referral.objects.none()
-        )
-        # qs = self.filter_queryset(self.request, qs, self)
-        qs = self.filter_queryset(qs)
-
-        self.paginator.page_size = qs.count()
-        result_page = self.paginator.paginate_queryset(qs, request)
-        serializer = DTReferralSerializer(
-            result_page, context={"request": request}, many=True
-        )
         return self.paginator.get_paginated_response(serializer.data)
 
     @list_route(
@@ -1195,7 +1131,9 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def requirements(self, request, *args, **kwargs):
         instance = self.get_object()
-        qs = instance.requirements.exclude(is_deleted=True)
+        qs = instance.requirements.exclude(
+            standard_requirement__gross_turnover_required=True
+        ).exclude(is_deleted=True)
         serializer = ProposalRequirementSerializer(
             qs, many=True, context={"request": request}
         )
@@ -1294,7 +1232,7 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def validate_map_files(self, request, *args, **kwargs):
         instance = self.get_object()
-        valid_geometry_saved = instance.validate_map_files(request)
+        valid_geometry_saved = validate_map_files(request, instance)
         instance.save()
         if valid_geometry_saved:
             populate_gis_data(instance, "proposalgeometry")
@@ -1611,7 +1549,9 @@ class ProposalViewSet(UserActionLoggingViewset):
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        if ExternalRefereeInvite.objects.filter(email=request.data["email"]).exists():
+        if ExternalRefereeInvite.objects.filter(
+            archived=False, email=request.data["email"]
+        ).exists():
             raise serializers.ValidationError(
                 _(
                     "An external referee invitation has already been sent to {email}".format(
@@ -2204,22 +2144,6 @@ class ReferralViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(methods=["post"], detail=True)
-    @basic_exception_handler
-    def send_referral(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = SendReferralSerializer(
-            data=request.data, context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-        instance.send_referral(
-            request,
-            serializer.validated_data["email"],
-            serializer.validated_data["text"],
-        )
-        serializer = self.get_serializer(instance, context={"request": request})
-        return Response(serializer.data)
-
     @detail_route(
         methods=[
             "GET",
@@ -2371,9 +2295,7 @@ class ProposalRequirementViewSet(LicensingViewset):
 
         # Set associated referral and source user on requirement creation
         serializer.save(referral=referral, source=user.id)
-        # instance = serializer.save()
-        # TODO: requirements documents in LL?
-        # instance.add_documents(request)
+
         return Response(serializer.data)
 
 
@@ -2535,7 +2457,7 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
 
 
 class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
-    queryset = ExternalRefereeInvite.objects.all()
+    queryset = ExternalRefereeInvite.objects.filter(archived=False)
     serializer_class = ExternalRefereeInviteSerializer
     permission_classes = [IsAssessorOrReferrer]
 
@@ -2551,12 +2473,12 @@ class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
             data={"message": f"Reminder sent to {instance.email} successfully"},
         )
 
-    # Todo: Change this to a patch and archive the invite rather than delete
-    @detail_route(methods=["delete"], detail=True)
+    @detail_route(methods=["patch"], detail=True)
     @basic_exception_handler
     def retract(self, request, *args, **kwargs):
         instance = self.get_object()
         proposal = instance.proposal
-        instance.delete()
+        instance.archived = True
+        instance.save()
         serializer = InternalProposalSerializer(proposal, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)

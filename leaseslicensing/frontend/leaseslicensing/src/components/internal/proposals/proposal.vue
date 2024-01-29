@@ -1723,7 +1723,11 @@ export default {
             return (
                 this.proposal &&
                 this.proposal.requirements.filter(
-                    (condition) => !condition.is_deleted && !condition.due_date
+                    (condition) =>
+                        !condition.standard_requirement
+                            ?.gross_turnover_required &&
+                        !condition.is_deleted &&
+                        !condition.due_date
                 )
             );
         },
@@ -1764,6 +1768,16 @@ export default {
             var form = document.getElementById('invoicing-form');
 
             if (form.checkValidity()) {
+                if (!this.proposal.invoicing_details.oracle_code) {
+                    $('#oracle_code').focus();
+                    swal.fire({
+                        title: 'Receivable Activity Code Required',
+                        text: 'Please select a receivable activity code',
+                        icon: 'error',
+                        customClass: 'swal-wide',
+                    });
+                    return;
+                }
                 vm.completeEditing();
             } else {
                 form.classList.add('was-validated');
@@ -1840,7 +1854,6 @@ export default {
                         invoice.start_date_has_passed &&
                         invoice.amount_object.amount != null
                     ) {
-                        console.log(JSON.stringify(invoice));
                         immediateInvoicesHtml += '<tr>';
                         immediateInvoicesHtml += `<td>${invoice.number}</td>`;
                         immediateInvoicesHtml += `<td>${invoice.issue_date}</td>`;
@@ -2861,7 +2874,6 @@ export default {
                             vm.profile.is_finance_officer &&
                             $('#invoicing-form').length
                         ) {
-                            console.log('scrolling to invoicing form');
                             $(document).scrollTop(
                                 $('#invoicing-form').offset()?.top - 300
                             );

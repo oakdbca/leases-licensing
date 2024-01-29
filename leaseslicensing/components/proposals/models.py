@@ -3,13 +3,10 @@ import copy
 import datetime
 import json
 import logging
-import os
 import subprocess
 from copy import deepcopy
 from decimal import Decimal
-from zipfile import ZipFile
 
-import geopandas as gpd
 from ckeditor.fields import RichTextField
 from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
@@ -17,8 +14,6 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib.gis.db.models.fields import PolygonField
 from django.contrib.gis.db.models.functions import Area
-from django.contrib.gis.gdal import SpatialReference
-from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -59,10 +54,7 @@ from leaseslicensing.components.main.models import (  # Organisation as ledger_o
     UserAction,
 )
 from leaseslicensing.components.main.related_item import RelatedItem
-from leaseslicensing.components.main.utils import (
-    is_department_user,
-    polygon_intersects_with_layer,
-)
+from leaseslicensing.components.main.utils import is_department_user
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import (
     can_admin_org,
@@ -1497,7 +1489,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def external_referral_invites(self):
         return self.external_referee_invites.filter(
-            datetime_first_logged_in__isnull=True
+            archived=False, datetime_first_logged_in__isnull=True
         )
 
     @property
@@ -1757,105 +1749,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def log_user_action(self, action, request):
         return ProposalUserAction.log_action(self, action, request.user.id)
 
-    def validate_map_files(self, request):
-        # Validates shapefiles uploaded with the proposal.
-        # Shapefiles are valid when the shp, shx, and dbf extensions are provided
-        # and when they intersect with DBCA legislated land or water polygons
-
-        valid_geometry_saved = False
-
-        # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
-        shp_file_qs = self.shapefile_documents.filter(
-            Q(name__endswith=".shp")
-            | Q(name__endswith=".shx")
-            | Q(name__endswith=".dbf")
-            | Q(name__endswith=".prj")
-        )
-        # Validate shapefile and all the other related files are present
-        if not shp_file_qs:
-            raise ValidationError(
-                "You can only attach files with the following extensions: .shp, .shx, and .dbf"
-            )
-
-        shp_files = shp_file_qs.filter(name__endswith=".shp").count()
-        shx_files = shp_file_qs.filter(name__endswith=".shx").count()
-        dbf_files = shp_file_qs.filter(name__endswith=".dbf").count()
-
-        if shp_files != 1 or shx_files != 1 or dbf_files != 1:
-            raise ValidationError(
-                "Please attach at least a .shp, .shx, and .dbf file (the .prj file is optional but recommended)"
-            )
-
-        # Add the shapefiles to a zip file for archiving purposes
-        # (as they are deleted after being converted to proposal geometry)
-        shapefile_archive_name = (
-            os.path.splitext(self.shapefile_documents.first().path)[0]
-            + "-"
-            + timezone.now().strftime("%Y%m%d%H%M%S")
-            + ".zip"
-        )
-        shapefile_archive = ZipFile(shapefile_archive_name, "w")
-        for shp_file_obj in shp_file_qs:
-            shapefile_archive.write(shp_file_obj.path, shp_file_obj.name)
-        shapefile_archive.close()
-
-        # A list of all uploaded shapefiles
-        shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
-
-        for shp_file_obj in shp_file_objs:
-            gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
-
-            # If no prj file assume WGS-84 datum
-            if not gdf.crs:
-                gdf_transform = gdf.set_crs("epsg:4326", inplace=True)
-            else:
-                gdf_transform = gdf.to_crs("epsg:4326")
-
-            geometries = gdf.geometry  # GeoSeries
-
-            # Only accept polygons
-            geom_type = geometries.geom_type.values[0]
-            if geom_type not in ("Polygon", "MultiPolygon"):
-                raise ValidationError(f"Geometry of type {geom_type} not allowed")
-
-            # Check for intersection with DBCA geometries
-            gdf_transform["valid"] = False
-            for geom in geometries:
-                srid = SpatialReference(
-                    geometries.crs.srs
-                ).srid  # spatial reference identifier
-
-                polygon = GEOSGeometry(geom.wkt, srid=srid)
-
-                # Add the file name as identifier to the geojson for use in the frontend
-                if "source_" not in gdf_transform:
-                    gdf_transform["source_"] = shp_file_obj.name
-
-                # Imported geometry is valid if it intersects with any one of the DBCA geometries
-                if not polygon_intersects_with_layer(
-                    polygon, "public:dbca_legislated_lands_and_waters"
-                ):
-                    raise ValidationError(
-                        "One or more polygons does not intersect with a relevant layer"
-                    )
-
-                gdf_transform["valid"] = True
-
-                ProposalGeometry.objects.create(
-                    proposal=self,
-                    polygon=polygon,
-                    intersects=True,
-                    drawn_by=request.user.id,
-                )
-
-            self.save()
-            valid_geometry_saved = True
-
-        # Delete all shapefile documents so the user can upload another one if they wish.
-        self.shapefile_documents.all().delete()
-
-        return valid_geometry_saved
-
     @transaction.atomic
     def update(self, request, viewset):
         from leaseslicensing.components.proposals.utils import save_proponent_data
@@ -1869,79 +1762,77 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     @transaction.atomic
     def send_referral(self, request, referral_email, referral_text):
-        referral_email = referral_email.lower()
-        if self.processing_status in [
+        if self.processing_status not in [
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
             Proposal.PROCESSING_STATUS_WITH_REFERRAL,
         ]:
-            self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
-            self.save()
-
-            # Check if the user is in ledger
-            try:
-                user = EmailUser.objects.get(email__icontains=referral_email)
-            except EmailUser.DoesNotExist:
-                # Validate if it is a deparment user
-                department_user = is_department_user(referral_email)
-                if not department_user:
-                    raise ValidationError(
-                        "The user you want to send the referral to is not a member of the department"
-                    )
-                # Todo: This will not work in a segreggated system -> Check if the user is in ledger or create
-
-                user, created = EmailUser.objects.get_or_create(
-                    email=department_user["email"].lower()
-                )
-                if created:
-                    user.first_name = department_user["given_name"]
-                    user.last_name = department_user["surname"]
-                    user.save()
-
-            referral = None
-            try:
-                referral = Referral.objects.get(referral=user.id, proposal=self)
-                raise ValidationError("A referral has already been sent to this user")
-            except Referral.DoesNotExist:
-                # Create Referral
-                referral = Referral.objects.create(
-                    proposal=self,
-                    referral=user.id,
-                    sent_by=request.user.id,
-                    text=referral_text,
-                    assigned_officer=request.user.id,
-                )
-
-            # Create a log entry for the proposal
-            self.log_user_action(
-                ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                    referral.id,
-                    self.lodgement_number,
-                    f"{user.get_full_name()}({user.email})",
-                ),
-                request,
-            )
-
-            # Create a log entry for the applicant
-            self.applicant.log_user_action(
-                ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                    referral.id,
-                    self.lodgement_number,
-                    f"{user.get_full_name()}({user.email})",
-                ),
-                request,
-            )
-
-            # send email
-            send_referral_email_notification(
-                referral,
-                [
-                    user.email,
-                ],
-                request,
-            )
-        else:
             raise exceptions.ProposalReferralCannotBeSent()
+
+        self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
+        self.save()
+
+        referral_email = referral_email.lower()
+
+        # Check if the user exists in the ledger database
+        if not EmailUser.objects.filter(email__icontains=referral_email).exists():
+            raise ValidationError(
+                "The user you want to send the referral to does not have an account in ledger."
+            )
+
+        # Check if the user is a member of the department
+        if not is_department_user(referral_email):
+            raise ValidationError(
+                "The user you want to send the referral to is not a member of the department"
+            )
+
+        user = EmailUser.objects.get(email__icontains=referral_email)
+
+        if Referral.objects.filter(referral=user.id, proposal=self).exists():
+            raise ValidationError(
+                "A referral has already been sent to this user for this proposal"
+            )
+
+        referral, created = Referral.objects.get_or_create(
+            referral=user.id,
+            proposal=self,
+            defaults={
+                "sent_by": request.user.id,
+                "text": referral_text,
+                "assigned_officer": request.user.id,
+            },
+        )
+        if created:
+            logger.info(f"Referral created: {referral}")
+
+        # Create a log entry for the proposal
+        self.log_user_action(
+            ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                referral.id,
+                self.lodgement_number,
+                f"{user.get_full_name()}({user.email})",
+            ),
+            request,
+        )
+
+        # Create a log entry for the applicant
+        self.applicant.log_user_action(
+            ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                referral.id,
+                self.lodgement_number,
+                f"{user.get_full_name()}({user.email})",
+            ),
+            request,
+        )
+
+        # send email
+        send_referral_email_notification(
+            referral,
+            [
+                user.email,
+            ],
+            request,
+        )
 
     @transaction.atomic
     def assign_officer(self, request, officer):
@@ -2078,6 +1969,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def move_to_status(self, request, status, approver_comment):
         if not self.can_assess(request.user) and not self.is_referee(request.user):
             raise exceptions.ProposalNotAuthorized()
+
+        if self.processing_status == status:
+            return
+
         if status in [
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
@@ -2090,49 +1985,44 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 raise ValidationError(
                     "You cannot change the current status at this time"
                 )
-            if self.processing_status != status:
-                if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
-                    self.approver_comment = ""
-                    if approver_comment:
-                        self.approver_comment = approver_comment
-                        self.save()
-                        send_proposal_approver_sendback_email_notification(
-                            request, self
-                        )
-                self.processing_status = status
-                self.save()
-                # Only add standard requirements if no requirements exist so far
-                if (
-                    status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
-                    and len(self.requirements.all()) == 0
-                ):
-                    self.add_default_requirements()
 
-                # Lock the proposal geometries associated with this proposal and owned by the current user
-                ProposalGeometry.objects.filter(proposal=self).exclude(
-                    Q(locked=True) | ~Q(drawn_by=request.user.id)
-                ).update(**{"locked": True})
+            if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
+                self.approver_comment = ""
+                if approver_comment:
+                    self.approver_comment = approver_comment
+                    self.save()
+                    send_proposal_approver_sendback_email_notification(request, self)
+            self.processing_status = status
+            self.save()
+            # Only add standard requirements if no requirements exist so far
+            if (
+                status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
+                and len(self.requirements.all()) == 0
+            ):
+                self.add_default_requirements()
 
-                # Create a log entry for the proposal
-                if self.processing_status == self.PROCESSING_STATUS_WITH_ASSESSOR:
-                    self.log_user_action(
-                        ProposalUserAction.ACTION_BACK_TO_PROCESSING.format(self.id),
-                        request,
-                    )
-                elif (
-                    self.processing_status
-                    == self.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
-                ):
-                    self.log_user_action(
-                        ProposalUserAction.ACTION_ENTER_REQUIREMENTS.format(self.id),
-                        request,
-                    )
+            # Lock the proposal geometries associated with this proposal and owned by the current user
+            ProposalGeometry.objects.filter(proposal=self).exclude(
+                Q(locked=True) | ~Q(drawn_by=request.user.id)
+            ).update(**{"locked": True})
+
+            # Create a log entry for the proposal
+            if self.processing_status == self.PROCESSING_STATUS_WITH_ASSESSOR:
+                self.log_user_action(
+                    ProposalUserAction.ACTION_BACK_TO_PROCESSING.format(self.id),
+                    request,
+                )
+            elif (
+                self.processing_status
+                == self.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
+            ):
+                self.log_user_action(
+                    ProposalUserAction.ACTION_ENTER_REQUIREMENTS.format(self.id),
+                    request,
+                )
         elif status in [
             self.PROCESSING_STATUS_WITH_REFERRAL,
         ]:
-            if self.processing_status == status:
-                return
-
             self.processing_status = status
             self.save()
         else:
@@ -2468,11 +2358,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 raise ValidationError(
                     "The previous application's approval does not match the current approval."
                 )
-            proposal_type_comment_name = (
-                proposal_type_comment_names[PROPOSAL_TYPE_AMENDMENT]
-                if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
-                else proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]
-            )
+            proposal_type_comment_name = proposal_type_comment_names[
+                PROPOSAL_TYPE_AMENDMENT
+            ]
             logger.info(f"Approval {proposal_type_comment_name} for {self}")
 
             start_date = details.get("start_date", None)
@@ -2498,22 +2386,18 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 },
             )
             # Update the approval documents
-            reason = (
-                ApprovalDocument.REASON_AMENDED
-                if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
-                else ApprovalDocument.REASON_RENEWED
+            self.generate_license_documents(
+                approval, reason=ApprovalDocument.REASON_AMENDED
             )
-            self.generate_license_documents(approval, reason=reason)
 
             # Create a versioned approval save
             approval.save(
                 version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
             )
 
-            # TODO: Do compliances need to be created again for amended approvals
+            # TODO: Refine Amendment Requirements
+            # (If the start date can be amended then that will create complications for invoicing)
             self.generate_compliances(approval, request)
-
-            # TODO: Do invoicing details need to be created again for amended
             self.generate_invoicing_details()
 
             self.processing_status = (
@@ -2521,11 +2405,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
             self.approved_by = request.user.id
+
             # Send notification email to applicant
             send_proposal_approval_email_notification(self, request)
             self.save(
                 version_comment=(
-                    f"Lease License Approval: {self.approval.lodgement_number} {reason}"
+                    f"Lease License Approval: {self.approval.lodgement_number} {ApprovalDocument.REASON_AMENDED}"
                 )
             )
         elif (
@@ -2575,6 +2460,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             approval.save(
                 version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
+            )
+            self.save(
+                version_comment=(
+                    f"Lease License Approval: {self.approval.lodgement_number} {ApprovalDocument.REASON_TRANSFERRED}"
+                )
             )
 
         elif self.proposal_type.code in [
@@ -3642,6 +3532,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             # send to the finance group so they can take action
             send_new_invoice_raised_internal_notification(invoice)
+
+            self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
+            self.save()
+
             return
 
         if invoicing_details.charge_method.key in [
@@ -3940,6 +3834,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def update_lease_licence_approval_documents_approval_type(self):
         self.lease_licence_approval_documents
+
+    def mark_documents_not_deleteable(self):
+        document_field_names = [
+            documents_field
+            for documents_field in self._meta.fields_map.keys()
+            if "documents" in documents_field
+        ]
+        for document_field_name in document_field_names:
+            getattr(self, document_field_name).all().update(can_delete=False)
 
 
 class ProposalApplicant(BaseApplicant):
@@ -4369,8 +4272,9 @@ class AmendmentRequest(ProposalRequest):
                 proposal.save(
                     version_comment=f"Proposal amendment requested {request.data.get('reason', '')}"
                 )
-                # Todo: Do we need to update all the related document models to can_hide=True?
-                # proposal.documents.all().update(can_hide=True)
+
+                # Mark any related documents that the assessor may have attached to the proposal as not delete-able
+                self.mark_documents_not_deleteable()
 
             # Create a log entry for the proposal
             proposal.log_user_action(
@@ -4616,10 +4520,6 @@ class Referral(RevisionedMixin):
     referral = models.IntegerField()  # EmailUserRO
     is_external = models.BooleanField(default=False)
     linked = models.BooleanField(default=False)
-    # Todo: We may be able to remove sent_from now that only assessors can send referral requests
-    sent_from = models.SmallIntegerField(
-        choices=SENT_CHOICES, default=SENT_CHOICES[0][0]
-    )
     processing_status = models.CharField(
         "Processing Status",
         max_length=30,
@@ -4652,7 +4552,7 @@ class Referral(RevisionedMixin):
         ordering = ("-lodged_on",)
 
     def __str__(self):
-        return f"Proposal {self.proposal.id} - Referral {self.id}"
+        return f"Referral: {self.id} for Proposal: {self.proposal.lodgement_number}"
 
     # Methods
     @property
@@ -4724,9 +4624,11 @@ class Referral(RevisionedMixin):
     def unassign(self, request):
         if not self.can_process(request.user):
             raise exceptions.ProposalNotAuthorized()
+
         if self.assigned_officer:
             self.assigned_officer = None
             self.save()
+
             # Create a log entry for the proposal
             self.proposal.log_user_action(
                 ProposalUserAction.ACTION_REFERRAL_UNASSIGN_ASSESSOR.format(
@@ -4802,10 +4704,10 @@ class Referral(RevisionedMixin):
     def resend(self, request):
         if not self.proposal.can_assess(request.user):
             raise exceptions.ProposalNotAuthorized()
+
         self.processing_status = Referral.PROCESSING_STATUS_WITH_REFERRAL
         self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
         self.proposal.save()
-        self.sent_from = 1
         self.save()
 
         # Create a log entry for the proposal
@@ -4829,8 +4731,6 @@ class Referral(RevisionedMixin):
         )
 
         # send email
-        # recipients = self.referral_group.members_list
-        # ~leaving the comment above here in case we need to send to the whole group
         send_referral_email_notification(
             self,
             [
@@ -4873,145 +4773,51 @@ class Referral(RevisionedMixin):
             processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
         ).exists():
             # Change the status back to what it was before this referral was requested
-            if self.sent_from == 1:
-                self.proposal.processing_status = (
-                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-                )
-            else:
-                self.proposal.processing_status = (
-                    Proposal.PROCESSING_STATUS_WITH_APPROVER
-                )
+            self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_ASSESSOR
             self.proposal.save()
 
             send_pending_referrals_complete_email_notification(self, request)
 
     @transaction.atomic
     def add_referral_document(self, request):
-        # if request.data.has_key('referral_document'):
-        if "referral_document" in request.data:
-            referral_document = request.data["referral_document"]
-            if referral_document != "null":
-                try:
-                    document = self.referral_documents.get(
-                        input_name=str(referral_document)
-                    )
-                except ReferralDocument.DoesNotExist:
-                    document, created = self.referral_documents.get_or_create(
-                        input_name=str(referral_document),
-                        name=str(referral_document),
-                    )[0]
-                document.name = str(referral_document)
-                # commenting out below tow lines - we want to retain all past attachments
-                # - reversion can use them
-                # if document._file and os.path.isfile(document._file.path):
-                #    os.remove(document._file.path)
-                document._file = referral_document
-                document.save()
-                d = ReferralDocument.objects.get(id=document.id)
-                # self.referral_document = d
-                self.document = d
-                comment = f"Referral Document Added: {document.name}"
-            else:
-                # self.referral_document = None
-                self.document = None
-                # comment = 'Referral Document Deleted: {}'.format(request.data['referral_document_name'])
-                comment = "Referral Document Deleted"
-            # self.save()
-            self.save(
-                version_comment=comment
-            )  # to allow revision to be added to reversion history
-            self.proposal.log_user_action(
-                ProposalUserAction.ACTION_REFERRAL_DOCUMENT.format(self.id),
-                request,
-            )
+        if "referral_document" not in request.data:
+            return self
 
-            # Log entry for applicant
-            self.proposal.applicant.log_user_action(
-                ProposalUserAction.ACTION_DECLINE.format(self.id), request
-            )
+        referral_document = request.data["referral_document"]
+        if referral_document != "null":
+            try:
+                document = self.referral_documents.get(
+                    input_name=str(referral_document)
+                )
+            except ReferralDocument.DoesNotExist:
+                document, created = self.referral_documents.get_or_create(
+                    input_name=str(referral_document),
+                    name=str(referral_document),
+                )[0]
+            document.name = str(referral_document)
+            document._file = referral_document
+            document.save()
+            d = ReferralDocument.objects.get(id=document.id)
+            self.document = d
+            comment = f"Referral Document Added: {document.name}"
+        else:
+            self.document = None
+            comment = "Referral Document Deleted"
+
+        # to allow revision to be added to reversion history
+        self.save(version_comment=comment)
+
+        self.proposal.log_user_action(
+            ProposalUserAction.ACTION_REFERRAL_DOCUMENT.format(self.id),
+            request,
+        )
+
+        # Log entry for applicant
+        self.proposal.applicant.log_user_action(
+            ProposalUserAction.ACTION_DECLINE.format(self.id), request
+        )
 
         return self
-
-    @transaction.atomic
-    def send_referral(self, request, referral_email, referral_text):
-        if self.proposal.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL:
-            if request.user != self.referral:
-                raise exceptions.ReferralNotAuthorized()
-            if self.sent_from != 1:
-                raise exceptions.ReferralCanNotSend()
-            self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
-            self.proposal.save()
-            referral = None
-            # Check if the user is in ledger
-            try:
-                user = EmailUser.objects.get(email__icontains=referral_email.lower())
-            except EmailUser.DoesNotExist:
-                # Validate if it is a deparment user
-                department_user = is_department_user(referral_email)
-                if not department_user:
-                    raise ValidationError(
-                        "The user you want to send the referral to is not a member of the department"
-                    )
-                # Todo: This will not work in a segreggated system -> Check if the user is in ledger or create
-
-                user, created = EmailUser.objects.get_or_create(
-                    email=department_user["email"].lower()
-                )
-                if created:
-                    user.first_name = department_user["given_name"]
-                    user.last_name = department_user["surname"]
-                    user.save()
-            qs = Referral.objects.filter(sent_by=user, proposal=self.proposal)
-            if qs:
-                raise ValidationError("You cannot send referral to this user")
-            try:
-                Referral.objects.get(referral=user, proposal=self.proposal)
-                raise ValidationError("A referral has already been sent to this user")
-            except Referral.DoesNotExist:
-                # Create Referral
-                referral = Referral.objects.create(
-                    proposal=self.proposal,
-                    referral=user,
-                    sent_by=request.user,
-                    sent_from=2,
-                    text=referral_text,
-                )
-                # try:
-                #     referral_assessment=ProposalAssessment.objects
-                # .get(proposal=self,referral_group=referral_group,
-                # referral_assessment=True, referral=referral)
-                # except ProposalAssessment.DoesNotExist:
-                #     referral_assessment=ProposalAssessment.objects
-                # .create(proposal=self,referral_group=referral_group,
-                # referral_assessment=True, referral=referral)
-                #     checklist=ChecklistQuestion.objects.filter(list_type='referral_list', obsolete=False)
-                #     for chk in checklist:
-                #         try:
-                #             chk_instance=ProposalAssessmentAnswer.objects
-                # .get(question=chk, assessment=referral_assessment)
-                #         except ProposalAssessmentAnswer.DoesNotExist:
-                #             chk_instance=ProposalAssessmentAnswer.objects
-                # .create(question=chk, assessment=referral_assessment)
-            # Create a log entry for the proposal
-            self.proposal.log_user_action(
-                ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                    referral.id,
-                    self.proposal.id,
-                    f"{user.get_full_name()}({user.email})",
-                ),
-                request,
-            )
-
-            # Log entry for applicant
-            self.proposal.applicant.log_user_action(
-                ProposalUserAction.ACTION_DECLINE.format(self.id), request
-            )
-
-            # send email
-            recipients = self.email_group.members_list
-            send_referral_email_notification(referral, recipients, request)
-        else:
-            raise exceptions.ProposalReferralCannotBeSent()
 
     @property
     def title(self):
@@ -5039,11 +4845,9 @@ class ExternalRefereeInvite(RevisionedMixin):
     proposal = models.ForeignKey(
         Proposal, related_name="external_referee_invites", on_delete=models.CASCADE
     )
-    sent_from = models.SmallIntegerField(
-        choices=Referral.SENT_CHOICES, default=Referral.SENT_CHOICES[0][0]
-    )
     sent_by = models.IntegerField()
     invite_text = models.TextField(blank=True)
+    archived = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -5051,9 +4855,12 @@ class ExternalRefereeInvite(RevisionedMixin):
         verbose_name_plural = "External Referrals"
 
     def __str__(self):
-        return (
+        return_str = (
             f"{self.first_name} {self.last_name} ({self.email}) [{self.organisation}]"
         )
+        if self.archived:
+            return_str += " - Archived"
+        return return_str
 
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -5166,16 +4973,6 @@ class ProposalRequirement(RevisionedMixin):
             proposal_id=self.proposal_id, is_deleted=False
         ).order_by("req_order")[swap_increment]
 
-    # def _next_req(self):
-    #    increment = -1
-    #    for req in ProposalRequirement.objects
-    # .filter(proposal_id=self.proposal_id, is_deleted=False).order_by('-req_order'):
-    #        increment += 1
-    #        if req.id == self.id:
-    #            break
-    #    return ProposalRequirement.objects.filter(proposal_id=self.proposal_id,
-    # is_deleted=False).order_by('req_order')[increment]
-
     def move_up(self):
         # ignore deleted reqs
         if self.req_order == ProposalRequirement.objects.filter(
@@ -5183,7 +4980,6 @@ class ProposalRequirement(RevisionedMixin):
         ).aggregate(min_req_order=Min("req_order")).get("min_req_order"):
             pass
         else:
-            # self.swap(ProposalRequirement.objects.get(proposal=self.proposal, req_order=self.req_order-1))
             self.swap(self.swap_obj(True))
 
     def move_down(self):
@@ -5193,9 +4989,7 @@ class ProposalRequirement(RevisionedMixin):
         ).aggregate(max_req_order=Max("req_order")).get("max_req_order"):
             pass
         else:
-            # self.swap(ProposalRequirement.objects.get(proposal=self.proposal, req_order=self.req_order-1))
             self.swap(self.swap_obj(False))
-            # self.swap(self._next_req())
 
     def swap(self, other):
         new_self_position = other.req_order

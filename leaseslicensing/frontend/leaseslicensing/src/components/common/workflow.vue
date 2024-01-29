@@ -1135,7 +1135,6 @@ export default {
             });
         },
         initialiseRefereeSelect: function (reinit = false) {
-            console.log('initialiseRefereeSelect');
             let vm = this;
             if (reinit) {
                 $(vm.$refs.department_users).data('select2')
@@ -1408,7 +1407,7 @@ export default {
                             `/${external_referee_invite.id}/retract/`
                         ),
                         {
-                            method: 'DELETE',
+                            method: 'PATCH',
                             headers: {
                                 Accept: 'application/json',
                                 'Content-Type': 'application/json',

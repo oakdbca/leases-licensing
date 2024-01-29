@@ -17,7 +17,7 @@ def process_external_referee_invite(sender, user, request, **kwargs):
     )
     logger.info("Processing external referee invite for user: %s", user)
     if not ExternalRefereeInvite.objects.filter(
-        email=user.email, datetime_first_logged_in__isnull=True
+        archived=False, email=user.email, datetime_first_logged_in__isnull=True
     ).exists():
         return
 

@@ -677,7 +677,7 @@ class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
     def related_items(self, request, *args, **kwargs):
         """Uses union to combine a queryset of multiple different model types
         and uses a generic related item serializer to return the data
-        Todo: Pagination is not working."""
+        Note: Pagination is not working."""
         instance = self.get_object()
         proposals_queryset = (
             Proposal.objects.filter(
@@ -696,11 +696,6 @@ class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
         queryset = proposals_queryset.union(compliances_queryset).order_by(
             "lodgement_number"
         )
-
-        # page = self.paginate_queryset(queryset)
-        # if page is not None:
-        #     serializer = RelatedItemSerializer(page, many=True)
-        #     return self.get_paginated_response(serializer.data)
 
         serializer = RelatedItemSerializer(queryset, many=True)
         data = {}
