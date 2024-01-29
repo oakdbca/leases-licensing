@@ -1135,7 +1135,6 @@ export default {
             });
         },
         initialiseRefereeSelect: function (reinit = false) {
-            console.log('initialiseRefereeSelect');
             let vm = this;
             if (reinit) {
                 $(vm.$refs.department_users).data('select2')

@@ -2874,7 +2874,6 @@ export default {
                             vm.profile.is_finance_officer &&
                             $('#invoicing-form').length
                         ) {
-                            console.log('scrolling to invoicing form');
                             $(document).scrollTop(
                                 $('#invoicing-form').offset()?.top - 300
                             );
