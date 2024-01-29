@@ -94,3 +94,11 @@ class InvoiceAdmin(admin.ModelAdmin):
     inlines = [
         InvoiceTransactionInline,
     ]
+
+
+@admin.register(models.OracleCode)
+class OracleCodeAdmin(admin.ModelAdmin):
+    list_display = [
+        "code",
+        "description",
+    ]

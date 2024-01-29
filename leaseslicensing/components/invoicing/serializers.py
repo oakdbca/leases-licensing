@@ -17,6 +17,7 @@ from leaseslicensing.components.invoicing.models import (
     Invoice,
     InvoiceTransaction,
     InvoicingDetails,
+    OracleCode,
     PercentageOfGrossTurnover,
     RepetitionType,
 )
@@ -284,6 +285,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "comment_text",
             "context",
             "invoices_created",
+            "oracle_code",
         )
 
     def set_default_values(self, attrs, fields_excluded):
@@ -740,3 +742,30 @@ class InvoiceTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = InvoiceTransaction
         fields = "__all__"
+
+
+class OracleCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OracleCode
+        fields = (
+            "id",
+            "code",
+            "description",
+        )
+
+
+class OracleCodeKeyValueSerializer(serializers.ModelSerializer):
+    code = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OracleCode
+        fields = (
+            "id",
+            "code",
+        )
+
+    def get_code(self, instance):
+        value = instance.code
+        if instance.description:
+            value += f" - {instance.description}"
+        return value

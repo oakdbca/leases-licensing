@@ -29,6 +29,7 @@ from leaseslicensing.components.invoicing.models import (
     Invoice,
     InvoiceTransaction,
     InvoicingDetails,
+    OracleCode,
 )
 from leaseslicensing.components.invoicing.serializers import (
     CPICalculationMethodSerializer,
@@ -36,9 +37,15 @@ from leaseslicensing.components.invoicing.serializers import (
     InvoiceSerializer,
     InvoiceTransactionSerializer,
     InvoicingDetailsSerializer,
+    OracleCodeKeyValueSerializer,
+    OracleCodeSerializer,
 )
 from leaseslicensing.components.invoicing.utils import generate_ledger_invoice
-from leaseslicensing.components.main.api import LicensingViewset, NoPaginationListMixin
+from leaseslicensing.components.main.api import (
+    KeyValueListMixin,
+    LicensingViewset,
+    NoPaginationListMixin,
+)
 from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.helpers import is_customer, is_finance_officer
 from leaseslicensing.permissions import IsFinanceOfficer
@@ -419,3 +426,11 @@ class InvoicingDetailsViewSet(LicensingViewset):
         instance.approval.save(version_comment="Completed Editing Invoicing Details")
         serializer = ApprovalSerializer(instance.approval, context={"request": request})
         return Response(serializer.data)
+
+
+class OracleCodeViewSet(LicensingViewset, KeyValueListMixin):
+    queryset = OracleCode.objects.all()
+    serializer_class = OracleCodeSerializer
+    permission_classes = [IsFinanceOfficer]
+    key_value_display_field = "code"
+    key_value_serializer_class = OracleCodeKeyValueSerializer

@@ -136,7 +136,7 @@ class OracleCode(models.Model):
         ordering = ["code"]
 
     def __str__(self):
-        return f"Code: {self.code}, Description: {self.description}"
+        return f"{self.code}"
 
 
 class InvoicingDetailsManager(models.Manager):

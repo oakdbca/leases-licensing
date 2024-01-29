@@ -1768,6 +1768,16 @@ export default {
             var form = document.getElementById('invoicing-form');
 
             if (form.checkValidity()) {
+                if (!this.proposal.invoicing_details.oracle_code) {
+                    $('#oracle_code').focus();
+                    swal.fire({
+                        title: 'Receivable Activity Code Required',
+                        text: 'Please select a receivable activity code',
+                        icon: 'error',
+                        customClass: 'swal-wide',
+                    });
+                    return;
+                }
                 vm.completeEditing();
             } else {
                 form.classList.add('was-validated');
@@ -1844,7 +1854,6 @@ export default {
                         invoice.start_date_has_passed &&
                         invoice.amount_object.amount != null
                     ) {
-                        console.log(JSON.stringify(invoice));
                         immediateInvoicesHtml += '<tr>';
                         immediateInvoicesHtml += `<td>${invoice.number}</td>`;
                         immediateInvoicesHtml += `<td>${invoice.issue_date}</td>`;

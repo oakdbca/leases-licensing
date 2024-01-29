@@ -45,6 +45,9 @@ router.register(
     basename="invoicing_details",
 )
 router.register(
+    "oracle_codes", invoicing_api.OracleCodeViewSet, basename="oracle_codes"
+)
+router.register(
     "invoice_transactions",
     invoicing_api.InvoiceTransactionViewSet,
     basename="invoice_transactions",
