@@ -48,9 +48,15 @@
         >
             <div>
                 <BootstrapAlert>
-                    The <strong>Receivable Activity Code</strong> determines
-                    where the revenue from this {{ approvalType }} will be
-                    allocated
+                    <div class="mb-2">
+                        The <strong>Receivable Activity Code</strong> determines
+                        where the revenue from this {{ approvalType }} will be
+                        allocated
+                    </div>
+                    <div>
+                        If the code you need is not listed, contact a member of
+                        the 'Leases and Licensing Admin' group
+                    </div>
                 </BootstrapAlert>
             </div>
 
