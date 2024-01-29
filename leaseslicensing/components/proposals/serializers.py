@@ -619,7 +619,14 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         return LGA.objects.filter(id__in=ids).values("id", "name")
 
     def get_details_url(self, obj):
-        return reverse("internal-proposal-detail", kwargs={"pk": obj.id})
+        request = self.context["request"]
+        if request.user.is_authenticated:
+            if is_internal(request):
+                return reverse("internal-proposal-detail", kwargs={"pk": obj.id})
+            else:
+                return reverse(
+                    "external-proposal-detail", kwargs={"proposal_pk": obj.id}
+                )
 
     def get_groups(self, obj):
         group_ids = obj.groups.values_list("group__id", flat=True)

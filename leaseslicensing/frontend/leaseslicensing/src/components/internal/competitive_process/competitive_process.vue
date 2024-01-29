@@ -710,7 +710,8 @@ export default {
                     details_url: vm.competitive_process.details_url,
                     application_type_name_display: vm.competitive_process.label,
                     lodgement_number: vm.competitive_process.lodgement_number,
-                    lodgement_date_display: vm.competitive_process.created_at,
+                    lodgement_date_display:
+                        vm.competitive_process.created_at_display,
                     processing_status_display: vm.competitive_process.status,
                 };
                 featureCollection['features'][key]['model'] = model;

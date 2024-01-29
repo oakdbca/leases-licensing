@@ -2876,7 +2876,7 @@ export default {
                         ) {
                             console.log('scrolling to invoicing form');
                             $(document).scrollTop(
-                                $('#invoicing-form').offset().top - 300
+                                $('#invoicing-form').offset()?.top - 300
                             );
                         }
                     });
