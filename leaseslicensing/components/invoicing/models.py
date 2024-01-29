@@ -1651,6 +1651,15 @@ class Invoice(LicensingModel):
     def user_has_object_permission(self, user_id):
         return self.approval.user_has_object_permission(user_id)
 
+    def save(self, *args, **kwargs):
+        # If the invoice is being created without an oracle code
+        # and the invoicing details has an oracle code, use that instead
+        # This allows the user to not have to enter the oracle code twice
+        # but have the option to override it if they want to
+        if not self.oracle_code and self.invoicing_details.oracle_code:
+            self.oracle_code = self.invoicing_details.oracle_code
+        super().save(*args, **kwargs)
+
     @property
     def balance(self):
         amount = self.amount
