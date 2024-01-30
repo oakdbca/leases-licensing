@@ -168,8 +168,11 @@ export default {
         showCurrentlyAssignedTo: function () {
             return (
                 !this.finalised &&
-                constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID ==
-                    this.competitiveProcess.status_id
+                [
+                    constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID,
+                    constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS_UNLOCKED
+                        .ID,
+                ].includes(this.competitiveProcess.status_id)
             );
         },
         debug: function () {
@@ -257,6 +260,8 @@ export default {
                     [constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID]: [
                         constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID,
                     ],
+                    [constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS_UNLOCKED
+                        .ID]: [constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID],
                 };
             } else if (action == 'unlock') {
                 // A competitive process editor can unlock a completed or declined competitive process

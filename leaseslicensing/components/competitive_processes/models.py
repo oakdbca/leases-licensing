@@ -360,6 +360,7 @@ class CompetitiveProcess(LicensingModelVersioned):
         group = None
         if self.status in [
             CompetitiveProcess.STATUS_IN_PROGRESS,
+            CompetitiveProcess.STATUS_IN_PROGRESS_UNLOCKED,
         ]:
             group = SystemGroup.objects.get(
                 name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR
