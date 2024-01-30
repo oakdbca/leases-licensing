@@ -62,14 +62,17 @@
                             </label>
                             <div class="col-sm-9">
                                 <input
+                                    id="phone_number"
                                     v-model="contact.phone_number"
                                     type="text"
                                     class="form-control"
                                     name="phone"
-                                    minlength="8"
+                                    pattern="\d*"
+                                    @keyup="validatePhoneNumbers"
                                 />
                                 <div class="invalid-feedback">
-                                    Please enter a valid phone number.
+                                    Please enter a valid phone number or mobile
+                                    number.
                                 </div>
                             </div>
                         </div>
@@ -80,15 +83,17 @@
                             </label>
                             <div class="col-sm-9">
                                 <input
+                                    id="mobile_number"
                                     v-model="contact.mobile_number"
                                     type="text"
                                     class="form-control"
                                     name="mobile"
-                                    required
-                                    minlength="10"
+                                    pattern="\d*"
+                                    @keyup="validatePhoneNumbers"
                                 />
                                 <div class="invalid-feedback">
-                                    Please enter a valid mobile number.
+                                    Please enter a valid mobile number or phone
+                                    number.
                                 </div>
                             </div>
                         </div>
@@ -99,11 +104,11 @@
                             </label>
                             <div class="col-sm-9">
                                 <input
+                                    id="fax_number"
                                     v-model="contact.fax_number"
                                     type="text"
                                     class="form-control"
                                     name="fax"
-                                    minlength="8"
                                 />
                                 <div class="invalid-feedback">
                                     Please enter a valid fax number.
@@ -193,9 +198,36 @@ export default {
                 }
             );
         },
+        validatePhoneNumbers: function () {
+            let vm = this;
+            var form = document.getElementById('addContactForm');
+            if (
+                (!vm.contact.phone_number && !vm.contact.mobile_number) ||
+                (vm.contact.phone_number.trim() == '' &&
+                    vm.contact.mobile_number.trim() == '')
+            ) {
+                form.phone_number.setCustomValidity(
+                    'Please enter a valid phone number or mobile number.'
+                );
+                form.mobile_number.setCustomValidity(
+                    'Please enter a valid mobile number or phone number.'
+                );
+                form.checkValidity();
+                form.classList.add('was-validated');
+                $('#addContactForm').find(':invalid').first().focus();
+                return false;
+            }
+            form.phone_number.setCustomValidity('');
+            form.mobile_number.setCustomValidity('');
+            return true;
+        },
         validateForm: function () {
             let vm = this;
             var form = document.getElementById('addContactForm');
+
+            if (!vm.validatePhoneNumbers()) {
+                return;
+            }
 
             if (form.checkValidity()) {
                 vm.sendData();
