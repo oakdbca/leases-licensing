@@ -55,7 +55,9 @@
                                         :searchable="true"
                                         :loading="loadingApprovals"
                                         :required="true"
-                                        @change="updateFieldRequired"
+                                        @select="
+                                            populateOracleCodeFromApproval()
+                                        "
                                     />
                                 </div>
                             </div>
@@ -176,15 +178,71 @@
                                         (.pdf)
                                     </div>
                                 </div>
-                                <div
-                                    v-if="generatingAdHocInvoiceRecord"
-                                    class="col-sm-8"
+                            </div>
+                            <div v-if="oracleCodePrepopulated" class="row">
+                                <BootstrapAlert
+                                    icon="exclamation-triangle-fill"
+                                    type="warning"
                                 >
-                                    <BootstrapSpinner
-                                        class="text-primary"
-                                        :center-of-screen="false"
+                                    <div class="mb-2">
+                                        This
+                                        <strong
+                                            >Receivable Activity Code</strong
+                                        >
+                                        was prepopulated from the
+                                        {{
+                                            selectedApproval.approval_type__type
+                                        }}.
+                                    </div>
+                                    <div>
+                                        Only change it if you want the funds
+                                        allocated to a different code.
+                                    </div>
+                                </BootstrapAlert>
+                            </div>
+                            <div class="row mb-3">
+                                <label
+                                    for="oracle_code"
+                                    class="col-form-label col-sm-4"
+                                    >Receivable Activity Code</label
+                                >
+                                <div class="col-sm-8 mb-3">
+                                    <Multiselect
+                                        v-if="oracle_codes"
+                                        id="oracle_code"
+                                        ref="oracle_code"
+                                        v-model="oracleCode"
+                                        :custom-label="
+                                            (opt) =>
+                                                oracle_codes.find(
+                                                    (x) => x.id == opt
+                                                )?.code
+                                        "
+                                        placeholder="Start Typing to Search for a Code"
+                                        :options="
+                                            oracle_codes.map(
+                                                (oracle_code) => oracle_code.id
+                                            )
+                                        "
+                                        :allow-empty="false"
+                                        :hide-selected="true"
+                                        :multiple="false"
+                                        :searchable="true"
+                                        :required="true"
+                                        :loading="loadingOracleCodes"
+                                        :disabled="false"
                                     />
                                 </div>
+                            </div>
+
+                            <div
+                                v-if="generatingAdHocInvoiceRecord"
+                                class="col-sm-8"
+                            >
+                                <BootstrapSpinner
+                                    class="text-primary"
+                                    :center-of-screen="false"
+                                />
                             </div>
                         </form>
                     </div>
@@ -216,8 +274,23 @@ export default {
             loadingApprovals: false,
             generatingAdHocInvoiceRecord: false,
             approvals: [],
+            selectedApproval: null,
+            loadingOracleCodes: false,
+            oracle_codes: [],
+            oracleCode: null,
             errors: null,
         };
+    },
+    computed: {
+        oracleCodePrepopulated: function () {
+            return (
+                this.selectedApproval &&
+                this.selectedApproval.invoicing_details &&
+                this.selectedApproval.invoicing_details.oracle_code &&
+                this.selectedApproval.invoicing_details.oracle_code ==
+                    this.oracleCode
+            );
+        },
     },
     watch: {
         isModalOpen: function (val) {
@@ -230,6 +303,7 @@ export default {
     },
     created: async function () {
         this.fetchApprovals();
+        this.fetchOracleCodes();
     },
     methods: {
         focusFirstField: function () {
@@ -259,6 +333,7 @@ export default {
             };
             // Clear the file field
             $('#oracle-invoice').val('');
+            this.oracleCode = null;
         },
         close: function () {
             var form = document.getElementById(
@@ -268,18 +343,6 @@ export default {
             this.errors = null;
             this.resetInvoice();
             this.isModalOpen = false;
-        },
-        updateFieldRequired() {
-            this.$nextTick(() => {
-                const required =
-                    this.required &&
-                    (this.option == null ||
-                        (Array.isArray(this.option) &&
-                            this.option.length == 0 &&
-                            this.options.length > 0));
-                this.$refs.approval.$el.querySelector('input').required =
-                    required;
-            });
         },
         confirmUpload: function () {
             Swal.fire({
@@ -323,6 +386,10 @@ export default {
             }
 
             if (form.checkValidity()) {
+                if (!vm.oracleCode || vm.oracleCode == 'null') {
+                    $('#oracle_code').focus();
+                    return;
+                }
                 vm.generateAdHocInvoiceRecord();
             } else {
                 form.classList.add('was-validated');
@@ -342,6 +409,7 @@ export default {
                 formData.append(key, this.invoice[key]);
             }
             formData.append('invoice_pdf', oracleInvoice);
+            formData.append('oracle_code', vm.oracleCode);
             const requestOptions = {
                 method: 'POST',
                 body: formData,
@@ -399,6 +467,50 @@ export default {
                 .finally(() => {
                     vm.loadingApprovals = false;
                 });
+        },
+        populateOracleCodeFromApproval: async function () {
+            let vm = this;
+            vm.loadingApprovals = true;
+
+            fetch(api_endpoints.approvals + vm.invoice.approval + '/')
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText;
+                        console.error(error);
+                    }
+                    vm.selectedApproval = data;
+                    console.log(vm.selectedApproval);
+                    if (
+                        vm.selectedApproval &&
+                        vm.selectedApproval.invoicing_details &&
+                        vm.selectedApproval.invoicing_details.oracle_code
+                    ) {
+                        vm.oracleCode =
+                            vm.selectedApproval.invoicing_details.oracle_code;
+                    }
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error);
+                })
+                .finally(() => {
+                    vm.loadingApprovals = false;
+                });
+        },
+        fetchOracleCodes: async function () {
+            let vm = this;
+            try {
+                vm.loadingOracleCodes = true;
+                const res = await fetch(
+                    api_endpoints.oracle_codes + 'key-value-list/'
+                );
+                if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
+                vm.oracle_codes = await res.json();
+                vm.loadingOracleCodes = false;
+            } catch (err) {
+                console.error({ err });
+            }
         },
     },
 };
