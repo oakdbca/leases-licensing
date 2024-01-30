@@ -935,25 +935,30 @@ export default {
                     if (result.isConfirmed) {
                         // When Yes
                         let payload = vm.constructPayload();
-                        const res = await fetch(
-                            vm.competitive_process_complete_url,
-                            { body: JSON.stringify(payload), method: 'POST' }
-                        );
 
-                        if (res.ok) {
-                            await new swal({
-                                title: 'Completed',
-                                text: 'Competitive process has been completed',
-                                icon: 'success',
+                        utils
+                            .fetchUrl(vm.competitive_process_complete_url, {
+                                body: JSON.stringify(payload),
+                                method: 'POST',
+                            })
+                            .then(async () => {
+                                await new swal({
+                                    title: 'Completed',
+                                    text: 'Competitive process has been completed',
+                                    icon: 'success',
+                                });
+                                this.$router.push({
+                                    name: 'internal-dashboard',
+                                });
+                            })
+                            .catch(async (error) => {
+                                await swal.fire({
+                                    title: 'Please fix following errors before completing',
+                                    text: error,
+                                    icon: 'error',
+                                    confirmButtonColor: '#0d6efd',
+                                });
                             });
-                            this.$router.push({ name: 'internal-dashboard' });
-                        } else {
-                            await new swal({
-                                title: 'Please fix following errors before completing',
-                                text: res.text,
-                                icon: 'error',
-                            });
-                        }
                     }
                     vm.processing = false;
                 });
