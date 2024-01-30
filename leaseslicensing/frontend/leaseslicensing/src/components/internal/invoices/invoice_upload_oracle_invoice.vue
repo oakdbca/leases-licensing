@@ -61,7 +61,7 @@
                             </div>
                             <div class="row mb-3">
                                 <label
-                                    for="crown_land_rent_review_date"
+                                    for="oracle_code"
                                     class="col-form-label col-sm-4"
                                     >Receivable Activity Code</label
                                 >
@@ -87,6 +87,7 @@
                                         :hide-selected="true"
                                         :multiple="false"
                                         :searchable="true"
+                                        :required="true"
                                         :loading="loadingOracleCodes"
                                         :disabled="false"
                                     />
@@ -227,6 +228,10 @@ export default {
             }
 
             if (form.checkValidity()) {
+                if (!vm.oracleCode || vm.oracleCode == 'null') {
+                    $('#oracle_code').focus();
+                    return;
+                }
                 vm.updateOracleInvoiceNumber();
             } else {
                 form.classList.add('was-validated');
@@ -245,9 +250,9 @@ export default {
             );
 
             var data = new FormData();
-            data.append('oracle_code', vm.oracleCode);
             data.append('oracle_invoice_number', vm.oracleInvoiceNumber);
             data.append('invoice_pdf', oracleInvoice.files[0]);
+            data.append('oracle_code', vm.oracleCode);
 
             const requestOptions = {
                 method: 'POST',
