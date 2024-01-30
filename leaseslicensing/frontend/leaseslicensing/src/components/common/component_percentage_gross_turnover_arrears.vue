@@ -520,14 +520,12 @@ export default {
         grossQuarterlyTurnoverChanged: function (event, quarter) {
             if (!event.target.value) {
                 quarter.gross_turnover = null;
-                return;
             }
             this.$emit('onChangeQuarterlyGrossTurnover');
         },
         grossMonthlyTurnoverChanged: function (event, month) {
             if (!event.target.value) {
                 month.gross_turnover = null;
-                return;
             }
             this.$emit('onChangeMonthlyGrossTurnover');
         },
