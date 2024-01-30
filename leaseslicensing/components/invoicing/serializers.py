@@ -670,7 +670,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     oracle_code__code = serializers.CharField(
         source="oracle_code.code", read_only=True, allow_null=True
     )
-    oracle_code = serializers.IntegerField(
+    oracle_code__id = serializers.IntegerField(
         source="oracle_code.id", read_only=True, allow_null=True
     )
 
@@ -698,6 +698,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "is_customer",
             "description",
             "oracle_code__code",
+            "oracle_code__id",
             "oracle_code",
         ]
         datatables_always_serialize = [
@@ -707,7 +708,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "is_finance_officer",
             "oracle_invoice_number",
             "is_customer",
-            "oracle_code",
+            "oracle_code__id",
         ]
 
     def get_approval_type(self, obj):

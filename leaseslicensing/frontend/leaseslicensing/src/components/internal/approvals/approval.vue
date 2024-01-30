@@ -601,7 +601,6 @@ export default {
                 let financial_year_has_passed = helpers.financialYearHasPassed(
                     gross_turnover_percentage.financial_year
                 );
-                console.log(financial_year_has_passed);
 
                 // Invoices that need to be generated when there is just an estimate of GTO
                 if (
