@@ -209,10 +209,8 @@
                                     v-model="newOrganisation.abn"
                                     type="text"
                                     class="form-control"
-                                    minlength="9"
-                                    maxlength="11"
+                                    maxlength="50"
                                     required
-                                    onkeydown="javascript: return['Backspace','Delete','ArrowLeft','ArrowRight'].includes(event.code) ? true : !isNaN(Number(event.key)) && event.code !== 'Space'"
                                 />
                                 <div class="invalid-feedback">
                                     This is not a valid ABN or ACN.
