@@ -1031,18 +1031,10 @@ export default {
                     vm.processing = true;
                     // When Yes
                     let payload = vm.constructPayload();
-                    await fetch(vm.competitive_process_unlock_url, {
-                        body: JSON.stringify(payload),
-                        method: 'POST',
-                    })
-                        .then(async (response) => {
-                            if (!response.ok) {
-                                return response.text().then((text) => {
-                                    throw new Error(text);
-                                });
-                            } else {
-                                return await response.json();
-                            }
+                    await utils
+                        .fetchUrl(vm.competitive_process_unlock_url, {
+                            body: JSON.stringify(payload),
+                            method: 'POST',
                         })
                         .then(async (data) => {
                             vm.competitive_process = Object.assign({}, data);
@@ -1059,7 +1051,7 @@ export default {
                         .catch(async (error) => {
                             await swal.fire({
                                 title: 'Error unlocking competitive process',
-                                text: JSON.parse(error.message),
+                                text: error,
                                 icon: 'error',
                             });
                             vm.processing = false;
