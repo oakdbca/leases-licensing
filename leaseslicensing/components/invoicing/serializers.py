@@ -503,6 +503,8 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "cpi_calculation_method", instance.cpi_calculation_method
         )
 
+        instance.oracle_code = validated_data.get("oracle_code", instance.oracle_code)
+
         # Update local and FK fields
         instance.save()
 
