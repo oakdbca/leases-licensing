@@ -259,7 +259,7 @@ export default {
                     'Type',
                     'Holder',
                     'Status',
-                    'Ledger Invoice',
+                    'Invoice PDF',
                     'Amount',
                     'GST Free',
                     'Date Due',
@@ -380,7 +380,7 @@ export default {
                     if (!full.ledger_invoice_url) {
                         return 'Not Yet Generated';
                     }
-                    return `<a href="${full.ledger_invoice_url}" target="_blank">Ledger Invoice
+                    return `<a href="${full.ledger_invoice_url}" target="_blank">Invoice PDF
                                         <i
                                             class="fa fa-external-link"
                                             aria-hidden="true"
@@ -480,7 +480,7 @@ export default {
                             }
                         }
                         if (!full.oracle_invoice_number) {
-                            links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}" data-oracle-code="${full.oracle_code}">Upload Oracle Invoice</a><br />`;
+                            links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}" data-oracle-code="${full.oracle_code__id}">Upload Oracle Invoice</a><br />`;
                         }
                     }
                     return links;
