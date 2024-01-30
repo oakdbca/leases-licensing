@@ -36,6 +36,7 @@
                         <a
                             v-if="showAssignToMe"
                             class="actionBtn pull-right"
+                            style="cursor: pointer"
                             @click.prevent="assignRequestUser()"
                             >Assign to me</a
                         >
@@ -307,8 +308,11 @@ export default {
                     var selected = $(e.currentTarget);
                     // Competitve process only has one relevant status, so we can just set the assigned officer
                     if (
-                        vm.competitiveProcess.status_id ==
-                        constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID
+                        [
+                            constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID,
+                            constants.COMPETITIVE_PROCESS_STATUS
+                                .IN_PROGRESS_UNLOCKED.ID,
+                        ].includes(vm.competitiveProcess.status_id)
                     ) {
                         vm.competitiveProcess.assigned_officer = selected.val();
                     } else {
@@ -327,8 +331,11 @@ export default {
                 .on('select2:unselect', function () {
                     // Competitve process only has one relevant status, so we can just unset the assigned officer
                     if (
-                        vm.competitiveProcess.status_id ==
-                        constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID
+                        [
+                            constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID,
+                            constants.COMPETITIVE_PROCESS_STATUS
+                                .IN_PROGRESS_UNLOCKED.ID,
+                        ].includes(vm.competitiveProcess.status_id)
                     ) {
                         vm.competitiveProcess.assigned_officer = null;
                     } else {

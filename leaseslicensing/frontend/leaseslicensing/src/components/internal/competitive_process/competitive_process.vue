@@ -1173,7 +1173,13 @@ export default {
         },
         updateAssignedOfficerSelect: function () {
             let vm = this;
-            if (vm.competitive_process.status === 'In Progress') {
+            if (
+                [
+                    constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID,
+                    constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS_UNLOCKED
+                        .ID,
+                ].includes(vm.competitive_process.status_id)
+            ) {
                 let assigned_officer = vm.competitive_process.assigned_officer;
                 let _id = assigned_officer ? assigned_officer.id : null;
                 vm.$refs.workflow.updateAssignedOfficerSelect(_id);
