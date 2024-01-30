@@ -54,8 +54,12 @@
                         allocated
                     </div>
                     <div>
-                        If the code you need is not listed, contact a member of
-                        the 'Leases and Licensing Admin' group
+                        To add a new code please visit:
+                        <a
+                            href="/admin/leaseslicensing/oraclecode/"
+                            target="_blank"
+                            >Oracle Codes Admin</a
+                        >
                     </div>
                 </BootstrapAlert>
             </div>
@@ -69,18 +73,21 @@
                 <Multiselect
                     id="oracle_code"
                     ref="oracle_code"
-                    v-model="selectedOracleCode"
-                    label="code"
-                    track-by="id"
+                    v-model="invoicingDetailsComputed.oracle_code"
+                    :custom-label="
+                        (opt) => oracle_codes.find((x) => x.id == opt)?.code
+                    "
                     placeholder="Start Typing to Search for a Code"
-                    :options="oracle_codes"
+                    :options="oracle_codes.map((oracle_code) => oracle_code.id)"
+                    :allow-empty="false"
                     :hide-selected="true"
                     :multiple="false"
                     :searchable="true"
+                    :required="true"
                     :loading="loadingOracleCodes"
                     :disabled="false"
-                    required
-                    @change="updateOracleCode"
+                    @select="updatePreviewInvoices"
+                    @change="updatePreviewInvoices"
                 />
             </div>
         </div>
@@ -542,7 +549,6 @@ export default {
             repetition_types: [],
             cpi_calculation_methods: [],
             oracle_codes: [],
-            selectedOracleCode: null,
             previewInvoices: null,
             loadingPreviewInvoices: false,
             loadingOracleCodes: false,
@@ -1059,11 +1065,6 @@ export default {
             } catch (err) {
                 console.error({ err });
             }
-        },
-        updateOracleCode() {
-            this.invoicingDetailsComputed.oracle_code = this.selectedOracleCode
-                ? this.selectedOracleCode.id
-                : null;
         },
     },
 };
