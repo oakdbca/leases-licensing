@@ -669,7 +669,6 @@ export default {
             next((vm) => {
                 vm.countries = data[0];
                 vm.org = Object.assign({}, data[1]);
-                console.log(vm.org);
                 vm.myorgperms = data[2];
             });
         });
@@ -1539,7 +1538,6 @@ export default {
                                     )
                                         .then(async (response) => {
                                             const data = await response.json();
-                                            console.log(data);
                                             if (!response.ok) {
                                                 console.error(
                                                     JSON.stringify(data)

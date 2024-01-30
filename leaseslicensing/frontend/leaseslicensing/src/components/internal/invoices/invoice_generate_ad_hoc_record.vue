@@ -481,7 +481,6 @@ export default {
                         console.error(error);
                     }
                     vm.selectedApproval = data;
-                    console.log(vm.selectedApproval);
                     if (
                         vm.selectedApproval &&
                         vm.selectedApproval.invoicing_details &&

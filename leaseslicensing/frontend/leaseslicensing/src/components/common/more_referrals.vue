@@ -251,7 +251,6 @@ export default {
                 document.querySelectorAll('[data-bs-toggle="popover"]')
             );
             popoverTriggerList.map(function (popoverTriggerEl) {
-                console.log(`Creating popover for element ${popoverTriggerEl}`);
                 return new bootstrap.Popover(popoverTriggerEl, {
                     container: 'body',
                 });
