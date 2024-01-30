@@ -62,11 +62,13 @@ class CompetitiveProcess(LicensingModelVersioned):
 
     # For status
     STATUS_IN_PROGRESS = "in_progress"
+    STATUS_IN_PROGRESS_UNLOCKED = "in_progress_unlocked"
     STATUS_DISCARDED = "discarded"
     STATUS_COMPLETED_APPLICATION = "completed_application"
     STATUS_COMPLETED_DECLINED = "completed_declined"
     STATUS_CHOICES = (
         (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_IN_PROGRESS_UNLOCKED, "In Progress (Unlocked)"),
         (STATUS_DISCARDED, "Discarded"),
         (STATUS_COMPLETED_APPLICATION, "Completed (Application)"),
         (STATUS_COMPLETED_DECLINED, "Completed (Declined)"),
@@ -200,7 +202,8 @@ class CompetitiveProcess(LicensingModelVersioned):
         )
         if len(generated_proposal) > 1:
             raise ValidationError(
-                "There are more than one proposals that have not been discarded for the winning party."
+                f"""There are more than one proposals that have not been discarded for the winning party: """
+                f"""{", ".join([p.lodgement_number for p in generated_proposal])}."""
             )
         # There might be no valid application, because the applicant or an officer
         # might have discarded the application
@@ -222,21 +225,20 @@ class CompetitiveProcess(LicensingModelVersioned):
             # TODO: Disarding the previous winnner's proposal should be
             # done when saving the competitive process only after unlocking
             # and changing the outcome.
-            if generated_proposal:
-                generated_proposal.processing_status = (
-                    Proposal.PROCESSING_STATUS_DISCARDED
-                )
-                generated_proposal.save()
+            # if generated_proposal: # TODO
+            #     generated_proposal.processing_status = (
+            #         Proposal.PROCESSING_STATUS_DISCARDED
+            #     )
+            #     generated_proposal.save()
 
             # Unlock the competitive process geometries (not those from the originating proposal)
             self.competitive_process_geometries.all().update(locked=False)
 
             # Set the status of the competitive process to in progress
-            self.status = CompetitiveProcess.STATUS_IN_PROGRESS
-
+            self.status = CompetitiveProcess.STATUS_IN_PROGRESS_UNLOCKED
             # Remove the outcome data (winner, details, documents)
-            self.winner = None
-            self.winner_id = None
+            # self.winner = None # TODO
+            # self.winner_id = None # TODO
             self.details = ""
             self.competitive_process_documents.all().delete()
             self.save(version_comment=f"Unlocked competitive process {self.pk}")
