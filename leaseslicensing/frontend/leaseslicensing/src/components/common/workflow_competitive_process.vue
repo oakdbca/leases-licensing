@@ -169,7 +169,7 @@ export default {
             return (
                 !this.finalised &&
                 constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID ==
-                    this.competitiveProcess.processing_status_id
+                    this.competitiveProcess.status_id
             );
         },
         debug: function () {
