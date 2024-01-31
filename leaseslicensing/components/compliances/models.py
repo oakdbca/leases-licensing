@@ -97,9 +97,6 @@ class Compliance(LicensingModelVersioned):
     )
     due_date = models.DateField()
     text = models.TextField(blank=True)
-    num_participants = models.SmallIntegerField(
-        "Number of participants", blank=True, null=True
-    )
     processing_status = models.CharField(
         choices=PROCESSING_STATUS_CHOICES, max_length=20
     )

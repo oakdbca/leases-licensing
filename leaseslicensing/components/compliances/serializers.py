@@ -269,7 +269,6 @@ class SaveComplianceSerializer(serializers.ModelSerializer):
             "title",
             "text",
             "gross_turnover",
-            "num_participants",
         )
 
 
@@ -281,7 +280,6 @@ class AssessorSaveComplianceSerializer(serializers.ModelSerializer):
             "title",
             "text",
             "gross_turnover",
-            "num_participants",
         )
 
 
