@@ -8,7 +8,6 @@ from leaseslicensing.components.approvals.models import ApprovalUserAction
 from leaseslicensing.components.invoicing.models import (
     ChargeMethod,
     CPICalculationMethod,
-    CrownLandRentReviewDate,
     CustomCPIYear,
     FinancialMonth,
     FinancialQuarter,
@@ -197,27 +196,6 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
                 gross_turnover = month_data.get("gross_turnover", None)
                 month.gross_turnover = gross_turnover
                 month.save()
-
-
-class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
-    to_be_deleted = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CrownLandRentReviewDate
-        fields = (
-            "id",
-            "review_date",
-            "to_be_deleted",
-        )
-        extra_kwargs = {
-            "id": {
-                "read_only": False,
-                "required": False,
-            },
-        }
-
-    def get_to_be_deleted(self, instance):
-        return False
 
 
 class CustomCPIYearSerializer(serializers.ModelSerializer):

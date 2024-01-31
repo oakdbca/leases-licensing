@@ -148,7 +148,6 @@ class InvoicingDetailsManager(models.Manager):
                 "annual_increment_amounts",
                 "annual_increment_percentages",
                 "gross_turnover_percentages",
-                "crown_land_rent_review_dates",
             )
         )
 
@@ -1530,23 +1529,6 @@ class CustomCPIYear(BaseModel):
 
     def __str__(self):
         return f"{self.year}: {self.percentage}%"
-
-
-class CrownLandRentReviewDate(BaseModel):
-    review_date = models.DateField(null=True, blank=True)
-    invoicing_details = models.ForeignKey(
-        InvoicingDetails,
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-        related_name="crown_land_rent_review_dates",
-    )
-
-    class Meta:
-        app_label = "leaseslicensing"
-        ordering = [
-            "review_date",
-        ]
 
 
 def invoice_pdf_upload_path(instance, filename):
