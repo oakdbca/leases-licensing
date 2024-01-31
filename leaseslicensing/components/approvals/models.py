@@ -25,6 +25,7 @@ from leaseslicensing.components.approvals.email import (
 )
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.models import Invoice
+from leaseslicensing.components.invoicing.utils import clone_invoicing_details
 from leaseslicensing.components.main.models import (
     BaseApplicant,
     CommunicationsLogEntry,
@@ -680,6 +681,11 @@ class Approval(LicensingModelVersioned):
 
     @property
     def crown_land_rent_review_dates(self):
+        """Crown land rent review dates for an approval are calculated dynamically
+        based on the review_once_every field from the invoicing details object and the start
+        and expiry date for the approva. Default is 5 years. Will return an empty list if
+        no review interval is set or if no review is needed (i.e. the approval lasts less time
+        than the review_once_every value)."""
         review_once_every = self.current_proposal.invoicing_details.review_once_every
         if not review_once_every:
             logger.warning(
@@ -1180,11 +1186,6 @@ class ApprovalTransfer(LicensingModelVersioned):
         # Create a transfer proposal with all the same data as the original lease licence proposal
         proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_TRANSFER)
 
-        # Todo: Will have to copy over any required nested objects (gross turnover years etc.) as required
-        invoicing_details = self.approval.current_proposal.invoicing_details
-        invoicing_details.pk = None
-        invoicing_details.save()
-
         # Don't use self.approval.current_proposal here as the reference
         # would be incorrect after saving transfer_proposal
         original_proposal = Proposal.objects.get(id=self.approval.current_proposal.id)
@@ -1197,7 +1198,11 @@ class ApprovalTransfer(LicensingModelVersioned):
         transfer_proposal.ind_applicant = ind_applicant
         transfer_proposal.org_applicant = org_applicant
         transfer_proposal.proposal_type = proposal_type
-        transfer_proposal.invoicing_details = invoicing_details
+
+        # Clone the invoicing details object (includes any necessary child objects)
+        transfer_proposal.invoicing_details = clone_invoicing_details(
+            self.approval.current_proposal.invoicing_details
+        )
 
         transfer_proposal.save()
 
