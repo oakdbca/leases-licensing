@@ -113,6 +113,9 @@ uwsgi*.ini
 # npm build files
 leaseslicensing/static/leaseslicensing_vue/
 
+# Allow the inclusion of bootstrap date picker files required by ledger api client
+!leaseslicensing/static/common/node_modules/
+
 git_history_recent
 
 # data files
