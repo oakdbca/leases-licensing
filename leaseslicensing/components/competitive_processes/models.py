@@ -140,9 +140,11 @@ class CompetitiveProcess(LicensingModelVersioned):
             current_winner
             and self.status == CompetitiveProcess.STATUS_IN_PROGRESS_UNLOCKED
         ):
-            # If the outcome has changed, discard the previous winner's proposal if it exists
-            if self.winner != current_winner:
-                current_winner_proposal = self.winner_proposal(current_winner.id)
+            # Get the current winner's proposal
+            current_winner_proposal = self.winner_proposal(current_winner.id)
+
+            # If the outcome has changed, discard the current winner's proposal if it exists
+            if current_winner_proposal and self.winner != current_winner:
                 current_winner_proposal.processing_status = (
                     Proposal.PROCESSING_STATUS_DISCARDED
                 )
@@ -361,9 +363,13 @@ class CompetitiveProcess(LicensingModelVersioned):
             winner_id = self.winner_id
 
         # Get the winning party
-        winning_party = (
-            CompetitiveProcessParty.objects.get(pk=winner_id) if winner_id else None
-        )
+        try:
+            winning_party = (
+                CompetitiveProcessParty.objects.get(pk=winner_id) if winner_id else None
+            )
+        except CompetitiveProcessParty.DoesNotExist:
+            logger.warn(f"Winning party {winner_id} does not exist.")
+            winning_party = None
 
         # Get the generated proposals for the winning party or an empty Proposal queryset
         # when there is no winning party
