@@ -64,9 +64,7 @@
                 </BootstrapAlert>
             </div>
 
-            <label
-                for="crown_land_rent_review_date"
-                class="col-form-label col-sm-4"
+            <label for="oracle_code" class="col-form-label col-sm-4"
                 >Receivable Activity Code</label
             >
             <div class="col-sm-8 mb-3">
@@ -129,7 +127,10 @@
             </div>
         </div>
 
-        <div v-if="show_review_of_base_fee" class="row mb-3 pb-3 border-bottom">
+        <div
+            v-if="show_crown_land_rent_review_interval"
+            class="row mb-3 pb-3 border-bottom"
+        >
             <label class="col-form-label col-sm-4"
                 >Crown Land Rent Review</label
             >
@@ -650,7 +651,7 @@ export default {
                 return true;
             return false;
         },
-        show_review_of_base_fee: function () {
+        show_crown_land_rent_review_interval: function () {
             return this.show_base_fee;
         },
         show_cpi_method: function () {
@@ -869,12 +870,6 @@ export default {
                 this.invoicingDetailsComputed.invoicing_once_every = 1;
             }
             this.updatePreviewInvoices();
-        },
-        updateReviewDates: function (review_dates) {
-            this.invoicingDetailsComputed = {
-                ...this.invoicingDetailsComputed,
-                crown_land_rent_review_dates: review_dates,
-            };
         },
         updateYearsArray: function (incrementType, years_array) {
             if ('annual_increment_amount' == incrementType) {
