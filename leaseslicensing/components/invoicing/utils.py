@@ -569,3 +569,5 @@ def clone_invoicing_details(
                     month.pk = None
                     month.gross_turnover_percentage = gross_turnover_percentage
                     month.save()
+
+    return invoicing_details
