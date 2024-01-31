@@ -850,6 +850,53 @@ export default {
             // Saving, so set custom row to processing
             vm.set_custom_rows_property('processing', true);
 
+            let save_continue = true;
+            // The current winner as saved in the database
+            let current_winner_id = vm.competitive_process.winner
+                ? vm.competitive_process.winner.id
+                : null;
+            // The new winner as selected in the form
+            let new_winner_id = vm.competitive_process.winner_id;
+
+            // On an unlocked CP check if the winner has been changed
+            if (
+                vm.competitive_process.status_id ==
+                    constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS_UNLOCKED
+                        .ID &&
+                current_winner_id != new_winner_id
+            ) {
+                let info_text = '';
+                current_winner_id == null && new_winner_id != null
+                    ? (info_text =
+                          'A winner has been selected for this competitive process.')
+                    : current_winner_id != null && new_winner_id == null
+                      ? (info_text =
+                            'The winner has been removed from this competitive process. Saving will discard their proposal.')
+                      : (info_text =
+                            "The winner has been changed for this competitive process. Saving will discard the previous winner's proposal.");
+
+                // Issue a warning that saving with a changed winner potentially will discard their proposal
+                await swal
+                    .fire({
+                        title: 'The outcome has changed',
+                        html: `${info_text} Do you wish to continue?<br /><br />Please make sure Details and Documents are correct for the new outcome.<br />`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Continue',
+                        confirmButtonColor: '#0d6efd',
+                    })
+                    .then(async (result) => {
+                        if (!result.isConfirmed) {
+                            save_continue = false;
+                        }
+                    });
+            }
+
+            if (!save_continue) {
+                vm.processing = false;
+                return;
+            }
+
             let payload = vm.constructPayload();
             fetch(vm.competitive_process_form_url, {
                 body: JSON.stringify(payload),
@@ -923,7 +970,6 @@ export default {
                 }
                 swal.fire({
                     title: 'Complete this competitive process',
-                    // text: "Are you sure you want to complete this competitive process?<br />" + description,
                     html:
                         'Are you sure you want to complete this competitive process?<br />' +
                         description,
@@ -935,27 +981,36 @@ export default {
                     if (result.isConfirmed) {
                         // When Yes
                         let payload = vm.constructPayload();
-                        const res = await fetch(
-                            vm.competitive_process_complete_url,
-                            { body: JSON.stringify(payload), method: 'POST' }
-                        );
 
-                        if (res.ok) {
-                            await new swal({
-                                title: 'Completed',
-                                text: 'Competitive process has been completed',
-                                icon: 'success',
+                        utils
+                            .fetchUrl(vm.competitive_process_complete_url, {
+                                body: JSON.stringify(payload),
+                                method: 'POST',
+                            })
+                            .then(async () => {
+                                await new swal({
+                                    title: 'Completed',
+                                    text: 'Competitive process has been completed',
+                                    icon: 'success',
+                                });
+                                this.$router.push({
+                                    name: 'internal-dashboard',
+                                });
+                            })
+                            .catch(async (error) => {
+                                await swal.fire({
+                                    title: 'Please fix following errors before completing',
+                                    text: error,
+                                    icon: 'error',
+                                    confirmButtonColor: '#0d6efd',
+                                });
+                            })
+                            .finally(() => {
+                                vm.processing = false;
                             });
-                            this.$router.push({ name: 'internal-dashboard' });
-                        } else {
-                            await new swal({
-                                title: 'Please fix following errors before completing',
-                                text: res.text,
-                                icon: 'error',
-                            });
-                        }
+                    } else {
+                        vm.processing = false;
                     }
-                    vm.processing = false;
                 });
             } catch (err) {
                 console.error(err);
@@ -1019,8 +1074,8 @@ export default {
             let vm = this;
             swal.fire({
                 title: 'Unlock this competitive process',
-                text: "Unlocking this competitive process will change the status to 'In Progress'\
-                            and discard the proposal of the previous winner.\
+                text: "Unlocking this competitive process will change the status to 'In Progress (Unlocked)'\
+                            and allow to change the outcome to a different winner.\
                             Are you sure you want to unlock this competitive process?",
                 icon: 'warning',
                 showCancelButton: true,
@@ -1031,18 +1086,10 @@ export default {
                     vm.processing = true;
                     // When Yes
                     let payload = vm.constructPayload();
-                    await fetch(vm.competitive_process_unlock_url, {
-                        body: JSON.stringify(payload),
-                        method: 'POST',
-                    })
-                        .then(async (response) => {
-                            if (!response.ok) {
-                                return response.text().then((text) => {
-                                    throw new Error(text);
-                                });
-                            } else {
-                                return await response.json();
-                            }
+                    await utils
+                        .fetchUrl(vm.competitive_process_unlock_url, {
+                            body: JSON.stringify(payload),
+                            method: 'POST',
                         })
                         .then(async (data) => {
                             vm.competitive_process = Object.assign({}, data);
@@ -1059,7 +1106,7 @@ export default {
                         .catch(async (error) => {
                             await swal.fire({
                                 title: 'Error unlocking competitive process',
-                                text: JSON.parse(error.message),
+                                text: error,
                                 icon: 'error',
                             });
                             vm.processing = false;
@@ -1181,7 +1228,13 @@ export default {
         },
         updateAssignedOfficerSelect: function () {
             let vm = this;
-            if (vm.competitive_process.status === 'In Progress') {
+            if (
+                [
+                    constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID,
+                    constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS_UNLOCKED
+                        .ID,
+                ].includes(vm.competitive_process.status_id)
+            ) {
                 let assigned_officer = vm.competitive_process.assigned_officer;
                 let _id = assigned_officer ? assigned_officer.id : null;
                 vm.$refs.workflow.updateAssignedOfficerSelect(_id);

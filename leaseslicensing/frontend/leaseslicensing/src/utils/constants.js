@@ -50,6 +50,10 @@ module.exports = {
     },
     COMPETITIVE_PROCESS_STATUS: {
         IN_PROGRESS: { ID: 'in_progress', TEXT: 'In Progress' },
+        IN_PROGRESS_UNLOCKED: {
+            ID: 'in_progress_unlocked',
+            TEXT: 'In Progress (Unlocked)',
+        },
         DISCARDED: { ID: 'discarded', TEXT: 'Discarded' },
         COMPLETED_APPLICATION: {
             ID: 'completed_application',

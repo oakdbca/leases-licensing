@@ -62,11 +62,13 @@ class CompetitiveProcess(LicensingModelVersioned):
 
     # For status
     STATUS_IN_PROGRESS = "in_progress"
+    STATUS_IN_PROGRESS_UNLOCKED = "in_progress_unlocked"
     STATUS_DISCARDED = "discarded"
     STATUS_COMPLETED_APPLICATION = "completed_application"
     STATUS_COMPLETED_DECLINED = "completed_declined"
     STATUS_CHOICES = (
         (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_IN_PROGRESS_UNLOCKED, "In Progress (Unlocked)"),
         (STATUS_DISCARDED, "Discarded"),
         (STATUS_COMPLETED_APPLICATION, "Completed (Application)"),
         (STATUS_COMPLETED_DECLINED, "Completed (Declined)"),
@@ -128,6 +130,31 @@ class CompetitiveProcess(LicensingModelVersioned):
 
         return lease_licence
 
+    def save(self, *args, **kwargs):
+        from leaseslicensing.components.proposals.models import Proposal
+
+        # Get the current winner before saving a potential change to the outcome
+        current_cp = CompetitiveProcess.objects.get(pk=self.pk)
+        current_winner = current_cp.winner
+        if (
+            current_winner
+            and self.status == CompetitiveProcess.STATUS_IN_PROGRESS_UNLOCKED
+        ):
+            # Get the current winner's proposal
+            current_winner_proposal = self.winner_proposal(current_winner.id)
+
+            # If the outcome has changed, discard the current winner's proposal if it exists
+            if current_winner_proposal and self.winner != current_winner:
+                current_winner_proposal.processing_status = (
+                    Proposal.PROCESSING_STATUS_DISCARDED
+                )
+                current_winner_proposal.save()
+                logger.info(
+                    f"Discarded proposal {current_winner_proposal} of previous winner."
+                )
+
+        super().save(*args, **kwargs)
+
     def discard(self, request):
         if not self.can_user_process(request.user):
             raise ValidationError(
@@ -140,74 +167,38 @@ class CompetitiveProcess(LicensingModelVersioned):
         if self.winner:
             self.status = CompetitiveProcess.STATUS_COMPLETED_APPLICATION
 
-            # 1. Create proposal for the winner
-            lease_licence = self.create_lease_licence_from_competitive_process()
+            # Only create a license proposal if there is no proposal for the winner yet
+            if not self.winner_proposal():
+                # 1. Create proposal for the winner
+                lease_licence = self.create_lease_licence_from_competitive_process()
 
-            self.generated_proposal.add(lease_licence)
+                self.generated_proposal.add(lease_licence)
 
-            # 2. Send email to the winner
-            send_winner_notification(request, self)
+                # 2. Send email to the winner
+                send_winner_notification(request, self)
+            else:
+                logger.info(
+                    f"Competitive Process {self.pk} completed, but there is already a winner's proposal."
+                )
         else:
             self.status = CompetitiveProcess.STATUS_COMPLETED_DECLINED
         self.save(version_comment=f"Completed competitive process {self.pk}")
 
     def unlock(self, request):
-        """Unlock the competitive process and make it available for editing again.
-        Unlock action changes status back to In Progress, allowing to change the
-        Outcome.
-        The outcome can only be changed if the proposal from the previous winner
+        """
+        Unlocks the competitive process and makes it available for editing again.
+        Unlock action changes status to `In Progress (Unlocked)`, allowing to change
+        the Outcome.
+        The outcome can only be changed if the proposal of the previous winner
         has not been approved yet.
-        TODO Changing the outcome will discard the proposal of the previous winner
-        and allow the user to select another winner (or no winner).
-
+        Changing the outcome will discard the the previous winner's proposal when
+        the competitive process is next saved, which allows to select another
+        winner (or no winner).
         """
 
         from leaseslicensing.components.proposals.models import Proposal
 
-        # Get the winning party
-        winning_party = (
-            CompetitiveProcessParty.objects.get(pk=self.winner_id)
-            if self.winner_id
-            else None
-        )
-
-        # Get the generated proposals for the winning party or an empty Proposal queryset
-        # when there is no winning party
-        if not winning_party:
-            generated_proposals = Proposal.objects.none()
-        elif winning_party.is_person:
-            generated_proposals = self.generated_proposal.filter(
-                ind_applicant=winning_party.person_id
-            )
-        elif winning_party.is_organisation:
-            generated_proposals = self.generated_proposal.filter(
-                org_applicant=winning_party.organisation_id
-            )
-        else:
-            raise ValidationError(
-                "Winning party is neither a person nor an organisation."
-            )
-
-        # May happen if the competitive process has a selected winner but has been discarded,
-        # i.e. no proposal has been generated
-        if winning_party and len(generated_proposals) == 0:
-            logger.warn("No generated proposals found for the winning party.")
-
-        # Get the generated lease/license proposal / generated proposal
-        # that is still active (not discarded)
-        generated_proposal = generated_proposals.filter(
-            ~Q(processing_status=Proposal.PROCESSING_STATUS_DISCARDED)
-        )
-        if len(generated_proposal) > 1:
-            raise ValidationError(
-                "There are more than one proposals that have not been discarded for the winning party."
-            )
-        # There might be no valid application, because the applicant or an officer
-        # might have discarded the application
-        if not generated_proposal.exists():
-            generated_proposal = None
-        else:
-            generated_proposal = generated_proposal.first()
+        generated_proposal = self.winner_proposal()
 
         # Cannot unlock if the proposal has been approved
         if generated_proposal and generated_proposal.processing_status in [
@@ -218,27 +209,11 @@ class CompetitiveProcess(LicensingModelVersioned):
             raise ValidationError("The generated proposal has already been approved.")
 
         with transaction.atomic():
-            # Set the generated proposal's processing status to discarded
-            # TODO: Disarding the previous winnner's proposal should be
-            # done when saving the competitive process only after unlocking
-            # and changing the outcome.
-            if generated_proposal:
-                generated_proposal.processing_status = (
-                    Proposal.PROCESSING_STATUS_DISCARDED
-                )
-                generated_proposal.save()
-
             # Unlock the competitive process geometries (not those from the originating proposal)
             self.competitive_process_geometries.all().update(locked=False)
 
             # Set the status of the competitive process to in progress
-            self.status = CompetitiveProcess.STATUS_IN_PROGRESS
-
-            # Remove the outcome data (winner, details, documents)
-            self.winner = None
-            self.winner_id = None
-            self.details = ""
-            self.competitive_process_documents.all().delete()
+            self.status = CompetitiveProcess.STATUS_IN_PROGRESS_UNLOCKED
             self.save(version_comment=f"Unlocked competitive process {self.pk}")
 
     @property
@@ -358,6 +333,7 @@ class CompetitiveProcess(LicensingModelVersioned):
         group = None
         if self.status in [
             CompetitiveProcess.STATUS_IN_PROGRESS,
+            CompetitiveProcess.STATUS_IN_PROGRESS_UNLOCKED,
         ]:
             group = SystemGroup.objects.get(
                 name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR
@@ -374,6 +350,67 @@ class CompetitiveProcess(LicensingModelVersioned):
             else []
         )
         return users
+
+    def winner_proposal(self, winner_id=None):
+        """
+        Returns the generated proposal for the winning party or None if there is no winning party.
+        Allows to pass a winner_id to get the generated proposal for a specific party.
+        """
+
+        from leaseslicensing.components.proposals.models import Proposal
+
+        if not winner_id:
+            winner_id = self.winner_id
+
+        # Get the winning party
+        try:
+            winning_party = (
+                CompetitiveProcessParty.objects.get(pk=winner_id) if winner_id else None
+            )
+        except CompetitiveProcessParty.DoesNotExist:
+            logger.warn(f"Winning party {winner_id} does not exist.")
+            winning_party = None
+
+        # Get the generated proposals for the winning party or an empty Proposal queryset
+        # when there is no winning party
+        if not winning_party:
+            generated_proposals = Proposal.objects.none()
+        elif winning_party.is_person:
+            generated_proposals = self.generated_proposal.filter(
+                ind_applicant=winning_party.person_id
+            )
+        elif winning_party.is_organisation:
+            generated_proposals = self.generated_proposal.filter(
+                org_applicant=winning_party.organisation_id
+            )
+        else:
+            raise ValidationError(
+                "Winning party is neither a person nor an organisation."
+            )
+
+        # May happen if the competitive process has a selected winner but has been discarded,
+        # i.e. no proposal has been generated
+        if winning_party and len(generated_proposals) == 0:
+            logger.warn("No generated proposals found for the winning party.")
+
+        # Get the generated lease/license proposal / generated proposal
+        # that is still active (not discarded)
+        generated_proposal = generated_proposals.filter(
+            ~Q(processing_status=Proposal.PROCESSING_STATUS_DISCARDED)
+        )
+        if len(generated_proposal) > 1:
+            raise ValidationError(
+                f"""There are more than one proposals that have not been discarded for the winning party: """
+                f"""{", ".join([p.lodgement_number for p in generated_proposal])}."""
+            )
+        # There might be no valid application, because the applicant or an officer
+        # might have discarded the application
+        if not generated_proposal.exists():
+            generated_proposal = None
+        else:
+            generated_proposal = generated_proposal.first()
+
+        return generated_proposal
 
 
 class CompetitiveProcessGeometry(models.Model):
