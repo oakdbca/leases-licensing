@@ -543,6 +543,7 @@ def clone_invoicing_details(
         gross_turnover_percentage.invoicing_details = invoicing_details
         gross_turnover_percentage.save()
 
+        # For arrears GTO invoicing we need to clone the quarters or months
         if (
             charge_method_key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
