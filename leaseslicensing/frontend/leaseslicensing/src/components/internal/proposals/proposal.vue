@@ -76,13 +76,8 @@
             </div>
 
             <div class="col-md-9">
-                <BootstrapAlert
-                    v-if="
-                        proposal &&
-                        proposal.proposal_type.code == 'transfer' &&
-                        proposal.approval
-                    "
-                >
+                <BootstrapAlert v-if="showTransferInformation">
+                    {{ proposal.approval }}
                     Proposal to transfer
                     <span class="fw-bold"
                         >{{ proposal.approval.approval_type_name }}
@@ -1729,6 +1724,19 @@ export default {
                         !condition.is_deleted &&
                         !condition.due_date
                 )
+            );
+        },
+        showTransferInformation() {
+            return (
+                this.proposal &&
+                this.proposal.proposal_type.code ==
+                    constants.PROPOSAL_TYPE.TRANSFER.code &&
+                this.proposal.approval &&
+                [
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                    constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
+                ].includes(this.proposal.processing_status_id)
             );
         },
     },
