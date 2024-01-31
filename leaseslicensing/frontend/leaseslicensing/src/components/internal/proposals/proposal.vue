@@ -77,7 +77,6 @@
 
             <div class="col-md-9">
                 <BootstrapAlert v-if="showTransferInformation">
-                    {{ proposal.approval }}
                     Proposal to transfer
                     <span class="fw-bold"
                         >{{ proposal.approval.approval_type_name }}
