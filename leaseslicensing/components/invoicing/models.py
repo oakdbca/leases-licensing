@@ -396,6 +396,13 @@ class InvoicingDetails(BaseModel):
         return self.invoicing_periods_next_start_date is not None
 
     @property
+    def has_missing_gross_turnover_entries(self):
+        return self.gross_turnover_percentages.filter(
+            estimated_gross_turnover__isnull=False,
+            gross_turnover__isnull=True,
+        ).exists()
+
+    @property
     def invoiced_up_to(self):
         # We return this if no invoices have been generated yet
         day_before_start_date = self.proposal.approval.start_date - relativedelta(

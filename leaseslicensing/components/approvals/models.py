@@ -547,6 +547,10 @@ class Approval(LicensingModelVersioned):
         ).exists()
 
     @property
+    def has_missing_gross_turnover_entries(self):
+        return self.invoicing_details.has_missing_gross_turnover_entries
+
+    @property
     def can_initiate_transfer(self):
         if self.has_pending_transfer:
             return False
