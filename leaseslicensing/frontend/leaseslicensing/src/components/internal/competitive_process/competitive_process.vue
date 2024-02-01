@@ -161,9 +161,12 @@
                                 :filterable="false"
                                 :drawable="true"
                                 :editable="true"
+                                :navbar-buttons-disabled="processing"
                                 level="internal"
                                 @validate-feature="validateFeature.bind(this)()"
                                 @refresh-from-response="refreshFromResponse"
+                                @finished-drawing="saveMapFeatures"
+                                @deleted-features="saveMapFeatures"
                             />
                         </FormSection>
                     </div>
@@ -843,7 +846,10 @@ export default {
                 ][property] = value;
             });
         },
-        save: async function () {
+        save: async function (
+            show_confirmation = true,
+            increment_map_key = true
+        ) {
             let vm = this;
 
             vm.processing = true;
@@ -913,17 +919,21 @@ export default {
                 })
                 .then((data) => {
                     vm.competitive_process = Object.assign(data, {});
-                    swal.fire({
-                        title: 'Saved',
-                        text: 'Competitive process has been saved',
-                        icon: 'success',
-                        confirmButtonColor: '#0d6efd',
-                    });
+                    if (show_confirmation) {
+                        swal.fire({
+                            title: 'Saved',
+                            text: 'Competitive process has been saved',
+                            icon: 'success',
+                            confirmButtonColor: '#0d6efd',
+                        });
+                    }
                     // Done save, set custom row back to not processing
                     vm.set_custom_rows_property('processing', false);
                     vm.$nextTick(async () => {
                         vm.cp_id = uuid();
-                        vm.incrementComponentMapKey();
+                        if (increment_map_key) {
+                            vm.incrementComponentMapKey();
+                        }
                     });
                 })
                 .catch((error) => {
@@ -1314,6 +1324,10 @@ export default {
                     name: val.name,
                 });
             }
+        },
+        saveMapFeatures: function () {
+            // Save the entire proposal including the map features without reloading the map
+            this.save(false, false);
         },
     },
 };
