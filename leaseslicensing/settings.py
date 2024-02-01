@@ -86,6 +86,9 @@ else:
     )
 
 REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_RENDERER_CLASSES": rest_framework_renderer_classes,
     "DEFAULT_FILTER_BACKENDS": (
         "rest_framework_datatables.filters.DatatablesFilterBackend",
