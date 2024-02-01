@@ -1845,7 +1845,9 @@ export default {
                 ) &&
                 !(
                     this.proposal.proposal_type.code ==
-                    constants.PROPOSAL_TYPE.MIGRATION.code
+                        constants.PROPOSAL_TYPE.MIGRATION.code ||
+                    this.proposal.proposal_type.code ==
+                        constants.PROPOSAL_TYPE.RENEWAL.code
                 )
             ) {
                 let immediateInvoicesHtml =
