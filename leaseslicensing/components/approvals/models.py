@@ -957,6 +957,12 @@ class Approval(LicensingModelVersioned):
         )
 
         self.save(version_comment="status_change: Approval reinstated")
+
+        # If any compliances or invoices were discarded when the approval was
+        # cancelled or surrendered, reinstate them
+        self.reinstate_discarded_compliances()
+        self.reinstate_discarded_invoices()
+
         send_approval_reinstate_email_notification(self, request)
 
         # Log approval action
