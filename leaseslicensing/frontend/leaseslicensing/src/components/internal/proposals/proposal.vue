@@ -2426,6 +2426,19 @@ export default {
                 });
                 return false;
             }
+            if (this.proposal.approval.has_missing_gross_turnover_entries) {
+                swal.fire({
+                    title: `Unable to Transfer Lease/License`,
+                    text: `Lease/License ${this.proposal.approval.lodgement_number} can not be transferred \
+                    as it is missing actual gross turnover entries for one or more financial years. \
+                    A finance officer must enter actual gross turnover entries for all elapsed financial years.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    showConfirmButton: false,
+                    cancelButtonText: 'Dismiss',
+                });
+                return false;
+            }
             return true;
         },
         issueApproval: function () {
