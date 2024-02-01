@@ -2432,7 +2432,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"Unable to transfer lease license {approval} as it has outstanding invoices."
                 )
 
+            if approval.has_missing_gross_turnover_entries:
+                raise ValidationError(
+                    f"Unable to transfer lease license {approval} as it has missing gross turnover entries."
+                )
+
             # Discard any future compliances and invoices for the current holder of the approval
+            # as new invoices and compliances will be generated for the new holder
             approval.discard_future_compliances()
             approval.discard_future_invoices()
 
