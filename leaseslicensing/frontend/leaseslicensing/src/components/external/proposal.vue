@@ -59,8 +59,11 @@
             :submitter-id="submitterId"
             :registration-of-interest="registrationOfInterest"
             :lease-licence="leaseLicence"
+            :navbar-buttons-disabled="navbarButtonsDisabled"
             @update-submit-text="updateSubmitText"
             @refresh-from-response="refreshFromResponse"
+            @finished-drawing="saveMapFeatures"
+            @deleted-features="saveMapFeatures"
         >
             <template #slot_additional_documents_assessment_comments>
                 <div class="row">
@@ -505,29 +508,31 @@ export default {
             // Save right away if there are no deleted features, otherwise ask for confirmation
             let commence_saving = deleted_features.length == 0 ? true : false;
 
-            let warning_text = `${deleted_features.length} ${
-                deleted_features.length == 1 ? 'feature' : 'features'
-            } will be deleted. Are you sure?`;
-            if (deleted_features.length > 0) {
-                await swal
-                    .fire({
-                        title: 'Save Proposal',
-                        text: warning_text,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Continue',
-                    })
-                    .then(async (result) => {
-                        if (result.isConfirmed) {
-                            // When Yes
-                            commence_saving = true;
-                        }
-                    });
-            }
+            if (withConfirm) {
+                let warning_text = `${deleted_features.length} ${
+                    deleted_features.length == 1 ? 'feature' : 'features'
+                } will be deleted. Are you sure?`;
+                if (deleted_features.length > 0) {
+                    await swal
+                        .fire({
+                            title: 'Save Proposal',
+                            text: warning_text,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Continue',
+                        })
+                        .then(async (result) => {
+                            if (result.isConfirmed) {
+                                // When Yes
+                                commence_saving = true;
+                            }
+                        });
+                }
 
-            if (!commence_saving) {
-                vm.savingProposal = false;
-                return;
+                if (!commence_saving) {
+                    vm.savingProposal = false;
+                    return;
+                }
             }
 
             if (vm.submitting) {
@@ -699,6 +704,11 @@ export default {
         },
         refreshFromResponse: function (data) {
             this.proposal = Object.assign({}, data);
+        },
+        saveMapFeatures: function () {
+            // TODO: Save map features only, not the whole proposal
+            console.log('Saving map features');
+            this.save(false);
         },
     },
 };
