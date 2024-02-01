@@ -2429,6 +2429,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"Unable to transfer lease license {approval} as it has outstanding invoices."
                 )
 
+            # Discard any future compliances and invoices for the current holder of the approval
+            approval.discard_future_compliances()
+            approval.discard_future_invoices()
+
             # Set the current proposal for the approval to this transfer proposal
             approval.current_proposal = self
             approval_transfer = approval.transfers.filter(
