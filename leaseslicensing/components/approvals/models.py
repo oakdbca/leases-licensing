@@ -827,20 +827,28 @@ class Approval(LicensingModelVersioned):
         today = timezone.now().date()
         if cancellation_date <= today:
             if not self.status == Approval.APPROVAL_STATUS_CANCELLED:
-                self.status = Approval.APPROVAL_STATUS_CANCELLED
-                self.set_to_cancel = False
-                send_approval_cancel_email_notification(self)
+                self.cancel(request.user)
         else:
             self.set_to_cancel = True
-        self.save(version_comment="status_change: Approval canceled")
-        # Log proposal action
-        self.log_user_action(
-            ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(self.id), request
+            self.save()
+
+    @transaction.atomic
+    def cancel(self, user):
+        self.status = Approval.APPROVAL_STATUS_CANCELLED
+        self.set_to_cancel = False
+        self.save(version_comment="status_change: Approval cancelled")
+        self.discard_future_compliances()
+        self.discard_future_invoices()
+        send_approval_cancel_email_notification(self)
+        ApprovalUserAction.log_action(
+            self,
+            ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(self.id),
+            user.id,
         )
-        # Log entry for organisation
-        self.current_proposal.log_user_action(
+        ProposalUserAction.log_action(
+            self.current_proposal,
             ProposalUserAction.ACTION_CANCEL_APPROVAL.format(self.current_proposal.id),
-            request,
+            user.id,
         )
 
     @transaction.atomic
@@ -867,39 +875,47 @@ class Approval(LicensingModelVersioned):
         from_date = from_date.date()
         if from_date <= today:
             if not self.status == Approval.APPROVAL_STATUS_SUSPENDED:
-                self.status = Approval.APPROVAL_STATUS_SUSPENDED
-                self.set_to_suspend = False
-                self.save()
-                send_approval_suspend_email_notification(self)
+                self.commence_suspension(request.user)
         else:
             self.set_to_suspend = True
+            self.save()
+
+    @transaction.atomic
+    def commence_suspension(self, user):
+        self.status = Approval.APPROVAL_STATUS_SUSPENDED
+        self.set_to_suspend = False
         self.save(version_comment="status_change: Approval suspended")
-        # Log approval action
-        self.log_user_action(
-            ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(self.id), request
+        send_approval_suspend_email_notification(self)
+        ApprovalUserAction.log_action(
+            self,
+            ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(self.id),
+            user.id,
         )
-        # Log entry for proposal
-        self.current_proposal.log_user_action(
+        ProposalUserAction.log_action(
+            self.current_proposal,
             ProposalUserAction.ACTION_SUSPEND_APPROVAL.format(self.current_proposal.id),
-            request,
+            user.id,
         )
 
     @transaction.atomic
     def reinstate_approval(self, request):
         if request.user.id not in self.allowed_assessor_ids:
             raise ValidationError("You do not have access to reinstate this approval")
+
         if not self.can_reinstate:
-            # if not self.status == 'suspended':
             raise ValidationError("You cannot reinstate approval at this stage")
+
         today = timezone.now().date()
         if not self.can_reinstate and self.expiry_date >= today:
-            # if not self.status == 'suspended' and self.expiry_date >= today:
             raise ValidationError("You cannot reinstate approval at this stage")
+
         if self.status == Approval.APPROVAL_STATUS_CANCELLED:
             self.cancellation_details = ""
             self.cancellation_date = None
+
         if self.status == Approval.APPROVAL_STATUS_SURRENDERED:
             self.surrender_details = {}
+
         if self.status == Approval.APPROVAL_STATUS_SUSPENDED:
             self.suspension_details = {}
 
@@ -907,14 +923,16 @@ class Approval(LicensingModelVersioned):
         self.renewal_review_notification_sent_to_assessors = (
             False  # Should be able to renew again
         )
-        # self.suspension_details = {}
+
         self.save(version_comment="status_change: Approval reinstated")
         send_approval_reinstate_email_notification(self, request)
+
         # Log approval action
         self.log_user_action(
             ApprovalUserAction.ACTION_REINSTATE_APPROVAL.format(self.id),
             request,
         )
+
         # Log entry for proposal
         self.current_proposal.log_user_action(
             ProposalUserAction.ACTION_REINSTATE_APPROVAL.format(
@@ -948,24 +966,30 @@ class Approval(LicensingModelVersioned):
         surrender_date = surrender_date.date()
         if surrender_date <= today:
             if not self.status == Approval.APPROVAL_STATUS_SURRENDERED:
-                self.status = Approval.APPROVAL_STATUS_SURRENDERED
-                self.set_to_surrender = False
-                self.save()
-                send_approval_surrender_email_notification(self)
+                self.surrender(request.user)
         else:
             self.set_to_surrender = True
+            self.save()
+
+    @transaction.atomic
+    def surrender(self, user):
+        self.status = Approval.APPROVAL_STATUS_SURRENDERED
+        self.set_to_surrender = False
         self.save(version_comment="status_change: Approval surrendered")
-        # Log approval action
-        self.log_user_action(
+        self.discard_future_compliances()
+        self.discard_future_invoices()
+        send_approval_surrender_email_notification(self)
+        ApprovalUserAction.log_action(
+            self,
             ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(self.id),
-            request,
+            user.id,
         )
-        # Log entry for proposal
-        self.current_proposal.log_user_action(
+        ProposalUserAction.log_action(
+            self.current_proposal,
             ProposalUserAction.ACTION_SURRENDER_APPROVAL.format(
                 self.current_proposal.id
             ),
-            request,
+            user.id,
         )
 
     @property
