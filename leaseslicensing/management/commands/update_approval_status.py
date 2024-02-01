@@ -6,13 +6,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
-from leaseslicensing.components.approvals.email import (
-    send_approval_cancel_email_notification,
-    send_approval_surrender_email_notification,
-    send_approval_suspend_email_notification,
-)
-from leaseslicensing.components.approvals.models import Approval, ApprovalUserAction
-from leaseslicensing.components.proposals.models import ProposalUserAction
+from leaseslicensing.components.approvals.models import Approval
 
 logger = logging.getLogger(__name__)
 
@@ -42,24 +36,10 @@ class Command(BaseCommand):
                 from_date = from_date.date()
                 if from_date <= today:
                     try:
-                        a.status = Approval.APPROVAL_STATUS_SUSPENDED
-                        a.set_to_suspend = False
-                        a.save()
-                        send_approval_suspend_email_notification(a)
-                        proposal = a.current_proposal
-                        ApprovalUserAction.log_action(
-                            a,
-                            ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(a.id),
-                            user.id,
+                        a.commence_suspension(user)
+                        logger.info(
+                            f"Approval {a.lodgement_number} Suspension Commenced"
                         )
-                        ProposalUserAction.log_action(
-                            proposal,
-                            ProposalUserAction.ACTION_SUSPEND_APPROVAL.format(
-                                proposal.id
-                            ),
-                            user.id,
-                        )
-                        logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(suspended=a.lodgement_number))
                     except Exception as e:
                         err_msg = "Error suspending Approval {} status".format(
@@ -76,22 +56,10 @@ class Command(BaseCommand):
                 to_date = to_date.date()
                 if to_date <= today and today < a.expiry_date:
                     try:
-                        a.status = Approval.APPROVAL_STATUS_CURRENT
-                        a.save()
-                        proposal = a.current_proposal
-                        ApprovalUserAction.log_action(
-                            a,
-                            ApprovalUserAction.ACTION_REINSTATE_APPROVAL.format(a.id),
-                            user.id,
+                        a.reinstate_approval(user)
+                        logger.info(
+                            f"Suspended Approval {a.lodgement_number} Reinstated"
                         )
-                        ProposalUserAction.log_action(
-                            proposal,
-                            ProposalUserAction.ACTION_REINSTATE_APPROVAL.format(
-                                proposal.id
-                            ),
-                            user.id,
-                        )
-                        logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(current=a.lodgement_number))
                     except Exception as e:
                         err_msg = "Error suspending Approval {} status".format(
@@ -108,23 +76,7 @@ class Command(BaseCommand):
                 surrender_date = surrender_date.date()
                 if surrender_date <= today:
                     try:
-                        a.status = Approval.APPROVAL_STATUS_SURRENDERED
-                        a.set_to_surrender = False
-                        a.save()
-                        send_approval_surrender_email_notification(a)
-                        proposal = a.current_proposal
-                        ApprovalUserAction.log_action(
-                            a,
-                            ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(a.id),
-                            user.id,
-                        )
-                        ProposalUserAction.log_action(
-                            proposal,
-                            ProposalUserAction.ACTION_SURRENDER_APPROVAL.format(
-                                proposal.id
-                            ),
-                            user.id,
-                        )
+                        a.surrender(user)
                         logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(surrender=a.lodgement_number))
                     except Exception as e:
@@ -138,23 +90,7 @@ class Command(BaseCommand):
             if a.cancellation_date and a.set_to_cancel:
                 if a.cancellation_date <= today:
                     try:
-                        a.status = Approval.APPROVAL_STATUS_CANCELLED
-                        a.set_to_cancel = False
-                        a.save()
-                        send_approval_cancel_email_notification(a)
-                        proposal = a.current_proposal
-                        ApprovalUserAction.log_action(
-                            a,
-                            ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(a.id),
-                            user.id,
-                        )
-                        ProposalUserAction.log_action(
-                            proposal,
-                            ProposalUserAction.ACTION_CANCEL_APPROVAL.format(
-                                proposal.id
-                            ),
-                            user.id,
-                        )
+                        a.cancel(user)
                         logger.info(f"Updated Approval {a.id} status to {a.status}")
                         updates.append(dict(cancelled=a.lodgement_number))
                     except Exception as e:
@@ -163,6 +99,7 @@ class Command(BaseCommand):
                         )
                         logger.error(f"{err_msg}\n{str(e)}")
                         errors.append(err_msg)
+
         logger.info(f"Command {__name__} completed")
 
         cmd_name = __name__.split(".")[-1].replace("_", " ").upper()
