@@ -751,6 +751,18 @@ class Approval(LicensingModelVersioned):
             f"Discarded {updated_count} future compliances for Approval: {self}"
         )
 
+    def reinstate_discarded_compliances(self):
+        # Method to use when reinstating a cancelled or surrendered approval
+        # Reinstates all discarded compliances for the approval
+        updated_count = self.compliances.filter(
+            processing_status=Compliance.PROCESSING_STATUS_DISCARDED,
+        ).update(processing_status=Compliance.PROCESSING_STATUS_FUTURE)
+        logger.info(
+            f"Reinstated {updated_count} discarded compliances for Approval: {self}"
+        )
+        # Note even though they are all makred as 'future' they will be processed
+        # as 'due' on the next run of the update_compliance_status management command
+
     def discard_future_invoices(self):
         # Method to use when transferring, cancelling or surrending an approval
         # Discards all invoices that are pending or unpaid where the due date is in the future
@@ -763,6 +775,26 @@ class Approval(LicensingModelVersioned):
             ],
         ).update(status=Invoice.INVOICE_STATUS_DISCARDED)
         logger.info(f"Discarded {updated_count} future invoices for Approval: {self}")
+
+    def reinstate_discarded_invoices(self):
+        # Method to use when reinstating a cancelled or surrendered approval
+        # Reinstates all discarded invoices for the approval
+        reinstated_invoice_count = self.invoices.filter(
+            status=Invoice.INVOICE_STATUS_DISCARDED,
+        ).count()
+        for invoice in self.invoices.filter(
+            status=Invoice.INVOICE_STATUS_DISCARDED,
+        ):
+            if not invoice.due_date:
+                invoice.status = Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE
+                invoice.save()
+            else:
+                invoice.status = Invoice.INVOICE_STATUS_UNPAID
+                invoice.save()
+
+        logger.info(
+            f"Reinstated {reinstated_invoice_count} discarded invoices for Approval: {self}"
+        )
 
     @classmethod
     def get_approvals_for_emailuser(cls, emailuser_id):
