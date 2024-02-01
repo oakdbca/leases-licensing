@@ -397,15 +397,23 @@ class InvoicingDetails(BaseModel):
 
     @property
     def has_missing_gross_turnover_entries(self):
-        if self.charge_method.key not in [
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
-        ]:
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            return self.gross_turnover_percentages.filter(
+                estimated_gross_turnover__isnull=False,
+                gross_turnover__isnull=True,
+            ).exists()
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+        ):
+            for gtp in self.gross_turnover_percentages.all():
+                if gtp.financial_year_has_passed and gtp.gross_turnover is None:
+                    return True
+
             return False
-        return self.gross_turnover_percentages.filter(
-            estimated_gross_turnover__isnull=False,
-            gross_turnover__isnull=True,
-        ).exists()
 
     @property
     def invoiced_up_to(self):
@@ -1400,6 +1408,10 @@ class PercentageOfGrossTurnover(BaseModel):
     @property
     def financial_year(self):
         return f"{self.year-1}-{self.year}"
+
+    @property
+    def financial_year_has_passed(self):
+        return utils.financial_year_has_passed(self.financial_year)
 
     @property
     def discrepency(self):
