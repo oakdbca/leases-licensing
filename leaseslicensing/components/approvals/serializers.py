@@ -638,6 +638,7 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
             "holder",
             "has_outstanding_compliances",
             "has_outstanding_invoices",
+            "has_missing_gross_turnover_entries",
             "holder",
             "active_transfer",
         )
