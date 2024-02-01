@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import urlquote_plus
@@ -63,6 +64,10 @@ class CacheControlMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
+
+        if settings.DEBUG:
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            return response
 
         if request.path[:5] == "/api/" or request.path == "/":
             response["Cache-Control"] = "private, no-store"
