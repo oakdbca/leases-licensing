@@ -140,6 +140,17 @@ class EmailUserSerializer(serializers.ModelSerializer):
         return f"{obj.first_name} {obj.last_name}"
 
 
+class LimitedEmailUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailUser
+        fields = (
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+        )
+
+
 class NewEmailuserSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
 
