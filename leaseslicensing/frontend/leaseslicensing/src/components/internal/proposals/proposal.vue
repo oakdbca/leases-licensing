@@ -1825,7 +1825,6 @@ export default {
             let previewInvoices =
                 this.$refs.approval_screen.$refs.invoicing_details
                     .previewInvoices;
-
             if (
                 [
                     constants.CHARGE_METHODS
@@ -1847,7 +1846,7 @@ export default {
                     this.proposal.proposal_type.code ==
                         constants.PROPOSAL_TYPE.MIGRATION.code ||
                     this.proposal.proposal_type.code ==
-                        constants.PROPOSAL_TYPE.RENEWAL.code
+                        constants.PROPOSAL_TYPE.TRANSFER.code
                 )
             ) {
                 let immediateInvoicesHtml =
