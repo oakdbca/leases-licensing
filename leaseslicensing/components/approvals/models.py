@@ -740,6 +740,30 @@ class Approval(LicensingModelVersioned):
     def renewed_from(self):
         return self.current_proposal.previous_application.approval
 
+    def discard_future_compliances(self):
+        # Method to use when transferring, cancelling or surrending an approval
+        # Discards all future compliances for the approval
+        # In the case of a transfer, new compliances will be generated for the new approval holder
+        updated_count = self.compliances.filter(
+            processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+        ).update(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
+        logger.info(
+            f"Discarded {updated_count} future compliances for Approval: {self}"
+        )
+
+    def discard_future_invoices(self):
+        # Method to use when transferring, cancelling or surrending an approval
+        # Discards all invoices that are pending or unpaid where the due date is in the future
+        # or where there is no due date
+        updated_count = self.invoices.filter(
+            Q(date_due__gt=timezone.now().date()) | Q(date_due__isnull=True),
+            status__in=[
+                Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+                Invoice.INVOICE_STATUS_UNPAID,
+            ],
+        ).update(status=Invoice.INVOICE_STATUS_DISCARDED)
+        logger.info(f"Discarded {updated_count} future invoices for Approval: {self}")
+
     @classmethod
     def get_approvals_for_emailuser(cls, emailuser_id):
         user_orgs = get_organisation_ids_for_user(emailuser_id)
