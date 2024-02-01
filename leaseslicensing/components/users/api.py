@@ -25,7 +25,10 @@ from leaseslicensing.components.invoicing.serializers import (
 )
 from leaseslicensing.components.main.api import UserActionLoggingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
-from leaseslicensing.components.main.serializers import EmailUserSerializer
+from leaseslicensing.components.main.serializers import (
+    EmailUserSerializer,
+    LimitedEmailUserSerializer,
+)
 from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestDTSerializer,
 )
@@ -46,6 +49,7 @@ from leaseslicensing.components.users.serializers import (
     UserSerializer,
 )
 from leaseslicensing.helpers import is_internal
+from leaseslicensing.permissions import IsInternal
 
 logger = logging.getLogger(__name__)
 
@@ -159,14 +163,22 @@ class UserViewSet(UserActionLoggingViewset):
     queryset = EmailUser.objects.all()
     serializer_class = UserSerializer
 
+    def get_serializer_class(self):
+        if not is_internal(self.request):
+            return LimitedEmailUserSerializer
+        return super().get_serializer_class()
+
     @basic_exception_handler
     def list(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
         queryset = self.queryset.filter(
             Q(first_name__icontains=search_term) | Q(last_name__icontains=search_term)
         )[:10]
-        data_transform = EmailUserSerializer(queryset, many=True)
-        return Response(data_transform.data)
+        if not is_internal(request):
+            serializer = LimitedEmailUserSerializer(queryset, many=True)
+        else:
+            serializer = EmailUserSerializer(queryset, many=True)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -220,6 +232,7 @@ class UserViewSet(UserActionLoggingViewset):
             "GET",
         ],
         detail=False,
+        permission_classes=[IsInternal],
     )
     @basic_exception_handler
     def get_referees(self, request, *args, **kwargs):
@@ -293,6 +306,7 @@ class UserViewSet(UserActionLoggingViewset):
             "GET",
         ],
         detail=False,
+        permission_classes=[IsInternal],
     )
     @basic_exception_handler
     def get_department_users(self, request, *args, **kwargs):
