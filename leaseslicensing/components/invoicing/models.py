@@ -397,7 +397,7 @@ class InvoicingDetails(BaseModel):
 
     @property
     def has_missing_gross_turnover_entries(self):
-        if not self.charge_method.key[
+        if self.charge_method.key not in [
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
         ]:
