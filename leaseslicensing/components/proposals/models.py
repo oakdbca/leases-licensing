@@ -2385,6 +2385,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     "approval_type": approval_type,
                 },
             )
+            if created:
+                logger.info(f"Created Approval: {approval}")
+
             # Update the approval documents
             self.generate_license_documents(
                 approval, reason=ApprovalDocument.REASON_AMENDED
@@ -2429,6 +2432,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"Unable to transfer lease license {approval} as it has outstanding invoices."
                 )
 
+            # Discard any future compliances and invoices for the current holder of the approval
+            approval.discard_future_compliances()
+            approval.discard_future_invoices()
+
             # Set the current proposal for the approval to this transfer proposal
             approval.current_proposal = self
             approval_transfer = approval.transfers.filter(
@@ -2447,12 +2454,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             self.generate_license_documents(
                 approval, reason=ApprovalDocument.REASON_TRANSFERRED
             )
+
             # Create a versioned approval save
             proposal_type_comment_name = proposal_type_comment_names[
                 PROPOSAL_TYPE_TRANSFER
             ]
 
-            self.generate_compliances(approval, request)
+            self.generate_compliances(approval, request, only_future=True)
 
             self.processing_status = (
                 Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
@@ -3500,6 +3508,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         # We assume any past compliances have been dealt with in a legacy system
         is_migration_proposal = proposal.proposal_type.code == PROPOSAL_TYPE_MIGRATION
 
+        # For leases/licences being transferred prevent the generation of any past compliances
+        is_transfer_proposal = proposal.proposal_type.code == PROPOSAL_TYPE_TRANSFER
+
+        only_future_compliances = is_migration_proposal or is_transfer_proposal
+
         if (
             settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE
             == invoicing_details.charge_method.key
@@ -3547,14 +3560,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             # Generate compliances from the requirements
             self.generate_compliances(
-                approval, request, only_future=is_migration_proposal
+                approval, request, only_future=only_future_compliances
             )
 
         # For all other charge methods, there may be one or more invoice records that need to be
         # generated immediately (any past periods and any current period i.e. that has started but not yet finished)
 
-        if not is_migration_proposal:
-            # Generate any immediate invoices including backdated invoices
+        # Only generate immeiate and backdated invoices for non-migration and non-transfer proposals
+        if not is_migration_proposal and not is_transfer_proposal:
             invoicing_details.generate_immediate_invoices()
 
         # Generate the invoice schdule for any future invoices

@@ -37,8 +37,7 @@
                             aria-selected="true"
                             @click="holderTabClicked"
                         >
-                            <span class="fw-bold">Step 1:</span> Provide Holder
-                            Details
+                            Provide Holder Details
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -53,8 +52,7 @@
                             aria-selected="false"
                             @click="transfereeTabClicked"
                         >
-                            <span class="fw-bold">Step 2:</span> Select
-                            Transferee
+                            Select Transferee
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -68,8 +66,7 @@
                             aria-controls="details"
                             aria-selected="false"
                         >
-                            <span class="fw-bold">Step 3:</span> Provide
-                            Supporting Documents
+                            Provide Supporting Documents
                         </button>
                     </li>
                 </ul>
@@ -362,16 +359,16 @@
                     <button
                         type="button"
                         class="btn btn-primary me-2"
-                        @click="saveAndContinue"
+                        @click="saveAndExit"
                     >
-                        Save and Continue
+                        Save and Exit
                     </button>
                     <button
                         type="button"
                         class="btn btn-primary me-2"
-                        @click="saveAndExit"
+                        @click="saveAndContinue"
                     >
-                        Save and Exit
+                        Save and Continue
                     </button>
                     <button
                         type="button"
@@ -696,7 +693,21 @@ export default {
                 name: 'external-dashboard',
             });
         },
-        initiateTransfer: function () {
+        activateTab(tabId) {
+            var tab = new bootstrap.Tab(document.getElementById(tabId));
+            tab.show();
+        },
+        initiateTransfer: async function () {
+            if (!this.selectedTransferee) {
+                await swal.fire({
+                    title: 'You must select a transferee',
+                    icon: 'error',
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+                this.activateTab('transferee-tab');
+                return;
+            }
             this.errors = null;
             let confirmation_html = `<p class="text-starts">Are you sure you want to transfer ${this.approval.lodgement_number} - ${this.approval.approval_type} to ${this.selectedTransferee}?</p>`;
             confirmation_html += `<p>The transferee will gain access to any information and documents that were submitted as part of the original lease/licence proposal.</p>`;

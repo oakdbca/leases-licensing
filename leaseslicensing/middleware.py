@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import urlquote_plus
@@ -22,7 +23,11 @@ class FirstTimeNagScreenMiddleware:
             and request.user.last_name
             and request.user.residential_address_id
             and self.postal_address_fully_filled(request.user)
-            and self.residential_address_fully_filled(request.user)
+            and (
+                request.user.postal_same_as_residential
+                or self.residential_address_fully_filled(request.user)
+            )
+            and (request.user.phone_number or request.user.mobile_number)
         ):
             return self.get_response(request)
 
@@ -59,6 +64,10 @@ class CacheControlMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
+
+        if settings.DEBUG:
+            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            return response
 
         if request.path[:5] == "/api/" or request.path == "/":
             response["Cache-Control"] = "private, no-store"

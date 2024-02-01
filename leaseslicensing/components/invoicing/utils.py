@@ -21,7 +21,11 @@ from rest_framework import serializers
 from leaseslicensing.components.invoicing.email import (
     send_new_invoice_raised_notification,
 )
-from leaseslicensing.components.invoicing.models import Invoice
+from leaseslicensing.components.invoicing.models import (
+    Invoice,
+    InvoicingDetails,
+    PercentageOfGrossTurnover,
+)
 from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationContact,
@@ -471,3 +475,99 @@ def generate_ledger_invoice(invoice: Invoice) -> None:
 
     # Send request for payment to proponent
     send_new_invoice_raised_notification(invoice)
+
+
+def clone_invoicing_details(
+    invoicing_details_to_clone: InvoicingDetails,
+) -> InvoicingDetails:
+    # Clone the top level object first
+    invoicing_details = InvoicingDetails.objects.get(id=invoicing_details_to_clone.id)
+    invoicing_details.pk = None
+    invoicing_details.save()
+
+    # Clear out prefetched items cache etc.
+    invoicing_details.refresh_from_db()
+
+    # This object will still have child records that have the same ids as the original
+    # so we need to clone those as well
+    if not invoicing_details.charge_method:
+        logger.warning(
+            f"Invoicing details {invoicing_details} has no charge method so cannot clone. Returning original object."
+        )
+        return invoicing_details_to_clone
+
+    charge_method_key = invoicing_details.charge_method.key
+
+    if charge_method_key in [
+        # There are no nested objects to clone for these charge methods
+        settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
+        settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
+        settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM,
+    ]:
+        return invoicing_details
+
+    if charge_method_key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
+        for custom_cpi_year in invoicing_details_to_clone.custom_cpi_years.all():
+            custom_cpi_year.pk = None
+            custom_cpi_year.invoicing_details = invoicing_details
+            custom_cpi_year.save()
+        return invoicing_details
+
+    if charge_method_key == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT:
+        for (
+            annual_increment_amount
+        ) in invoicing_details_to_clone.annual_increment_amounts.all():
+            annual_increment_amount.pk = None
+            annual_increment_amount.invoicing_details = invoicing_details
+            annual_increment_amount.save()
+        return invoicing_details
+
+    if (
+        charge_method_key
+        == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE
+    ):
+        for (
+            annual_increment_percentage
+        ) in invoicing_details_to_clone.annual_increment_percentages.all():
+            annual_increment_percentage.pk = None
+            annual_increment_percentage.invoicing_details = invoicing_details
+            annual_increment_percentage.save()
+        return invoicing_details
+
+    # Clone gross turnover percentages for both arrears and advance GTO invoicing
+    for (
+        gross_turnover_percentage
+    ) in invoicing_details_to_clone.gross_turnover_percentages.all():
+        original_pk = gross_turnover_percentage.pk
+        gross_turnover_percentage.pk = None
+        gross_turnover_percentage.invoicing_details = invoicing_details
+        gross_turnover_percentage.save()
+
+        # For arrears GTO invoicing we need to clone the quarters or months
+        if (
+            charge_method_key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+        ):
+            original_gross_turnover_percentage = PercentageOfGrossTurnover.objects.get(
+                id=original_pk
+            )
+
+            if (
+                invoicing_details.invoicing_repetition_type.key
+                == settings.REPETITION_TYPE_QUARTERLY
+            ):
+                for quarter in original_gross_turnover_percentage.quarters.all():
+                    quarter.pk = None
+                    quarter.gross_turnover_percentage = gross_turnover_percentage
+                    quarter.save()
+
+            elif (
+                invoicing_details.invoicing_repetition_type.key
+                == settings.REPETITION_TYPE_MONTHLY
+            ):
+                for month in original_gross_turnover_percentage.months.all():
+                    month.pk = None
+                    month.gross_turnover_percentage = gross_turnover_percentage
+                    month.save()
+
+    return invoicing_details

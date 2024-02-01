@@ -148,7 +148,6 @@ class InvoicingDetailsManager(models.Manager):
                 "annual_increment_amounts",
                 "annual_increment_percentages",
                 "gross_turnover_percentages",
-                "crown_land_rent_review_dates",
             )
         )
 
@@ -1532,23 +1531,6 @@ class CustomCPIYear(BaseModel):
         return f"{self.year}: {self.percentage}%"
 
 
-class CrownLandRentReviewDate(BaseModel):
-    review_date = models.DateField(null=True, blank=True)
-    invoicing_details = models.ForeignKey(
-        InvoicingDetails,
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-        related_name="crown_land_rent_review_dates",
-    )
-
-    class Meta:
-        app_label = "leaseslicensing"
-        ordering = [
-            "review_date",
-        ]
-
-
 def invoice_pdf_upload_path(instance, filename):
     return f"approvals/{instance.approval.id}/invoices/{instance.id}/{filename}"
 
@@ -1572,6 +1554,7 @@ class Invoice(LicensingModel):
     INVOICE_STATUS_UNPAID = "unpaid"
     INVOICE_STATUS_PAID = "paid"
     INVOICE_STATUS_VOID = "void"
+    INVOICE_STATUS_DISCARDED = "discarded"
     INVOICE_STATUS_CHOICES = (
         (
             INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
@@ -1580,6 +1563,7 @@ class Invoice(LicensingModel):
         (INVOICE_STATUS_UNPAID, "Unpaid"),
         (INVOICE_STATUS_PAID, "Paid"),
         (INVOICE_STATUS_VOID, "Void"),
+        (INVOICE_STATUS_DISCARDED, "Discarded"),
     )
     approval = models.ForeignKey(
         "Approval",

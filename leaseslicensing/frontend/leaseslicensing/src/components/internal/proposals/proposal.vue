@@ -76,13 +76,7 @@
             </div>
 
             <div class="col-md-9">
-                <BootstrapAlert
-                    v-if="
-                        proposal &&
-                        proposal.proposal_type.code == 'transfer' &&
-                        proposal.approval
-                    "
-                >
+                <BootstrapAlert v-if="showTransferInformation">
                     Proposal to transfer
                     <span class="fw-bold"
                         >{{ proposal.approval.approval_type_name }}
@@ -1731,6 +1725,19 @@ export default {
                 )
             );
         },
+        showTransferInformation() {
+            return (
+                this.proposal &&
+                this.proposal.proposal_type.code ==
+                    constants.PROPOSAL_TYPE.TRANSFER.code &&
+                this.proposal.approval &&
+                [
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                    constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
+                ].includes(this.proposal.processing_status_id)
+            );
+        },
     },
     watch: {},
     updated: function () {
@@ -1818,7 +1825,6 @@ export default {
             let previewInvoices =
                 this.$refs.approval_screen.$refs.invoicing_details
                     .previewInvoices;
-
             if (
                 [
                     constants.CHARGE_METHODS
@@ -1838,7 +1844,9 @@ export default {
                 ) &&
                 !(
                     this.proposal.proposal_type.code ==
-                    constants.PROPOSAL_TYPE.MIGRATION.code
+                        constants.PROPOSAL_TYPE.MIGRATION.code ||
+                    this.proposal.proposal_type.code ==
+                        constants.PROPOSAL_TYPE.TRANSFER.code
                 )
             ) {
                 let immediateInvoicesHtml =

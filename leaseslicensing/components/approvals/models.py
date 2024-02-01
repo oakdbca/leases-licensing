@@ -25,6 +25,7 @@ from leaseslicensing.components.approvals.email import (
 )
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.models import Invoice
+from leaseslicensing.components.invoicing.utils import clone_invoicing_details
 from leaseslicensing.components.main.models import (
     BaseApplicant,
     CommunicationsLogEntry,
@@ -534,8 +535,11 @@ class Approval(LicensingModelVersioned):
 
     @property
     def has_outstanding_invoices(self):
+        # TODO: Find out if the pending invoices with no due date should be included
+        # If so, shall we email the finance group when the user attempts to complete
+        # the transfer?
         return self.invoices.filter(
-            date_due__lte=timezone.now().date(),
+            Q(date_due__lte=timezone.now().date()) | Q(date_due__isnull=True),
             status__in=[
                 Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
                 Invoice.INVOICE_STATUS_UNPAID,
@@ -680,6 +684,11 @@ class Approval(LicensingModelVersioned):
 
     @property
     def crown_land_rent_review_dates(self):
+        """Crown land rent review dates for an approval are calculated dynamically
+        based on the review_once_every field from the invoicing details object and the start
+        and expiry date for the approva. Default is 5 years. Will return an empty list if
+        no review interval is set or if no review is needed (i.e. the approval lasts less time
+        than the review_once_every value)."""
         review_once_every = self.current_proposal.invoicing_details.review_once_every
         if not review_once_every:
             logger.warning(
@@ -730,6 +739,62 @@ class Approval(LicensingModelVersioned):
     @property
     def renewed_from(self):
         return self.current_proposal.previous_application.approval
+
+    def discard_future_compliances(self):
+        # Method to use when transferring, cancelling or surrending an approval
+        # Discards all future compliances for the approval
+        # In the case of a transfer, new compliances will be generated for the new approval holder
+        updated_count = self.compliances.filter(
+            processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+        ).update(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
+        logger.info(
+            f"Discarded {updated_count} future compliances for Approval: {self}"
+        )
+
+    def reinstate_discarded_compliances(self):
+        # Method to use when reinstating a cancelled or surrendered approval
+        # Reinstates all discarded compliances for the approval
+        updated_count = self.compliances.filter(
+            processing_status=Compliance.PROCESSING_STATUS_DISCARDED,
+        ).update(processing_status=Compliance.PROCESSING_STATUS_FUTURE)
+        logger.info(
+            f"Reinstated {updated_count} discarded compliances for Approval: {self}"
+        )
+        # Note even though they are all makred as 'future' they will be processed
+        # as 'due' on the next run of the update_compliance_status management command
+
+    def discard_future_invoices(self):
+        # Method to use when transferring, cancelling or surrending an approval
+        # Discards all invoices that are pending or unpaid where the due date is in the future
+        # or where there is no due date
+        updated_count = self.invoices.filter(
+            Q(date_due__gt=timezone.now().date()) | Q(date_due__isnull=True),
+            status__in=[
+                Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+                Invoice.INVOICE_STATUS_UNPAID,
+            ],
+        ).update(status=Invoice.INVOICE_STATUS_DISCARDED)
+        logger.info(f"Discarded {updated_count} future invoices for Approval: {self}")
+
+    def reinstate_discarded_invoices(self):
+        # Method to use when reinstating a cancelled or surrendered approval
+        # Reinstates all discarded invoices for the approval
+        reinstated_invoice_count = self.invoices.filter(
+            status=Invoice.INVOICE_STATUS_DISCARDED,
+        ).count()
+        for invoice in self.invoices.filter(
+            status=Invoice.INVOICE_STATUS_DISCARDED,
+        ):
+            if not invoice.due_date:
+                invoice.status = Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE
+                invoice.save()
+            else:
+                invoice.status = Invoice.INVOICE_STATUS_UNPAID
+                invoice.save()
+
+        logger.info(
+            f"Reinstated {reinstated_invoice_count} discarded invoices for Approval: {self}"
+        )
 
     @classmethod
     def get_approvals_for_emailuser(cls, emailuser_id):
@@ -794,20 +859,28 @@ class Approval(LicensingModelVersioned):
         today = timezone.now().date()
         if cancellation_date <= today:
             if not self.status == Approval.APPROVAL_STATUS_CANCELLED:
-                self.status = Approval.APPROVAL_STATUS_CANCELLED
-                self.set_to_cancel = False
-                send_approval_cancel_email_notification(self)
+                self.cancel(request.user)
         else:
             self.set_to_cancel = True
-        self.save(version_comment="status_change: Approval canceled")
-        # Log proposal action
-        self.log_user_action(
-            ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(self.id), request
+            self.save()
+
+    @transaction.atomic
+    def cancel(self, user):
+        self.status = Approval.APPROVAL_STATUS_CANCELLED
+        self.set_to_cancel = False
+        self.save(version_comment="status_change: Approval cancelled")
+        self.discard_future_compliances()
+        self.discard_future_invoices()
+        send_approval_cancel_email_notification(self)
+        ApprovalUserAction.log_action(
+            self,
+            ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(self.id),
+            user.id,
         )
-        # Log entry for organisation
-        self.current_proposal.log_user_action(
+        ProposalUserAction.log_action(
+            self.current_proposal,
             ProposalUserAction.ACTION_CANCEL_APPROVAL.format(self.current_proposal.id),
-            request,
+            user.id,
         )
 
     @transaction.atomic
@@ -834,39 +907,47 @@ class Approval(LicensingModelVersioned):
         from_date = from_date.date()
         if from_date <= today:
             if not self.status == Approval.APPROVAL_STATUS_SUSPENDED:
-                self.status = Approval.APPROVAL_STATUS_SUSPENDED
-                self.set_to_suspend = False
-                self.save()
-                send_approval_suspend_email_notification(self)
+                self.commence_suspension(request.user)
         else:
             self.set_to_suspend = True
+            self.save()
+
+    @transaction.atomic
+    def commence_suspension(self, user):
+        self.status = Approval.APPROVAL_STATUS_SUSPENDED
+        self.set_to_suspend = False
         self.save(version_comment="status_change: Approval suspended")
-        # Log approval action
-        self.log_user_action(
-            ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(self.id), request
+        send_approval_suspend_email_notification(self)
+        ApprovalUserAction.log_action(
+            self,
+            ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(self.id),
+            user.id,
         )
-        # Log entry for proposal
-        self.current_proposal.log_user_action(
+        ProposalUserAction.log_action(
+            self.current_proposal,
             ProposalUserAction.ACTION_SUSPEND_APPROVAL.format(self.current_proposal.id),
-            request,
+            user.id,
         )
 
     @transaction.atomic
     def reinstate_approval(self, request):
         if request.user.id not in self.allowed_assessor_ids:
             raise ValidationError("You do not have access to reinstate this approval")
+
         if not self.can_reinstate:
-            # if not self.status == 'suspended':
             raise ValidationError("You cannot reinstate approval at this stage")
+
         today = timezone.now().date()
         if not self.can_reinstate and self.expiry_date >= today:
-            # if not self.status == 'suspended' and self.expiry_date >= today:
             raise ValidationError("You cannot reinstate approval at this stage")
+
         if self.status == Approval.APPROVAL_STATUS_CANCELLED:
             self.cancellation_details = ""
             self.cancellation_date = None
+
         if self.status == Approval.APPROVAL_STATUS_SURRENDERED:
             self.surrender_details = {}
+
         if self.status == Approval.APPROVAL_STATUS_SUSPENDED:
             self.suspension_details = {}
 
@@ -874,14 +955,22 @@ class Approval(LicensingModelVersioned):
         self.renewal_review_notification_sent_to_assessors = (
             False  # Should be able to renew again
         )
-        # self.suspension_details = {}
+
         self.save(version_comment="status_change: Approval reinstated")
+
+        # If any compliances or invoices were discarded when the approval was
+        # cancelled or surrendered, reinstate them
+        self.reinstate_discarded_compliances()
+        self.reinstate_discarded_invoices()
+
         send_approval_reinstate_email_notification(self, request)
+
         # Log approval action
         self.log_user_action(
             ApprovalUserAction.ACTION_REINSTATE_APPROVAL.format(self.id),
             request,
         )
+
         # Log entry for proposal
         self.current_proposal.log_user_action(
             ProposalUserAction.ACTION_REINSTATE_APPROVAL.format(
@@ -915,24 +1004,30 @@ class Approval(LicensingModelVersioned):
         surrender_date = surrender_date.date()
         if surrender_date <= today:
             if not self.status == Approval.APPROVAL_STATUS_SURRENDERED:
-                self.status = Approval.APPROVAL_STATUS_SURRENDERED
-                self.set_to_surrender = False
-                self.save()
-                send_approval_surrender_email_notification(self)
+                self.surrender(request.user)
         else:
             self.set_to_surrender = True
+            self.save()
+
+    @transaction.atomic
+    def surrender(self, user):
+        self.status = Approval.APPROVAL_STATUS_SURRENDERED
+        self.set_to_surrender = False
         self.save(version_comment="status_change: Approval surrendered")
-        # Log approval action
-        self.log_user_action(
+        self.discard_future_compliances()
+        self.discard_future_invoices()
+        send_approval_surrender_email_notification(self)
+        ApprovalUserAction.log_action(
+            self,
             ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(self.id),
-            request,
+            user.id,
         )
-        # Log entry for proposal
-        self.current_proposal.log_user_action(
+        ProposalUserAction.log_action(
+            self.current_proposal,
             ProposalUserAction.ACTION_SURRENDER_APPROVAL.format(
                 self.current_proposal.id
             ),
-            request,
+            user.id,
         )
 
     @property
@@ -1180,11 +1275,6 @@ class ApprovalTransfer(LicensingModelVersioned):
         # Create a transfer proposal with all the same data as the original lease licence proposal
         proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_TRANSFER)
 
-        # Todo: Will have to copy over any required nested objects (gross turnover years etc.) as required
-        invoicing_details = self.approval.current_proposal.invoicing_details
-        invoicing_details.pk = None
-        invoicing_details.save()
-
         # Don't use self.approval.current_proposal here as the reference
         # would be incorrect after saving transfer_proposal
         original_proposal = Proposal.objects.get(id=self.approval.current_proposal.id)
@@ -1197,7 +1287,11 @@ class ApprovalTransfer(LicensingModelVersioned):
         transfer_proposal.ind_applicant = ind_applicant
         transfer_proposal.org_applicant = org_applicant
         transfer_proposal.proposal_type = proposal_type
-        transfer_proposal.invoicing_details = invoicing_details
+
+        # Clone the invoicing details object (includes any necessary child objects)
+        transfer_proposal.invoicing_details = clone_invoicing_details(
+            self.approval.current_proposal.invoicing_details
+        )
 
         transfer_proposal.save()
 

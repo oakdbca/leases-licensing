@@ -8,7 +8,6 @@ from leaseslicensing.components.approvals.models import ApprovalUserAction
 from leaseslicensing.components.invoicing.models import (
     ChargeMethod,
     CPICalculationMethod,
-    CrownLandRentReviewDate,
     CustomCPIYear,
     FinancialMonth,
     FinancialQuarter,
@@ -197,27 +196,6 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
                 gross_turnover = month_data.get("gross_turnover", None)
                 month.gross_turnover = gross_turnover
                 month.save()
-
-
-class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
-    to_be_deleted = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CrownLandRentReviewDate
-        fields = (
-            "id",
-            "review_date",
-            "to_be_deleted",
-        )
-        extra_kwargs = {
-            "id": {
-                "read_only": False,
-                "required": False,
-            },
-        }
-
-    def get_to_be_deleted(self, instance):
-        return False
 
 
 class CustomCPIYearSerializer(serializers.ModelSerializer):
@@ -436,9 +414,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 years.append(a_year)
 
     def update(self, instance, validated_data):
-        # Not really sure the following code is needed up to instance.save()
-        # As could just call super().update(instance, validated_data) to achieve the same result?
-        # Local fields
+        # We have several writable nested fields to deal with
+        # Along with custom loggin and validation etc.
+        # thus the need to override the update method
 
         if "comment_text" in validated_data:
             # When editing from the approval details page log the reason the edit was made
@@ -479,10 +457,11 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         instance.invoicing_quarters_start_month = validated_data.get(
             "invoicing_quarters_start_month", instance.invoicing_quarters_start_month
         )
-        # FK fields
-        charge_method_changed = False
-        if instance.charge_method != validated_data.get("charge_method"):
-            charge_method_changed = True
+
+        # Writable nested fields
+        charge_method_changed = instance.charge_method != validated_data.get(
+            "charge_method"
+        )
 
         instance.charge_method = validated_data.get(
             "charge_method", instance.charge_method
@@ -490,11 +469,10 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         instance.review_repetition_type = validated_data.get(
             "review_repetition_type", instance.review_repetition_type
         )
-        invoicing_repetition_type_changed = False
-        if instance.invoicing_repetition_type != validated_data.get(
-            "invoicing_repetition_type"
-        ):
-            invoicing_repetition_type_changed = True
+        invoicing_repetition_type_changed = (
+            instance.invoicing_repetition_type
+            != validated_data.get("invoicing_repetition_type")
+        )
 
         instance.invoicing_repetition_type = validated_data.get(
             "invoicing_repetition_type", instance.invoicing_repetition_type
@@ -502,6 +480,8 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         instance.cpi_calculation_method = validated_data.get(
             "cpi_calculation_method", instance.cpi_calculation_method
         )
+
+        instance.oracle_code = validated_data.get("oracle_code", instance.oracle_code)
 
         # Update local and FK fields
         instance.save()

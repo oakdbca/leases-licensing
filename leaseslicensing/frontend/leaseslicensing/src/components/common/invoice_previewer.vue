@@ -109,6 +109,10 @@ export default {
             type: Boolean,
             required: true,
         },
+        invoicingRepetitionTypeKey: {
+            type: String,
+            required: true,
+        },
     },
     emits: ['updateDefaultInvoicingDate'],
     data: function () {

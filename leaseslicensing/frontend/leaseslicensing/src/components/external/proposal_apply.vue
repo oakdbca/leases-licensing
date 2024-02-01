@@ -59,7 +59,7 @@
                                 <li class="list-group-item">
                                     <input
                                         v-model="selectedOrganisation"
-                                        class="form-check-input me-1"
+                                        class="form-check-input me-2"
                                         type="radio"
                                         name="behalf_of_org"
                                         value="myself"
@@ -82,7 +82,7 @@
                                     >
                                         <input
                                             v-model="selectedOrganisation"
-                                            class="form-check-input me-1"
+                                            class="form-check-input me-2"
                                             type="radio"
                                             name="behalf_of_org"
                                             :value="linkedOrganisation"

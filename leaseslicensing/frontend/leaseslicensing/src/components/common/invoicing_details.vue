@@ -54,33 +54,38 @@
                         allocated
                     </div>
                     <div>
-                        If the code you need is not listed, contact a member of
-                        the 'Leases and Licensing Admin' group
+                        To add a new code please visit:
+                        <a
+                            href="/admin/leaseslicensing/oraclecode/"
+                            target="_blank"
+                            >Oracle Codes Admin</a
+                        >
                     </div>
                 </BootstrapAlert>
             </div>
 
-            <label
-                for="crown_land_rent_review_date"
-                class="col-form-label col-sm-4"
+            <label for="oracle_code" class="col-form-label col-sm-4"
                 >Receivable Activity Code</label
             >
             <div class="col-sm-8 mb-3">
                 <Multiselect
                     id="oracle_code"
                     ref="oracle_code"
-                    v-model="selectedOracleCode"
-                    label="code"
-                    track-by="id"
+                    v-model="invoicingDetailsComputed.oracle_code"
+                    :custom-label="
+                        (opt) => oracle_codes.find((x) => x.id == opt)?.code
+                    "
                     placeholder="Start Typing to Search for a Code"
-                    :options="oracle_codes"
+                    :options="oracle_codes.map((oracle_code) => oracle_code.id)"
+                    :allow-empty="false"
                     :hide-selected="true"
                     :multiple="false"
                     :searchable="true"
+                    :required="true"
                     :loading="loadingOracleCodes"
                     :disabled="false"
-                    required
-                    @change="updateOracleCode"
+                    @select="updatePreviewInvoices"
+                    @change="updatePreviewInvoices"
                 />
             </div>
         </div>
@@ -122,7 +127,10 @@
             </div>
         </div>
 
-        <div v-if="show_review_of_base_fee" class="row mb-3 pb-3 border-bottom">
+        <div
+            v-if="show_crown_land_rent_review_interval"
+            class="row mb-3 pb-3 border-bottom"
+        >
             <label class="col-form-label col-sm-4"
                 >Crown Land Rent Review</label
             >
@@ -542,7 +550,6 @@ export default {
             repetition_types: [],
             cpi_calculation_methods: [],
             oracle_codes: [],
-            selectedOracleCode: null,
             previewInvoices: null,
             loadingPreviewInvoices: false,
             loadingOracleCodes: false,
@@ -644,7 +651,7 @@ export default {
                 return true;
             return false;
         },
-        show_review_of_base_fee: function () {
+        show_crown_land_rent_review_interval: function () {
             return this.show_base_fee;
         },
         show_cpi_method: function () {
@@ -864,12 +871,6 @@ export default {
             }
             this.updatePreviewInvoices();
         },
-        updateReviewDates: function (review_dates) {
-            this.invoicingDetailsComputed = {
-                ...this.invoicingDetailsComputed,
-                crown_land_rent_review_dates: review_dates,
-            };
-        },
         updateYearsArray: function (incrementType, years_array) {
             if ('annual_increment_amount' == incrementType) {
                 this.invoicingDetailsComputed = {
@@ -1059,11 +1060,6 @@ export default {
             } catch (err) {
                 console.error({ err });
             }
-        },
-        updateOracleCode() {
-            this.invoicingDetailsComputed.oracle_code = this.selectedOracleCode
-                ? this.selectedOracleCode.id
-                : null;
         },
     },
 };
