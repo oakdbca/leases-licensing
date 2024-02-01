@@ -145,8 +145,11 @@
                             :show_related_items_tab="true"
                             :registration-of-interest="isRegistrationOfInterest"
                             :lease-licence="isLeaseLicence"
+                            :navbar-buttons-disabled="navbarButtonsDisabled"
                             @form-mounted="applicationFormMounted"
                             @update:gis-data="updateGisData"
+                            @finished-drawing="saveMapFeatures"
+                            @deleted-features="saveMapFeatures"
                         >
                             <!-- Inserted into the slot on the form.vue: Collapsible Assessor Questions -->
                             <template #slot_map_assessment_comments>
@@ -1738,6 +1741,9 @@ export default {
                 ].includes(this.proposal.processing_status_id)
             );
         },
+        navbarButtonsDisabled: function () {
+            return this.savingProposal;
+        },
     },
     watch: {},
     updated: function () {
@@ -2020,7 +2026,6 @@ export default {
                 );
             },
         save_and_continue: async function () {
-            this.savingProposal = true;
             await this.save().then(() => {
                 this.savingProposal = false;
             });
@@ -2079,8 +2084,12 @@ export default {
                     });
                 });
         },
-        save: async function (show_confirmation = true) {
+        save: async function (
+            show_confirmation = true,
+            increment_map_key = true
+        ) {
             let vm = this;
+            this.savingProposal = true;
             vm.checkAssessorData();
             try {
                 let payload = { proposal: this.proposal };
@@ -2150,7 +2159,10 @@ export default {
                     let resData = await res.json();
                     vm.proposal = Object.assign({}, resData);
                     vm.$nextTick(async () => {
-                        if (vm.$refs.application_form != undefined) {
+                        if (
+                            increment_map_key &&
+                            vm.$refs.application_form != undefined
+                        ) {
                             vm.$refs.application_form.incrementComponentMapKey();
                         }
                     });
@@ -2928,6 +2940,12 @@ export default {
                     name: value.name,
                 });
             }
+        },
+        saveMapFeatures: async function () {
+            // Save the entire proposal including the map features without reloading the map
+            await this.save(false, false).then(() => {
+                this.savingProposal = false;
+            });
         },
     },
 };

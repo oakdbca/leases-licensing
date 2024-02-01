@@ -408,7 +408,8 @@ export default {
 
         save: async function (
             withConfirm = true,
-            url = this.proposal_form_url
+            url = this.proposal_form_url,
+            increment_map_key = true
         ) {
             let vm = this;
             vm.savingProposal = true;
@@ -556,7 +557,12 @@ export default {
                 const resData = await res.json();
                 this.proposal = Object.assign({}, resData);
                 this.$nextTick(async () => {
-                    this.$refs.application_form.incrementComponentMapKey();
+                    if (
+                        increment_map_key &&
+                        vm.$refs.application_form != undefined
+                    ) {
+                        vm.$refs.application_form.incrementComponentMapKey();
+                    }
                 });
                 return resData;
             } else {
@@ -706,9 +712,8 @@ export default {
             this.proposal = Object.assign({}, data);
         },
         saveMapFeatures: function () {
-            // TODO: Save map features only, not the whole proposal
-            console.log('Saving map features');
-            this.save(false);
+            // Save the entire proposal including the map features without reloading the map
+            this.save(false, this.proposal_form_url, false);
         },
     },
 };
