@@ -227,6 +227,7 @@
                                 mode == 'draw'
                                     ? 'optional-layers-button-active'
                                     : 'optional-layers-button',
+                                navbarButtonsDisabled ? 'disabled' : '',
                             ]"
                             @click="set_mode.bind(this)('draw')"
                         >
@@ -253,6 +254,7 @@
                                     ? 'optional-layers-button-active'
                                     : 'optional-layers-button',
                                 drawable && polygonCount ? '' : 'disabled',
+                                navbarButtonsDisabled ? 'disabled' : '',
                             ]"
                             @click="set_mode.bind(this)('transform')"
                         >
@@ -300,11 +302,12 @@
                     >
                         <div
                             class="optional-layers-button btn"
-                            :class="
+                            :class="[
                                 selectedFeatureIds.length == 0
                                     ? 'disabled'
-                                    : 'btn-danger'
-                            "
+                                    : 'btn-danger',
+                                navbarButtonsDisabled ? 'disabled' : '',
+                            ]"
                             title="Delete selected features"
                             @click="removeModelFeatures()"
                         >
@@ -327,12 +330,13 @@
                     >
                         <div
                             class="optional-layers-button btn"
-                            :class="
+                            :class="[
                                 (mode !== 'draw' && hasUndo) ||
                                 (mode === 'draw' && canUndoDrawnVertex)
                                     ? ''
-                                    : 'disabled'
-                            "
+                                    : 'disabled',
+                                navbarButtonsDisabled ? 'disabled' : '',
+                            ]"
                             :title="
                                 'Undo ' +
                                 (canUndoDrawnVertex
@@ -354,12 +358,13 @@
                     >
                         <div
                             class="optional-layers-button btn"
-                            :class="
+                            :class="[
                                 (mode !== 'draw' && hasRedo) ||
                                 (mode === 'draw' && canRedoDrawnVertex)
                                     ? ''
-                                    : 'disabled'
-                            "
+                                    : 'disabled',
+                                navbarButtonsDisabled ? 'disabled' : '',
+                            ]"
                             :title="
                                 'Redo ' +
                                 (canRedoDrawnVertex
@@ -577,16 +582,17 @@
                         </div>
                     </template>
                 </div>
-                <BootstrapSpinner
-                    v-if="
+                <div
+                    v-show="
                         redirectingToModelDetails ||
                         queryingGeoserver ||
                         fetchingProposals ||
-                        loadingMap
+                        loadingMap ||
+                        savingFeatures
                     "
-                    id="map-spinner"
-                    class="text-primary"
-                />
+                >
+                    <BootstrapSpinner id="map-spinner" class="text-primary" />
+                </div>
             </div>
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
@@ -929,8 +935,24 @@ export default {
             required: false,
             default: 0, // 0 means no limit
         },
+        navbarButtonsDisabled: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
+        savingFeatures: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
     },
-    emits: ['filter-appied', 'validate-feature', 'refreshFromResponse'],
+    emits: [
+        'filter-appied',
+        'validate-feature',
+        'finished-drawing',
+        'deleted-features',
+        'refreshFromResponse',
+    ],
     data() {
         let vm = this;
         return {
@@ -1217,11 +1239,6 @@ export default {
                 );
             }
         },
-        // selectedFeatureIds: function () {
-        //     if (this.selectedFeatureIds.length == 0) {
-        //         this.errorMessageProperty(null);
-        //     }
-        // },
     },
     created: function () {
         this.fetchFilterLists();
@@ -2343,6 +2360,9 @@ export default {
                         .map((feature) => feature.getProperties().id)
                         .includes(id)
             );
+            if (features.length > 0) {
+                vm.$emit('deleted-features');
+            }
         },
         collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(
@@ -2596,6 +2616,8 @@ export default {
             vm.queryingGeoserver = false;
             vm.errorMessage = null;
             vm.drawForModel.finishDrawing();
+            vm.set_mode('layer');
+            vm.$emit('finished-drawing');
         },
         /**
          * Returns the current error message or sets it to the provided message.
@@ -2751,7 +2773,7 @@ export default {
                         }
                     });
                 if (item && item.feature) {
-                    validateFeature(item.feature, vm);
+                    vm.finishDrawing();
                 }
             } else {
                 // Nothing
@@ -2776,7 +2798,7 @@ export default {
                         }
                     });
                 if (item && item.feature) {
-                    validateFeature(item.feature, vm);
+                    vm.finishDrawing();
                 }
             } else {
                 // Nothing
