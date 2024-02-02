@@ -129,6 +129,7 @@
                             :drawable="is_internal || !leaseLicence"
                             :editable="true"
                             :navbar-buttons-disabled="navbarButtonsDisabled"
+                            :saving-features="savingInProgress"
                             level="internal"
                             :map-info-text="
                                 is_internal
@@ -448,6 +449,10 @@ export default {
             default: true,
         },
         navbarButtonsDisabled: {
+            type: Boolean,
+            default: false,
+        },
+        savingInProgress: {
             type: Boolean,
             default: false,
         },

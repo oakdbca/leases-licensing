@@ -60,6 +60,7 @@
             :registration-of-interest="registrationOfInterest"
             :lease-licence="leaseLicence"
             :navbar-buttons-disabled="navbarButtonsDisabled"
+            :saving-in-progress="savingProposal"
             @update-submit-text="updateSubmitText"
             @refresh-from-response="refreshFromResponse"
             @finished-drawing="saveMapFeatures"

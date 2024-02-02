@@ -162,6 +162,7 @@
                                 :drawable="true"
                                 :editable="true"
                                 :navbar-buttons-disabled="processing"
+                                :saving-features="processing"
                                 level="internal"
                                 @validate-feature="validateFeature.bind(this)()"
                                 @refresh-from-response="refreshFromResponse"

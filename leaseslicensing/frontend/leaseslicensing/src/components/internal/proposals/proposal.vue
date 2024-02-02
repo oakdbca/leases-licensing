@@ -146,6 +146,7 @@
                             :registration-of-interest="isRegistrationOfInterest"
                             :lease-licence="isLeaseLicence"
                             :navbar-buttons-disabled="navbarButtonsDisabled"
+                            :saving-in-progress="savingProposal"
                             @form-mounted="applicationFormMounted"
                             @update:gis-data="updateGisData"
                             @finished-drawing="saveMapFeatures"

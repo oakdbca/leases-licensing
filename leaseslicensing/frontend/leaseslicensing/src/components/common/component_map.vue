@@ -582,16 +582,17 @@
                         </div>
                     </template>
                 </div>
-                <BootstrapSpinner
-                    v-if="
+                <div
+                    v-show="
                         redirectingToModelDetails ||
                         queryingGeoserver ||
                         fetchingProposals ||
-                        loadingMap
+                        loadingMap ||
+                        savingFeatures
                     "
-                    id="map-spinner"
-                    class="text-primary"
-                />
+                >
+                    <BootstrapSpinner id="map-spinner" class="text-primary" />
+                </div>
             </div>
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
@@ -935,6 +936,11 @@ export default {
             default: 0, // 0 means no limit
         },
         navbarButtonsDisabled: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
+        savingFeatures: {
             type: Boolean,
             required: false,
             default: false,
