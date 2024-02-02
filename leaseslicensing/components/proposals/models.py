@@ -4091,7 +4091,10 @@ class ProposalGeometry(models.Model):
         "self", on_delete=models.SET_NULL, blank=True, null=True
     )
     drawn_by = models.IntegerField(blank=True, null=True)  # EmailUserRO
-    source = models.CharField(max_length=255, blank=True)
+    source_type = models.CharField(
+        max_length=255, blank=True, choices=settings.SOURCE_CHOICES
+    )
+    source_name = models.CharField(max_length=255, blank=True)
     locked = models.BooleanField(default=False)
 
     class Meta:
