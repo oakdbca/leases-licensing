@@ -25,8 +25,7 @@
                         aria-selected="true"
                     >
                         <template v-if="is_external"
-                            ><span class="fw-bold">Step 1:</span> Provide
-                            Proponent Information</template
+                            >Provide Proponent Information</template
                         >
                         <template v-else>Proponent</template>
                     </button>
@@ -43,8 +42,7 @@
                         @click="toggleComponentMapOn"
                     >
                         <template v-if="is_external"
-                            ><span class="fw-bold">Step 2:</span>
-                            <span v-if="!is_internal && leaseLicence">
+                            ><span v-if="!is_internal && leaseLicence">
                                 View Land Area (Map)</span
                             >
                             <span v-else> Indicate Land Area (Map)</span>
@@ -63,8 +61,7 @@
                         aria-selected="false"
                     >
                         <template v-if="is_external"
-                            ><span class="fw-bold">Step 3:</span> Provide
-                            Further Details
+                            >Provide Further Details
                         </template>
                         <template v-else>Details</template>
                     </button>
@@ -128,6 +125,8 @@
                             :filterable="false"
                             :drawable="is_internal || !leaseLicence"
                             :editable="true"
+                            :navbar-buttons-disabled="navbarButtonsDisabled"
+                            :saving-features="savingInProgress"
                             level="internal"
                             :map-info-text="
                                 is_internal
@@ -137,7 +136,9 @@
                                       : 'Use the <b>draw</b> tool to draw the area of the proposal you are interested in on the map.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the proposal and continue at a later time.'
                             "
                             @validate-feature="validateFeature.bind(this)()"
-                            @refreshFromResponse="refreshFromResponse"
+                            @refresh-from-response="refreshFromResponse"
+                            @finished-drawing="$emit('finished-drawing')"
+                            @deleted-features="$emit('deleted-features')"
                         />
                     </FormSection>
                 </div>
@@ -444,8 +445,22 @@ export default {
             type: Boolean,
             default: true,
         },
+        navbarButtonsDisabled: {
+            type: Boolean,
+            default: false,
+        },
+        savingInProgress: {
+            type: Boolean,
+            default: false,
+        },
     },
-    emits: ['refreshFromResponse', 'formMounted', 'update:GisData'],
+    emits: [
+        'refreshFromResponse',
+        'formMounted',
+        'update:GisData',
+        'finished-drawing',
+        'deleted-features',
+    ],
     data: function () {
         return {
             can_modify: true,
