@@ -25,8 +25,7 @@
                         aria-selected="true"
                     >
                         <template v-if="is_external"
-                            ><span class="fw-bold">Step 1:</span> Provide
-                            Proponent Information</template
+                            >Provide Proponent Information</template
                         >
                         <template v-else>Proponent</template>
                     </button>
@@ -43,8 +42,7 @@
                         @click="toggleComponentMapOn"
                     >
                         <template v-if="is_external"
-                            ><span class="fw-bold">Step 2:</span>
-                            <span v-if="!is_internal && leaseLicence">
+                            ><span v-if="!is_internal && leaseLicence">
                                 View Land Area (Map)</span
                             >
                             <span v-else> Indicate Land Area (Map)</span>
@@ -63,8 +61,7 @@
                         aria-selected="false"
                     >
                         <template v-if="is_external"
-                            ><span class="fw-bold">Step 3:</span> Provide
-                            Further Details
+                            >Provide Further Details
                         </template>
                         <template v-else>Details</template>
                     </button>
