@@ -1233,11 +1233,6 @@ export default {
                 );
             }
         },
-        // selectedFeatureIds: function () {
-        //     if (this.selectedFeatureIds.length == 0) {
-        //         this.errorMessageProperty(null);
-        //     }
-        // },
     },
     created: function () {
         this.fetchFilterLists();
