@@ -388,9 +388,7 @@
                     invoicingDetailsComputed.invoicing_repetition_type
                 "
                 :invoicing-repetition-type-key="
-                    getInvoicingRepetitionTypeKeyById(
-                        invoicingDetailsComputed.invoicing_repetition_type
-                    )
+                    invoicingDetailsComputed.invoicing_repetition_type_key
                 "
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
@@ -462,15 +460,9 @@
                 :invoicing-details="invoicingDetailsComputed"
                 :start-date="startDate"
                 :expiry-date="expiryDate"
-                :charge-method-key="
-                    getChargeMethodKeyById(
-                        invoicingDetailsComputed.charge_method
-                    )
-                "
+                :charge-method-key="invoicingDetailsComputed.charge_method_key"
                 :invoicing-repetition-type-key="
-                    getInvoicingRepetitionTypeKeyById(
-                        invoicingDetailsComputed.invoicing_repetition_type
-                    )
+                    invoicingDetailsComputed.invoicing_repetition_type_key
                 "
                 :show-past-invoices="context == 'Proposal'"
                 :loading-preview-invoices="loadingPreviewInvoices"
@@ -577,20 +569,6 @@ export default {
             return (
                 this.proposalTypeCode == constants.PROPOSAL_TYPE.MIGRATION.code
             );
-        },
-        financialYearRows: function () {
-            const rows = [];
-            for (let i = 0; i < this.financialYearsIncluded.length; i++) {
-                let financialYear = this.financialYearsIncluded[i];
-                let year = financialYear.split('-')[1];
-                rows.push({
-                    year: year,
-                    financial_year: financialYear,
-                    label: '',
-                    cpi: '',
-                });
-            }
-            return rows;
         },
         show_oracle_code: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -850,14 +828,11 @@ export default {
             );
         },
         onChargeMethodChange: function () {
-            const chargeMethodKey = this.getChargeMethodKeyById(
-                this.invoicingDetailsComputed.charge_method
-            );
             if (
                 [
                     'percentage_of_gross_turnover',
                     'percentage_of_gross_turnover_in_advance',
-                ].includes(chargeMethodKey)
+                ].includes(this.invoicingDetailsComputed.charge_method_key)
             ) {
                 this.invoicingDetailsComputed.invoicing_repetition_type = 2;
             } else {
@@ -931,20 +906,6 @@ export default {
             if (charge_method) return charge_method.id;
             else return 0;
         },
-        getChargeMethodKeyById: function (id) {
-            let charge_method = this.charge_methods.find(
-                (charge_method) => charge_method.id === id
-            );
-            if (charge_method) return charge_method.key;
-            else return '';
-        },
-        getInvoicingRepetitionTypeKeyById: function (id) {
-            let repetition_type = this.repetition_types.find(
-                (repetition_type) => repetition_type.id === id
-            );
-            if (repetition_type) return repetition_type.key;
-            else return '';
-        },
         fetchChargeMethods: async function () {
             let vm = this;
             try {
@@ -966,10 +927,6 @@ export default {
                 let repetition_types = await res.json();
                 vm.repetition_types = repetition_types;
                 vm.$nextTick(function () {
-                    const chargeMethodKey = this.getChargeMethodKeyById(
-                        this.invoicingDetailsComputed.charge_method
-                    );
-
                     if (!vm.invoicingDetailsComputed.review_once_every) {
                         vm.invoicingDetailsComputed.review_once_every = 5;
                     }
@@ -980,7 +937,8 @@ export default {
                         vm.invoicingDetailsComputed.review_repetition_type = 1;
                     }
                     if (
-                        'percentage_of_gross_turnover' != chargeMethodKey &&
+                        'percentage_of_gross_turnover' !=
+                            this.invoicingDetailsComputed.charge_method_key &&
                         !vm.invoicingDetailsComputed.invoicing_repetition_type
                     ) {
                         vm.invoicingDetailsComputed.invoicing_repetition_type = 1;
