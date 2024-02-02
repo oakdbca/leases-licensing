@@ -422,6 +422,7 @@ class CompetitiveProcessGeometry(models.Model):
     polygon = PolygonField(srid=4326, blank=True, null=True)
     intersects = models.BooleanField(default=False)
     drawn_by = models.IntegerField(blank=True, null=True)  # EmailUserRO
+    source = models.CharField(max_length=255, blank=True)
     locked = models.BooleanField(default=False)
 
     class Meta:
