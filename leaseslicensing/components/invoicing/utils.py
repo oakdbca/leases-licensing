@@ -488,8 +488,6 @@ def clone_invoicing_details(
     # Clear out prefetched items cache etc.
     invoicing_details.refresh_from_db()
 
-    # This object will still have child records that have the same ids as the original
-    # so we need to clone those as well
     if not invoicing_details.charge_method:
         logger.warning(
             f"Invoicing details {invoicing_details} has no charge method so cannot clone. Returning original object."

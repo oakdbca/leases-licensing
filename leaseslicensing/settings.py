@@ -86,6 +86,9 @@ else:
     )
 
 REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_RENDERER_CLASSES": rest_framework_renderer_classes,
     "DEFAULT_FILTER_BACKENDS": (
         "rest_framework_datatables.filters.DatatablesFilterBackend",
@@ -504,6 +507,16 @@ REPETITION_TYPES = (
 )
 
 LATEST_REFERRAL_COUNT = 5
+
+SOURCE_CHOICE_APPLICANT = "proponent"
+SOURCE_CHOICE_ASSESSOR = "assessor"
+SOURCE_CHOICE_COMPETITIVE_PROCESS_EDITOR = "competitive_process_editor"
+SOURCE_CHOICES = (
+    (SOURCE_CHOICE_APPLICANT, "Proponent"),
+    (SOURCE_CHOICE_ASSESSOR, "Assessor"),
+    (SOURCE_CHOICE_COMPETITIVE_PROCESS_EDITOR, "Competitive Process Editor"),
+)
+
 
 APPROVE_LEASE_LICENCE = "approve_lease_licence"
 APPROVE_COMPETITIVE_PROCESS = "approve_competitive_process"

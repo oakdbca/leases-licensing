@@ -2432,7 +2432,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"Unable to transfer lease license {approval} as it has outstanding invoices."
                 )
 
+            if approval.has_missing_gross_turnover_entries:
+                raise ValidationError(
+                    f"Unable to transfer lease license {approval} as it has missing gross turnover entries."
+                )
+
             # Discard any future compliances and invoices for the current holder of the approval
+            # as new invoices and compliances will be generated for the new holder
             approval.discard_future_compliances()
             approval.discard_future_invoices()
 
@@ -4085,6 +4091,10 @@ class ProposalGeometry(models.Model):
         "self", on_delete=models.SET_NULL, blank=True, null=True
     )
     drawn_by = models.IntegerField(blank=True, null=True)  # EmailUserRO
+    source_type = models.CharField(
+        max_length=255, blank=True, choices=settings.SOURCE_CHOICES
+    )
+    source_name = models.CharField(max_length=255, blank=True)
     locked = models.BooleanField(default=False)
 
     class Meta:

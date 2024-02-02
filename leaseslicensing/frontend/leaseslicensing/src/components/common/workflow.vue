@@ -573,11 +573,6 @@ export default {
                                     ROLES.GROUP_NAME_ASSESSOR.ID,
                                     ROLES.REFERRAL.ID,
                                 ],
-                                // When proposal status is 'with_referral', 'assessor'/'referral' can see this button
-                                [PROPOSAL_STATUS.WITH_REFERRAL.ID]: [
-                                    ROLES.GROUP_NAME_ASSESSOR.ID,
-                                    ROLES.REFERRAL.ID,
-                                ],
                             },
                         };
                         let show =

@@ -396,6 +396,26 @@ class InvoicingDetails(BaseModel):
         return self.invoicing_periods_next_start_date is not None
 
     @property
+    def has_missing_gross_turnover_entries(self):
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            return self.gross_turnover_percentages.filter(
+                estimated_gross_turnover__isnull=False,
+                gross_turnover__isnull=True,
+            ).exists()
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+        ):
+            for gtp in self.gross_turnover_percentages.all():
+                if gtp.financial_year_has_passed and gtp.gross_turnover is None:
+                    return True
+
+            return False
+
+    @property
     def invoiced_up_to(self):
         # We return this if no invoices have been generated yet
         day_before_start_date = self.proposal.approval.start_date - relativedelta(
@@ -1388,6 +1408,10 @@ class PercentageOfGrossTurnover(BaseModel):
     @property
     def financial_year(self):
         return f"{self.year-1}-{self.year}"
+
+    @property
+    def financial_year_has_passed(self):
+        return utils.financial_year_has_passed(self.financial_year)
 
     @property
     def discrepency(self):

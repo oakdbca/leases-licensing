@@ -218,7 +218,7 @@ class ApprovalDocumentGenerator:
 
         file = File(buffer)
         filename_prefix = filename_prefix or ""
-        reason = kwargs.get("reason", "new").lower()
+        reason = kwargs.get("reason", ApprovalDocument.REASON_NEW).lower()
 
         # Validate reason
         reasons = {r[0]: r[1] for r in ApprovalDocument.REASON_CHOICES}
@@ -234,10 +234,12 @@ class ApprovalDocumentGenerator:
 
         if not created:
             # If the document already exists, update the reason unless it is 'new'
-            if reason == "new":
-                raise AttributeError(
-                    f"Reason cannot be 'new'. ApprovalDocument {document.name} already exists."
+            if reason == ApprovalDocument.REASON_NEW:
+                logger.warning(
+                    f"Reason cannot be '{ApprovalDocument.REASON_NEW}' as ApprovalDocument {document.name} "
+                    f"already exists. Changing to '{ApprovalDocument.REASON_AMENDED}'."
                 )
+                reason = ApprovalDocument.REASON_AMENDED
             document.reason = reason
 
         # Save the actual file object

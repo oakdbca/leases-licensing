@@ -207,7 +207,13 @@ def save_assessor_data(proposal, request, viewset):
     # Save geometry
     geometry_data = request.data.get("proposalgeometry", None)
     if geometry_data:
-        save_geometry(request, proposal, "proposals", geometry_data)
+        save_geometry(
+            request,
+            proposal,
+            "proposals",
+            geometry_data,
+            source_type=settings.SOURCE_CHOICE_ASSESSOR,
+        )
 
     populate_gis_data(proposal, "proposalgeometry")
 

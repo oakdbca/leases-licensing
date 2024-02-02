@@ -1166,10 +1166,8 @@ export default {
                                         })
                                         .catch((error) => {
                                             swal.fire(
-                                                'Contact Accept',
-                                                'There was an error accepting ' +
-                                                    name +
-                                                    '.',
+                                                'Linking Request Failed',
+                                                error,
                                                 'error'
                                             );
                                             console.error(error);

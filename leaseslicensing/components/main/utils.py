@@ -17,13 +17,9 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from leaseslicensing.components.competitive_processes.models import (
-    CompetitiveProcessParty,
-)
 from leaseslicensing.components.tenure.models import (
     LGA,
     Act,
@@ -70,57 +66,6 @@ def _get_params(
         "maxFeatures": 50000,
         "outputFormat": "application/json",
     }
-
-
-def get_polygon_source(geometry_obj):
-    from leaseslicensing.components.competitive_processes.models import (
-        CompetitiveProcessGeometry,
-    )
-    from leaseslicensing.components.proposals.models import ProposalGeometry
-
-    source = ""
-
-    if not geometry_obj.drawn_by:
-        source = "Unknown"
-    elif isinstance(geometry_obj, ProposalGeometry) and geometry_obj.drawn_by in [
-        geometry_obj.proposal.ind_applicant,
-    ]:
-        # Polygon drawn by individual applicant
-        source = "Applicant"
-    elif (
-        isinstance(geometry_obj, ProposalGeometry)
-        and geometry_obj.proposal.org_applicant
-        and geometry_obj.drawn_by
-        in geometry_obj.proposal.org_applicant.contacts.all().values_list(
-            "user", flat=True
-        )
-    ):
-        # Polygon drawn by organisation applicant
-        source = "Applicant"
-    elif isinstance(
-        geometry_obj, CompetitiveProcessGeometry
-    ) and geometry_obj.drawn_by in (
-        CompetitiveProcessParty.objects.filter(
-            competitive_process_id=geometry_obj.competitive_process.id
-        )
-        .exclude(person_id__isnull=True)
-        .values_list("person_id", flat=True)
-    ):
-        source = "Applicant"
-    else:
-        assessor_group = SystemGroup.objects.get(name=settings.GROUP_NAME_ASSESSOR)
-        if geometry_obj.drawn_by in assessor_group.get_system_group_member_ids():
-            source = "Assessor"
-        competitive_process_editor_group = SystemGroup.objects.get(
-            name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR
-        )
-        if (
-            geometry_obj.drawn_by
-            in competitive_process_editor_group.get_system_group_member_ids()
-        ):
-            source = "Competitive Process Editor"
-
-    return source
 
 
 def get_dbca_lands_and_waters_geojson():
@@ -279,7 +224,14 @@ def multipolygon_intersects_with_layer(multipolygon, layer_name):
     return True
 
 
-def save_geometry(request, instance, component, geometry_data, foreign_key_field=None):
+def save_geometry(
+    request,
+    instance,
+    component,
+    geometry_data,
+    foreign_key_field=None,
+    source_type=settings.SOURCE_CHOICE_APPLICANT,
+):
     instance_name = instance._meta.model.__name__
     logger.info(f"\n\n\nSaving {instance_name} geometry")
 
@@ -338,6 +290,7 @@ def save_geometry(request, instance, component, geometry_data, foreign_key_field
             sys.modules[f"leaseslicensing.components.{component}.serializers"],
             f"{instance_name}GeometrySaveSerializer",
         )
+        geometry_data["source_type"] = source_type
         if feature.get("id"):
             logger.info(
                 f"Updating existing {instance_name} geometry: {feature.get('id')} for Proposal: {instance}"
@@ -350,6 +303,12 @@ def save_geometry(request, instance, component, geometry_data, foreign_key_field
                 )
                 continue
             geometry_data["drawn_by"] = geometry.drawn_by
+            source_user = EmailUser.objects.get(id=geometry.drawn_by)
+            geometry_data["source_name"] = (
+                geometry.source_name
+                if geometry.source_name
+                else source_user.get_full_name()
+            )
             geometry_data["locked"] = (
                 action in ["submit"]
                 and geometry.drawn_by == request.user.id
@@ -359,6 +318,7 @@ def save_geometry(request, instance, component, geometry_data, foreign_key_field
         else:
             logger.info(f"Creating new geometry for {instance_name}: {instance}")
             geometry_data["drawn_by"] = request.user.id
+            geometry_data["source_name"] = request.user.get_full_name()
             geometry_data["locked"] = action in ["submit"]
             serializer = InstanceGeometrySaveSerializer(data=geometry_data)
 

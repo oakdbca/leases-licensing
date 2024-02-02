@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import CharField, F, Q, Value
 from rest_framework import views
@@ -236,6 +237,7 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset, Select2ListMixin):
                 "competitive_processes",
                 competitive_process_geometry_data,
                 foreign_key_field="competitive_process",
+                source_type=settings.SOURCE_CHOICE_COMPETITIVE_PROCESS_EDITOR,
             )
 
             populate_gis_data(
