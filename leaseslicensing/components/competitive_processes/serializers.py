@@ -27,10 +27,7 @@ from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
-from leaseslicensing.components.main.utils import (
-    get_polygon_source,
-    get_secure_file_url,
-)
+from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.components.proposals.models import Proposal
 from leaseslicensing.components.proposals.serializers import (
     ProposalGeometrySerializer,
@@ -283,7 +280,10 @@ class CompetitiveProcessGeometrySaveSerializer(GeoFeatureModelSerializer):
         read_only_fields = ("id",)
 
     def get_polygon_source(self, obj):
-        return get_polygon_source(obj)
+        polygon_source = f"{obj.get_source_type_display()}"
+        if obj.source_name:
+            polygon_source += f" ({obj.source_name})"
+        return polygon_source
 
 
 class CompetitiveProcessIdentifierSerializer(serializers.ModelSerializer):

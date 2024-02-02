@@ -17,10 +17,7 @@ from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
-from leaseslicensing.components.main.utils import (
-    get_polygon_source,
-    get_secure_file_url,
-)
+from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.proposals.models import (
@@ -115,6 +112,7 @@ class ProposalGeometrySerializer(GeoFeatureModelSerializer):
     proposal_id = serializers.IntegerField(write_only=True, required=False)
     polygon_source = serializers.SerializerMethodField()
     proposal_copied_from = serializers.SerializerMethodField(read_only=True)
+    polygon_source = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProposalGeometry
@@ -133,7 +131,10 @@ class ProposalGeometrySerializer(GeoFeatureModelSerializer):
         read_only_fields = ("id",)
 
     def get_polygon_source(self, obj):
-        return get_polygon_source(obj)
+        polygon_source = f"{obj.get_source_type_display()}"
+        if obj.source_name:
+            polygon_source += f" ({obj.source_name})"
+        return polygon_source
 
     def get_proposal_copied_from(self, obj):
         if obj.copied_from:
