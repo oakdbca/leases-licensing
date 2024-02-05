@@ -1103,7 +1103,7 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
             return issue_date + relativedelta(months=3)
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
-            return issue_date + relativedelta(months=1)
+            return issue_date + relativedelta(months=self.invoicing_once_every)
 
     @transaction.atomic
     def process_gross_turnover_invoices(self):
