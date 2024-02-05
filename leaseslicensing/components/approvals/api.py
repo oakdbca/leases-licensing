@@ -5,12 +5,14 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import CharField, F, Q, Value
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 from rest_framework_datatables.renderers import DatatablesRenderer
 from reversion.errors import RevertError
@@ -743,6 +745,13 @@ class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
         return Response(serializer.data)
 
 
+class CheckRefereeEmailThrottle(UserRateThrottle):
+    if settings.DEBUG:
+        rate = "2000/day"
+    else:
+        rate = "4/hour"
+
+
 class ApprovalTransferViewSet(viewsets.ModelViewSet):
     queryset = ApprovalTransfer.objects.all()
     serializer_class = ApprovalTransferSerializer
@@ -809,3 +818,31 @@ class ApprovalTransferViewSet(viewsets.ModelViewSet):
         instance.cancel(request.user)
         serializer = ApprovalTransferSerializer(instance)
         return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+        throttle_classes=[CheckRefereeEmailThrottle],
+    )
+    @basic_exception_handler
+    def check_transferee_email(self, request, *args, **kwargs):
+        self.get_object()
+        logger.debug(request.data)
+        transferee_email = request.data.get("transferee_email", None)
+        if not transferee_email:
+            raise serializers.ValidationError("transferee_email not provided")
+        try:
+            emailuser = EmailUser.objects.get(email=transferee_email)
+        except EmailUser.DoesNotExist:
+            return Response({"email": transferee_email, "exists": False})
+
+        return Response(
+            {
+                "transferee": emailuser.id,
+                "transferee_name": emailuser.get_full_name(),
+                "email": transferee_email,
+                "exists": True,
+            }
+        )

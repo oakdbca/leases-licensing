@@ -113,7 +113,12 @@
                             index="fs-details-invoice"
                         >
                             <div class="container">
-                                <form>
+                                <form
+                                    id="transferee-form"
+                                    class="needs-validation"
+                                    novalidate
+                                    @submit.prevent="validateForm"
+                                >
                                     <div class="mb-3 row">
                                         <label
                                             for="inputName"
@@ -196,25 +201,93 @@
                                             />
                                         </div>
                                     </div>
-                                    <div
+                                    <template
                                         v-if="
                                             approval.active_transfer
                                                 .transferee_type == 'individual'
                                         "
-                                        class="row mb-3"
                                     >
-                                        <div class="col-3">
-                                            Select Individual
-                                        </div>
-                                        <div class="col-5">
-                                            <select
-                                                id="search"
-                                                ref="search"
-                                                class="form-select"
-                                                placeholder="Start typing the individual's name or email"
-                                            />
-                                        </div>
-                                    </div>
+                                        <template
+                                            v-if="
+                                                approval.active_transfer
+                                                    .transferee
+                                            "
+                                        >
+                                            <div class="row mb-3">
+                                                <div class="col-3">
+                                                    Selected Transferee
+                                                </div>
+                                                <div class="col-5">
+                                                    <span
+                                                        class="badge bg-primary p-2 fw-bold me-2"
+                                                    >
+                                                        {{
+                                                            approval
+                                                                .active_transfer
+                                                                .transferee_name
+                                                        }}
+                                                        ({{
+                                                            transfereeEmail
+                                                        }})</span
+                                                    >
+                                                    <a
+                                                        href="#"
+                                                        @click.prevent="
+                                                            changeTransferee
+                                                        "
+                                                        >Change Transferee
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template v-else>
+                                            <div class="row mb-3">
+                                                <div class="col-3">
+                                                    Enter Transferee's Email
+                                                </div>
+                                                <div class="col-5">
+                                                    <input
+                                                        id="transferee-email"
+                                                        v-model="
+                                                            transfereeEmail
+                                                        "
+                                                        class="form-control"
+                                                        type="email"
+                                                        required
+                                                    />
+                                                    <div
+                                                        class="invalid-feedback"
+                                                    >
+                                                        Please provide a valid
+                                                        email address.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-3">&nbsp;</div>
+                                                <div class="col-9">
+                                                    <BootstrapAlert>
+                                                        Enter the exact email
+                                                        address the transferee
+                                                        used to create their
+                                                        leases and licensing
+                                                        account.
+                                                    </BootstrapAlert>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-3">&nbsp;</div>
+                                                <div class="col-5">
+                                                    <button
+                                                        class="btn btn-primary"
+                                                    >
+                                                        Submit
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
+
                                     <div class="row mb-3">
                                         <BootstrapAlert
                                             icon="exclamation-triangle-fill"
@@ -414,6 +487,7 @@ export default {
             approval: null,
             searchApiEndpoint: api_endpoints.organisation_lookup,
             searchPlaceholder: 'Start typing the Organisation Name or ABN',
+            transfereeEmail: '',
             selectedTransferee: null,
             errors: null,
         };
@@ -540,12 +614,16 @@ export default {
             }
         },
         transfereeTypeChanged: function () {
-            this.setPlaceholderAndApiEndpoint();
-            setTimeout(() => {
-                this.initialiseSearch();
-                $('#search').select2('open');
-                this.resetTransferee();
-            }, 200);
+            if (this.approval.active_transfer.transferee_type == 'individual') {
+                $('#transferee-email').focus();
+            } else {
+                this.setPlaceholderAndApiEndpoint();
+                setTimeout(() => {
+                    this.initialiseSearch();
+                    $('#search').select2('open');
+                    this.resetTransferee();
+                }, 200);
+            }
         },
         initialiseSearch: function () {
             let vm = this;
@@ -600,6 +678,83 @@ export default {
         resetTransferee: function () {
             this.approval.active_transfer.transferee = null;
             this.approval.active_transfer.transferee_name = '';
+        },
+        changeTransferee: function () {
+            this.transfereeEmail = '';
+            this.resetTransferee();
+            this.$nextTick(() => {
+                $('#transferee-email').focus();
+            });
+        },
+        validateForm: function () {
+            let vm = this;
+            var form = document.getElementById('transferee-form');
+
+            if (form.checkValidity()) {
+                vm.checkTransfereeEmail();
+            } else {
+                form.classList.add('was-validated');
+                $('#transferee-form').find(':invalid').first().focus();
+            }
+
+            return false;
+        },
+        checkTransfereeEmail: function () {
+            this.errors = null;
+            fetch(
+                helpers.add_endpoint_join(
+                    api_endpoints.approval_transfers,
+                    this.approval.active_transfer.id
+                ) + 'check_transferee_email/',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        transferee_email: this.transfereeEmail,
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            )
+                .then(async (response) => {
+                    if (response.ok) {
+                        const responseJSON = await response.json();
+                        if (responseJSON.exists) {
+                            this.approval.active_transfer.transferee =
+                                responseJSON.transferee;
+                            this.approval.active_transfer.transferee_name =
+                                responseJSON.transferee_name;
+                            this.selectedTransferee =
+                                responseJSON.transferee_name;
+                        } else {
+                            swal.fire({
+                                title: 'Transferee Not Found',
+                                text: `An account with email address ${this.transfereeEmail} does not exist in our system. \
+                                Please double check with the transferee that you are using the correct email address.`,
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                didClose: () => {
+                                    this.$nextTick(() => {
+                                        this.$nextTick(() => {
+                                            $('#transferee-email').focus();
+                                        });
+                                    });
+                                },
+                            });
+                        }
+                    } else {
+                        const responseJSON = await response.json();
+                        this.errors = responseJSON.errors;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        console.error(this.errors);
+                    }
+                })
+                .catch((error) => {
+                    console.error(`Error checking referee email: ${error}`);
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
         },
         cancelApprovalTransfer: function () {
             this.loading = true;
@@ -772,5 +927,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss" scoped></style>

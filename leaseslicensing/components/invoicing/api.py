@@ -14,7 +14,7 @@ from ledger_api_client.utils import generate_payment_session
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 from rest_framework_datatables.filters import DatatablesFilterBackend
 
@@ -328,7 +328,7 @@ class CPICalculationMethodViewSet(
 
 
 class PayInvoiceSuccessCallbackView(APIView):
-    throttle_classes = [AnonRateThrottle]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
     @transaction.atomic
     def get(self, request, uuid, format=None):
