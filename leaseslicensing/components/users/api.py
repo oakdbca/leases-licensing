@@ -164,6 +164,7 @@ class UserViewSet(UserActionLoggingViewset):
 
     queryset = EmailUser.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsInternal]
 
     def get_serializer_class(self):
         if not is_internal(self.request):
