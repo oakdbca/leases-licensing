@@ -160,6 +160,8 @@ class UserListFilterView(generics.ListAPIView):
 
 
 class UserViewSet(UserActionLoggingViewset):
+    """TODO: Make sure to do a full security audit on this viewset"""
+
     queryset = EmailUser.objects.all()
     serializer_class = UserSerializer
 
@@ -197,6 +199,7 @@ class UserViewSet(UserActionLoggingViewset):
             "GET",
         ],
         detail=False,
+        permission_classes=[IsInternal],
     )
     def person_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")

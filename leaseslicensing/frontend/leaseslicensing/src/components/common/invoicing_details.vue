@@ -25,7 +25,7 @@
                                 charge_method.id !=
                                     invoicingDetailsComputed.charge_method
                             "
-                            @change="onChargeMethodChange"
+                            @change="onChargeMethodChange(charge_method)"
                         />
                         <label
                             :for="charge_method.key"
@@ -300,9 +300,12 @@
                             max="6"
                             step="1"
                             class="form-control"
+                            :data-previous-value="
+                                invoicing_once_every_previous_value
+                            "
                             :readonly="invoicing_once_every_readonly"
                             required
-                            @change="updatePreviewInvoices"
+                            @change="updateInvoicingOnceEvery"
                         />
                     </div>
                     <div class="">
@@ -388,9 +391,7 @@
                     invoicingDetailsComputed.invoicing_repetition_type
                 "
                 :invoicing-repetition-type-key="
-                    getInvoicingRepetitionTypeKeyById(
-                        invoicingDetailsComputed.invoicing_repetition_type
-                    )
+                    invoicingDetailsComputed.invoicing_repetition_type_key
                 "
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
@@ -462,15 +463,9 @@
                 :invoicing-details="invoicingDetailsComputed"
                 :start-date="startDate"
                 :expiry-date="expiryDate"
-                :charge-method-key="
-                    getChargeMethodKeyById(
-                        invoicingDetailsComputed.charge_method
-                    )
-                "
+                :charge-method-key="invoicingDetailsComputed.charge_method_key"
                 :invoicing-repetition-type-key="
-                    getInvoicingRepetitionTypeKeyById(
-                        invoicingDetailsComputed.invoicing_repetition_type
-                    )
+                    invoicingDetailsComputed.invoicing_repetition_type_key
                 "
                 :show-past-invoices="context == 'Proposal'"
                 :loading-preview-invoices="loadingPreviewInvoices"
@@ -553,6 +548,7 @@ export default {
             previewInvoices: null,
             loadingPreviewInvoices: false,
             loadingOracleCodes: false,
+            invoicing_once_every_previous_value: 1,
         };
     },
     computed: {
@@ -578,56 +574,52 @@ export default {
                 this.proposalTypeCode == constants.PROPOSAL_TYPE.MIGRATION.code
             );
         },
-        financialYearRows: function () {
-            const rows = [];
-            for (let i = 0; i < this.financialYearsIncluded.length; i++) {
-                let financialYear = this.financialYearsIncluded[i];
-                let year = financialYear.split('-')[1];
-                rows.push({
-                    year: year,
-                    financial_year: financialYear,
-                    label: '',
-                    cpi: '',
-                });
-            }
-            return rows;
-        },
         show_oracle_code: function () {
-            if (this.invoicingDetails && this.invoicingDetails.charge_method)
+            if (
+                this.invoicingDetails &&
+                this.invoicingDetails.charge_method_key
+            )
                 if (
-                    this.invoicingDetails.charge_method !=
-                    this.getChargeMethodIdByKey('no_rent_or_licence_charge')
+                    this.invoicingDetails.charge_method_key !=
+                    constants.CHARGE_METHODS.NO_RENT_OR_LICENCE_CHARGE.ID
                 )
                     return true;
             return false;
         },
         show_once_off_charge_amount: function () {
-            if (this.invoicingDetails && this.invoicingDetails.charge_method)
+            if (
+                this.invoicingDetails &&
+                this.invoicingDetails.charge_method_key
+            )
                 if (
-                    this.invoicingDetails.charge_method ===
-                    this.getChargeMethodIdByKey('once_off_charge')
+                    this.invoicingDetails.charge_method_key ===
+                    constants.CHARGE_METHODS.ONCE_OFF_CHARGE.ID
                 )
                     return true;
             return false;
         },
         show_fixed_annual_increment: function () {
-            if (this.invoicingDetails && this.invoicingDetails.charge_method)
+            if (
+                this.invoicingDetails &&
+                this.invoicingDetails.charge_method_key
+            )
                 if (
-                    this.invoicingDetails.charge_method ===
-                    this.getChargeMethodIdByKey(
-                        'base_fee_plus_fixed_annual_increment'
-                    )
+                    this.invoicingDetails.charge_method_key ===
+                    constants.CHARGE_METHODS
+                        .BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT.ID
                 )
                     return true;
             return false;
         },
         show_fixed_annual_percentage: function () {
-            if (this.invoicingDetails && this.invoicingDetails.charge_method)
+            if (
+                this.invoicingDetails &&
+                this.invoicingDetails.charge_method_key
+            )
                 if (
-                    this.invoicingDetails.charge_method ===
-                    this.getChargeMethodIdByKey(
-                        'base_fee_plus_fixed_annual_percentage'
-                    )
+                    this.invoicingDetails.charge_method_key ===
+                    constants.CHARGE_METHODS
+                        .BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE.ID
                 )
                     return true;
             return false;
@@ -637,16 +629,10 @@ export default {
                 this.show_fixed_annual_increment ||
                 this.show_fixed_annual_percentage ||
                 (this.invoicingDetails &&
-                    this.invoicingDetails.charge_method &&
-                    this.invoicingDetails.charge_method ===
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_annual_cpi'
-                        )) ||
-                (this.invoicingDetails.charge_method &&
-                    this.invoicingDetails.charge_method ===
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_annual_cpi_custom'
-                        ))
+                    this.invoicingDetails.charge_method_key ===
+                        constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI.ID) ||
+                this.invoicingDetails.charge_method_key ===
+                    constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM.ID
             )
                 return true;
             return false;
@@ -657,19 +643,20 @@ export default {
         show_cpi_method: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
                 if (
-                    this.invoicingDetails.charge_method ===
-                    this.getChargeMethodIdByKey('base_fee_plus_annual_cpi')
+                    this.invoicingDetails.charge_method_key ===
+                    constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI.ID
                 )
                     return true;
             return false;
         },
         show_custom_cpi_years: function () {
-            if (this.invoicingDetails && this.invoicingDetails.charge_method)
+            if (
+                this.invoicingDetails &&
+                this.invoicingDetails.charge_method_key
+            )
                 if (
-                    this.invoicingDetails.charge_method ===
-                    this.getChargeMethodIdByKey(
-                        'base_fee_plus_annual_cpi_custom'
-                    )
+                    this.invoicingDetails.charge_method_key ===
+                    constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM.ID
                 )
                     return true;
             return false;
@@ -677,10 +664,9 @@ export default {
         show_percentage_of_gross_turnover_advance: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
                 if (
-                    this.invoicingDetails.charge_method ===
-                    this.getChargeMethodIdByKey(
-                        'percentage_of_gross_turnover_in_advance'
-                    )
+                    this.invoicingDetails.charge_method_key ===
+                    constants.CHARGE_METHODS
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID
                 )
                     return true;
             return false;
@@ -688,8 +674,9 @@ export default {
         show_percentage_of_gross_turnover_arrears: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
                 if (
-                    this.invoicingDetails.charge_method ===
-                    this.getChargeMethodIdByKey('percentage_of_gross_turnover')
+                    this.invoicingDetails.charge_method_key ===
+                    constants.CHARGE_METHODS
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID
                 )
                     return true;
             return false;
@@ -705,10 +692,12 @@ export default {
                 [1, 2].includes(
                     this.invoicingDetailsComputed.invoicing_repetition_type
                 ) ||
-                this.getChargeMethodIdByKey('percentage_of_gross_turnover') ||
-                this.getChargeMethodIdByKey(
-                    'percentage_of_gross_turnover_in_advance'
-                ) ||
+                [
+                    constants.CHARGE_METHODS
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID,
+                    constants.CHARGE_METHODS
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID,
+                ].includes(this.invoicingDetailsComputed.charge_method_key) ||
                 this.context != 'Proposal'
             );
         },
@@ -728,23 +717,18 @@ export default {
             if (this.invoicingDetails) {
                 if (
                     [
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_fixed_annual_increment'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_fixed_annual_percentage'
-                        ),
-                        this.getChargeMethodIdByKey('base_fee_plus_annual_cpi'),
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_annual_cpi_custom'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover_in_advance'
-                        ),
-                    ].includes(this.invoicingDetails.charge_method)
+                        constants.CHARGE_METHODS
+                            .BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT.ID,
+                        constants.CHARGE_METHODS
+                            .BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE.ID,
+                        constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI.ID,
+                        constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM
+                            .ID,
+                        constants.CHARGE_METHODS
+                            .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID,
+                        constants.CHARGE_METHODS
+                            .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID,
+                    ].includes(this.invoicingDetails.charge_method_key)
                 )
                     return true;
                 return false;
@@ -756,16 +740,15 @@ export default {
         },
         show_invoicing_quarters: function () {
             return (
-                (this.invoicingDetails.charge_method ==
-                    this.getChargeMethodIdByKey(
-                        'percentage_of_gross_turnover'
-                    ) ||
-                    this.invoicingDetails.charge_method ==
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover_in_advance'
-                        )) &&
+                (this.invoicingDetails.charge_method_key ==
+                    constants.CHARGE_METHODS
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID ||
+                    this.invoicingDetails.charge_method_key ==
+                        constants.CHARGE_METHODS
+                            .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID) &&
                 this.show_invoicing_frequency &&
-                this.invoicingDetailsComputed.invoicing_repetition_type == 2
+                this.invoicingDetailsComputed.invoicing_repetition_type_key ==
+                    constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
             );
         },
         show_month_of_year_to_invoice: function () {
@@ -778,25 +761,25 @@ export default {
             // Don't show annual invoicing option for gross turnover charge method
             if (this.invoicingDetails) {
                 if (
-                    this.invoicingDetails.charge_method ==
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover'
-                        ) ||
-                    this.invoicingDetails.charge_method ==
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover_in_advance'
-                        )
+                    this.invoicingDetails.charge_method_key ==
+                        constants.CHARGE_METHODS
+                            .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID ||
+                    this.invoicingDetails.charge_method_key ==
+                        constants.CHARGE_METHODS
+                            .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID
                 ) {
                     return this.repetition_types.filter(
-                        (repetition_type) => repetition_type.id != 1
+                        (repetition_type) =>
+                            repetition_type.key !=
+                            constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
                     );
                 }
             }
             return this.repetition_types;
         },
     },
-    created: function () {
-        this.fetchChargeMethods();
+    created: async function () {
+        await this.fetchChargeMethods();
         this.fetchRepetitionTypes();
         this.fetchCPICalculationMethods();
         this.fetchOracleCodes();
@@ -804,6 +787,8 @@ export default {
             // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
             this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
         }
+        this.invoicing_once_every_previous_value =
+            this.invoicingDetailsComputed.invoicing_once_every;
         this.invoicingDetailsComputed.context = this.context;
     },
     mounted: function () {
@@ -849,15 +834,15 @@ export default {
                     year.has_passed)
             );
         },
-        onChargeMethodChange: function () {
-            const chargeMethodKey = this.getChargeMethodKeyById(
-                this.invoicingDetailsComputed.charge_method
-            );
+        onChargeMethodChange: function (charge_method) {
+            this.invoicingDetailsComputed.charge_method_key = charge_method.key;
             if (
                 [
-                    'percentage_of_gross_turnover',
-                    'percentage_of_gross_turnover_in_advance',
-                ].includes(chargeMethodKey)
+                    constants.CHARGE_METHODS
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID,
+                    constants.CHARGE_METHODS
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID,
+                ].includes(this.invoicingDetailsComputed.charge_method_key)
             ) {
                 this.invoicingDetailsComputed.invoicing_repetition_type = 2;
             } else {
@@ -917,33 +902,14 @@ export default {
                         this.invoicingDetailsComputed.charge_method
                     )) ||
                 ([
-                    'base_fee_plus_fixed_annual_increment',
-                    'base_fee_plus_fixed_annual_percentage',
+                    constants.CHARGE_METHODS
+                        .BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT.ID,
+                    constants.CHARGE_METHODS
+                        .BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE.ID,
                 ].includes(charge_method.key) &&
                     // The approval runs for less than a full year
                     this.approvalDurationYears - 1 == 0)
             );
-        },
-        getChargeMethodIdByKey: function (key) {
-            let charge_method = this.charge_methods.find(
-                (charge_method) => charge_method.key === key
-            );
-            if (charge_method) return charge_method.id;
-            else return 0;
-        },
-        getChargeMethodKeyById: function (id) {
-            let charge_method = this.charge_methods.find(
-                (charge_method) => charge_method.id === id
-            );
-            if (charge_method) return charge_method.key;
-            else return '';
-        },
-        getInvoicingRepetitionTypeKeyById: function (id) {
-            let repetition_type = this.repetition_types.find(
-                (repetition_type) => repetition_type.id === id
-            );
-            if (repetition_type) return repetition_type.key;
-            else return '';
         },
         fetchChargeMethods: async function () {
             let vm = this;
@@ -966,10 +932,6 @@ export default {
                 let repetition_types = await res.json();
                 vm.repetition_types = repetition_types;
                 vm.$nextTick(function () {
-                    const chargeMethodKey = this.getChargeMethodKeyById(
-                        this.invoicingDetailsComputed.charge_method
-                    );
-
                     if (!vm.invoicingDetailsComputed.review_once_every) {
                         vm.invoicingDetailsComputed.review_once_every = 5;
                     }
@@ -980,7 +942,9 @@ export default {
                         vm.invoicingDetailsComputed.review_repetition_type = 1;
                     }
                     if (
-                        'percentage_of_gross_turnover' != chargeMethodKey &&
+                        constants.CHARGE_METHODS
+                            .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID !=
+                            this.invoicingDetailsComputed.charge_method_key &&
                         !vm.invoicingDetailsComputed.invoicing_repetition_type
                     ) {
                         vm.invoicingDetailsComputed.invoicing_repetition_type = 1;
@@ -1031,6 +995,26 @@ export default {
                     `${this.invoicingDetails.id}/`,
                 requestOptions
             );
+        },
+        updateInvoicingOnceEvery: function () {
+            var changing_to;
+
+            if (this.invoicingDetailsComputed.invoicing_once_every == 5) {
+                if (this.invoicing_once_every_previous_value > 5) {
+                    this.invoicingDetailsComputed.invoicing_once_every = 4;
+                    changing_to = 4;
+                } else {
+                    this.invoicingDetailsComputed.invoicing_once_every = 6;
+                    changing_to = 6;
+                }
+                this.invoicing_once_every_previous_value =
+                    this.invoicingDetailsComputed.invoicing_once_every;
+                swal.fire({
+                    title: `The system does not support invoicing every 5 months. Changing value to ${changing_to} months.`,
+                    icon: 'info',
+                });
+            }
+            this.updatePreviewInvoices();
         },
         updatePreviewInvoices: async function () {
             const requestOptions = {

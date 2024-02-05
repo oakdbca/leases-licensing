@@ -680,13 +680,16 @@ export default {
                     ];
                 if (
                     !gross_turnover_percentage.locked &&
-                    gross_turnover_percentage.gross_turnover != null
+                    gross_turnover_percentage.gross_turnover != null &&
+                    gross_turnover_percentage.discrepency != null &&
+                    gross_turnover_percentage.discrepency != 0
                 ) {
                     annualTurnoverChanges.push({
                         year: gross_turnover_percentage.year,
                         percentage: gross_turnover_percentage.percentage,
                         gross_turnover:
                             gross_turnover_percentage.gross_turnover,
+                        discrepency: gross_turnover_percentage.discrepency,
                         invoice_amount:
                             gross_turnover_percentage.discrepency_invoice_amount,
                     });
@@ -899,7 +902,7 @@ export default {
             changesHtml = `<div class="mb-3 float-left">Annual Turnover Discrepencies</div>`;
             changesHtml += '<table class="table table-sm table-striped">';
             changesHtml +=
-                '<thead><tr><th>Financial Year</th><th>Percentage</th><th>Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
+                '<thead><tr><th>Financial Year</th><th>Percentage</th><th>Discrepency</th><th>Invoice Amount</th></tr></thead><tbody>';
             for (let i = 0; i < turnoverChanges.length; i++) {
                 let suffix = 'Debit';
                 let discrepencyClass = 'danger';
@@ -910,7 +913,7 @@ export default {
                 changesHtml += `<tr><td>${turnoverChanges[i].year - 1}-${
                     turnoverChanges[i].year
                 }</td><td>${turnoverChanges[i].percentage}%</td><td>$${currency(
-                    turnoverChanges[i].gross_turnover
+                    turnoverChanges[i].discrepency
                 )}</td><td class="text-${discrepencyClass}">$${Math.abs(
                     turnoverChanges[i].invoice_amount
                 )} ${suffix}</td></tr>`;
