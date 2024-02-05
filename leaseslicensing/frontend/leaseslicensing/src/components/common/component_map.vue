@@ -2616,7 +2616,9 @@ export default {
             vm.queryingGeoserver = false;
             vm.errorMessage = null;
             vm.drawForModel.finishDrawing();
-            vm.set_mode('layer');
+            if (vm.mode == 'draw' && vm.selectedFeatureIds.length == 0) {
+                vm.set_mode('layer');
+            }
             vm.$emit('finished-drawing');
         },
         /**
