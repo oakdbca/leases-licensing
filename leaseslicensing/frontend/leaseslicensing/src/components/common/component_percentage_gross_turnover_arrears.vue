@@ -66,11 +66,11 @@
                                             !financialYearHasPassed(
                                                 year.financial_year
                                             ) ||
-                                            (!yearBeforeIssueDate(year) &&
+                                            (!yearIsBeforeIssueDate(year) &&
                                                 !allQuartersLocked(year))
                                         "
                                         :placeholder="
-                                            !yearBeforeIssueDate(year) &&
+                                            !yearIsBeforeIssueDate(year) &&
                                             !allQuartersLocked(year)
                                                 ? 'Enter ' +
                                                   repetitionTypePlural
@@ -110,7 +110,7 @@
                             <template
                                 v-if="year.discrepency_invoice_amount > 0"
                             >
-                                <div v-if="!yearBeforeIssueDate(year)">
+                                <div v-if="!yearIsBeforeIssueDate(year)">
                                     The gross annual turnover entered is greater
                                     than the sum of the four quarters.
                                 </div>
@@ -127,7 +127,7 @@
                             <template
                                 v-else-if="year.discrepency_invoice_amount < 0"
                             >
-                                <div v-if="!yearBeforeIssueDate(year)">
+                                <div v-if="!yearIsBeforeIssueDate(year)">
                                     The gross annual turnover entered is less
                                     than the sum of the four quarters.
                                 </div>
@@ -149,7 +149,7 @@
                         v-if="
                             !editingFromProposalPage &&
                             invoicingReptitionQuarterly &&
-                            !yearBeforeIssueDate(year)
+                            year.quarters.length > 0
                         "
                         class="card-body py-3"
                     >
@@ -231,7 +231,7 @@
                         v-if="
                             !editingFromProposalPage &&
                             !invoicingReptitionQuarterly &&
-                            !yearBeforeIssueDate(year)
+                            year.months.length > 0
                         "
                         class="card-body py-3"
                     >
@@ -559,9 +559,9 @@ export default {
             }
             return true;
         },
-        yearBeforeIssueDate: function (year) {
+        yearIsBeforeIssueDate: function (year) {
             return (
-                new Date(year.financial_year.split('-')[1]) <
+                new Date(year.financial_year.split('-')[1], 5, 30) <
                 new Date(this.issueDate)
             );
         },
