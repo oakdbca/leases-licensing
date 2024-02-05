@@ -197,6 +197,7 @@ class UserViewSet(UserActionLoggingViewset):
             "GET",
         ],
         detail=False,
+        permission_classes=[IsInternal],
     )
     def person_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
