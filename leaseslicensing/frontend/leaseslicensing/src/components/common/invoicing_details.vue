@@ -25,7 +25,7 @@
                                 charge_method.id !=
                                     invoicingDetailsComputed.charge_method
                             "
-                            @change="onChargeMethodChange"
+                            @change="onChargeMethodChange(charge_method)"
                         />
                         <label
                             :for="charge_method.key"
@@ -685,14 +685,12 @@ export default {
                 [1, 2].includes(
                     this.invoicingDetailsComputed.invoicing_repetition_type
                 ) ||
-                this.getChargeMethodIdByKey(
+                [
                     constants.CHARGE_METHODS
-                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID
-                ) ||
-                this.getChargeMethodIdByKey(
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS.ID,
                     constants.CHARGE_METHODS
-                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID
-                ) ||
+                        .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID,
+                ].includes(this.invoicingDetailsComputed.charge_method_key) ||
                 this.context != 'Proposal'
             );
         },
@@ -742,7 +740,8 @@ export default {
                         constants.CHARGE_METHODS
                             .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID) &&
                 this.show_invoicing_frequency &&
-                this.invoicingDetailsComputed.invoicing_repetition_type == 2
+                this.invoicingDetailsComputed.invoicing_repetition_type_key ==
+                    constants.INVOICING_REPETITON_TYPES.QUARTERLY.ID
             );
         },
         show_month_of_year_to_invoice: function () {
@@ -763,15 +762,17 @@ export default {
                             .PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE.ID
                 ) {
                     return this.repetition_types.filter(
-                        (repetition_type) => repetition_type.id != 1
+                        (repetition_type) =>
+                            repetition_type.key !=
+                            constants.INVOICING_REPETITON_TYPES.ANNUALLY.ID
                     );
                 }
             }
             return this.repetition_types;
         },
     },
-    created: function () {
-        this.fetchChargeMethods();
+    created: async function () {
+        await this.fetchChargeMethods();
         this.fetchRepetitionTypes();
         this.fetchCPICalculationMethods();
         this.fetchOracleCodes();
@@ -824,7 +825,8 @@ export default {
                     year.has_passed)
             );
         },
-        onChargeMethodChange: function () {
+        onChargeMethodChange: function (charge_method) {
+            this.invoicingDetailsComputed.charge_method_key = charge_method.key;
             if (
                 [
                     constants.CHARGE_METHODS
@@ -899,13 +901,6 @@ export default {
                     // The approval runs for less than a full year
                     this.approvalDurationYears - 1 == 0)
             );
-        },
-        getChargeMethodIdByKey: function (key) {
-            let charge_method = this.charge_methods.find(
-                (charge_method) => charge_method.key === key
-            );
-            if (charge_method) return charge_method.id;
-            else return 0;
         },
         fetchChargeMethods: async function () {
             let vm = this;
