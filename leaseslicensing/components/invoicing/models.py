@@ -784,7 +784,7 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
             return math.floor(index / 4)
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
-            return math.floor(index / 12)
+            return math.floor(index / (12 / self.invoicing_once_every))
 
     def get_amount_by_repetition_type(self, amount):
         # Modify the amount based on the invoicing repetition type
