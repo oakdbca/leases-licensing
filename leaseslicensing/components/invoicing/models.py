@@ -1265,6 +1265,30 @@ class InvoicingDetails(BaseModel):
             if issue_date == potential_issue_date:
                 return True
 
+    def reset_gto_amounts(self):
+        # Used to speed up testing only
+        if not settings.DEBUG:
+            return
+
+        for gross_turnover_percentage in self.gross_turnover_percentages.all():
+            gross_turnover_percentage.estimated_gross_turnover = None
+            gross_turnover_percentage.gross_turnover = None
+            gross_turnover_percentage.estimate_locked = False
+            gross_turnover_percentage.locked = False
+            gross_turnover_percentage.save()
+
+            for quarter in gross_turnover_percentage.quarters.all():
+                quarter.gross_turnover = None
+                quarter.locked = False
+                quarter.save()
+
+            for month in gross_turnover_percentage.months.all():
+                month.gross_turnover = None
+                month.locked = False
+                month.save()
+
+        self.approval.invoices.all().delete()
+
 
 class ScheduledInvoice(BaseModel):
     """
