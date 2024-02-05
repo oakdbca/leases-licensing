@@ -646,7 +646,10 @@ export default {
             return false;
         },
         show_custom_cpi_years: function () {
-            if (this.invoicingDetails && this.invoicingDetails.charge_method)
+            if (
+                this.invoicingDetails &&
+                this.invoicingDetails.charge_method_key
+            )
                 if (
                     this.invoicingDetails.charge_method_key ===
                     constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM.ID
