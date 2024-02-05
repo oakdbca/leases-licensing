@@ -300,9 +300,12 @@
                             max="6"
                             step="1"
                             class="form-control"
+                            :data-previous-value="
+                                invoicing_once_every_previous_value
+                            "
                             :readonly="invoicing_once_every_readonly"
                             required
-                            @change="updatePreviewInvoices"
+                            @change="updateInvoicingOnceEvery"
                         />
                     </div>
                     <div class="">
@@ -545,6 +548,7 @@ export default {
             previewInvoices: null,
             loadingPreviewInvoices: false,
             loadingOracleCodes: false,
+            invoicing_once_every_previous_value: 1,
         };
     },
     computed: {
@@ -783,6 +787,8 @@ export default {
             // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
             this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
         }
+        this.invoicing_once_every_previous_value =
+            this.invoicingDetailsComputed.invoicing_once_every;
         this.invoicingDetailsComputed.context = this.context;
     },
     mounted: function () {
@@ -989,6 +995,26 @@ export default {
                     `${this.invoicingDetails.id}/`,
                 requestOptions
             );
+        },
+        updateInvoicingOnceEvery: function () {
+            var changing_to;
+
+            if (this.invoicingDetailsComputed.invoicing_once_every == 5) {
+                if (this.invoicing_once_every_previous_value > 5) {
+                    this.invoicingDetailsComputed.invoicing_once_every = 4;
+                    changing_to = 4;
+                } else {
+                    this.invoicingDetailsComputed.invoicing_once_every = 6;
+                    changing_to = 6;
+                }
+                this.invoicing_once_every_previous_value =
+                    this.invoicingDetailsComputed.invoicing_once_every;
+                swal.fire({
+                    title: `The system does not support invoicing every 5 months. Changing value to ${changing_to} months.`,
+                    icon: 'info',
+                });
+            }
+            this.updatePreviewInvoices();
         },
         updatePreviewInvoices: async function () {
             const requestOptions = {
