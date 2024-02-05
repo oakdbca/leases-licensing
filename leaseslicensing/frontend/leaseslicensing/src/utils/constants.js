@@ -1,4 +1,6 @@
 module.exports = {
+    // Unfortunately, most of the IDs here are actually keys not ids.
+    // No time to refactor now however it can cause confusion in the components when doing comparisons.
     APPLICATION_TYPES: {
         REGISTRATION_OF_INTEREST: 'registration_of_interest',
         LEASE_LICENCE: 'lease_licence',
