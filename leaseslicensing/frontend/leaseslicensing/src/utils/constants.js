@@ -148,11 +148,11 @@ module.exports = {
             TEXT: 'Base Fee Plus Fixed Annual Percentage',
         },
         BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM: {
-            ID: 'base_fee_plus_annual_cpi',
+            ID: 'base_fee_plus_annual_cpi_custom',
             TEXT: 'Base Fee Plus Annual CPI (Custom)',
         },
         BASE_FEE_PLUS_ANNUAL_CPI: {
-            ID: 'base_fee_plus_annual_cpi_custom',
+            ID: 'base_fee_plus_annual_cpi',
             TEXT: 'Base Fee Plus Annual CPI (ABS)',
         },
         PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS: {
