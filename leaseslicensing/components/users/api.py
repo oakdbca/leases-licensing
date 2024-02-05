@@ -160,6 +160,8 @@ class UserListFilterView(generics.ListAPIView):
 
 
 class UserViewSet(UserActionLoggingViewset):
+    """TODO: Make sure to do a full security audit on this viewset"""
+
     queryset = EmailUser.objects.all()
     serializer_class = UserSerializer
 
