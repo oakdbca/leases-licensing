@@ -79,10 +79,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div
-                                    v-if="org.ledger_organisation_trading_name"
-                                    class="row mb-2"
-                                >
+                                <div class="row mb-2">
                                     <label
                                         for="ledger_organisation_trading_name"
                                         class="col-sm-3 control-label"
