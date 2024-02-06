@@ -63,8 +63,8 @@
             :saving-in-progress="savingProposal"
             @update-submit-text="updateSubmitText"
             @refresh-from-response="refreshFromResponse"
-            @finished-drawing="saveMapFeatures"
-            @deleted-features="saveMapFeatures"
+            @finished-drawing="onFinishedDrawing"
+            @deleted-features="onFinishedDrawing"
         >
             <template #slot_additional_documents_assessment_comments>
                 <div class="row">
@@ -711,6 +711,11 @@ export default {
         },
         refreshFromResponse: function (data) {
             this.proposal = Object.assign({}, data);
+        },
+        onFinishedDrawing: function () {
+            if (this.$refs.application_form.$refs.component_map.autoSave) {
+                this.saveMapFeatures();
+            }
         },
         saveMapFeatures: function () {
             // Save the entire proposal including the map features without reloading the map
