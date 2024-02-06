@@ -710,7 +710,10 @@ import Feature from 'ol/Feature';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
-import { FullScreen as FullScreenControl } from 'ol/control';
+import {
+    FullScreen as FullScreenControl,
+    defaults as defaultControls,
+} from 'ol/control';
 import { LineString, Point, MultiPoint, Polygon } from 'ol/geom';
 import { getArea } from 'ol/sphere.js';
 import GeoJSON from 'ol/format/GeoJSON';
@@ -724,6 +727,7 @@ import {
     baselayer_name,
     validateFeature,
     layerAtEventPixel,
+    FeatureAutoSaveControl,
 } from '@/components/common/map_functions.js';
 
 export default {
@@ -945,6 +949,11 @@ export default {
             required: false,
             default: false,
         },
+        toggleAutoSave: {
+            type: Boolean,
+            required: false,
+            default: true,
+        },
     },
     emits: [
         'filter-appied',
@@ -1046,6 +1055,7 @@ export default {
             modifiedFeaturesStack: [], // A stack of only those undoable actions that modified a feature
             drawing: false, // Whether the map is in draw (pencil icon) mode
             transforming: false, // Whether the map is in transform (resize, scale, rotate) mode
+            autoSave: this.toggleAutoSave, // Whether to auto-save the map after a feature is modified
         };
     },
     computed: {
@@ -1591,6 +1601,9 @@ export default {
             });
 
             vm.map = new Map({
+                controls: defaultControls().extend([
+                    new FeatureAutoSaveControl(vm),
+                ]),
                 layers: [vm.tileLayerMapbox, vm.tileLayerSat],
                 overlays: [overlay],
                 target: vm.elem_id,
