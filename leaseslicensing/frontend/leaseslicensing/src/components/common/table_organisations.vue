@@ -154,7 +154,7 @@ export default {
                 columns: vm.applicableColumns,
                 processing: true,
                 initComplete: function () {
-                    vm.$refs.invoices_datatable.vmDataTable.draw('page');
+                    vm.$refs.organisations_datatable.vmDataTable.draw('page');
                 },
             };
         },
