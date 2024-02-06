@@ -149,8 +149,8 @@
                             :saving-in-progress="savingProposal"
                             @form-mounted="applicationFormMounted"
                             @update:gis-data="updateGisData"
-                            @finished-drawing="saveMapFeatures"
-                            @deleted-features="saveMapFeatures"
+                            @finished-drawing="onFinishedDrawing"
+                            @deleted-features="onFinishedDrawing"
                         >
                             <!-- Inserted into the slot on the form.vue: Collapsible Assessor Questions -->
                             <template #slot_map_assessment_comments>
@@ -2953,6 +2953,11 @@ export default {
                     id: value.id,
                     name: value.name,
                 });
+            }
+        },
+        onFinishedDrawing: function () {
+            if (this.$refs.application_form.$refs.component_map.autoSave) {
+                this.saveMapFeatures();
             }
         },
         saveMapFeatures: async function () {
