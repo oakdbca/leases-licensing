@@ -43,6 +43,10 @@ class OrganisationAdmin(admin.ModelAdmin):
         "ledger_organisation_trading_name",
         "ledger_organisation_abn",
         "ledger_organisation_email",
+        "admin_pin_one",
+        "admin_pin_two",
+        "user_pin_one",
+        "user_pin_two",
     ]
 
     def ledger_organisation_name(self, obj):
