@@ -237,6 +237,9 @@
                                                 class="form-select"
                                                 name="Country"
                                                 required
+                                                @change="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
                                             >
                                                 <option
                                                     v-for="c in countries"
