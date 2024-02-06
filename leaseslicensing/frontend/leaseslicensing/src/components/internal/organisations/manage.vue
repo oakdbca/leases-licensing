@@ -137,6 +137,7 @@
                                             class="form-control"
                                             name="ledger_organisation_email"
                                             placeholder=""
+                                            required
                                         />
                                         <div class="invalid-feedback">
                                             Please enter a valid email address
