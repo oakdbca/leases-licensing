@@ -133,7 +133,6 @@ def first_time(request):
         context["redirect_url"] = request.GET["next"]
     else:
         context["redirect_url"] = "/"
-    # return render(request, 'leaseslicensing/user_profile.html', context)
     return render(request, "leaseslicensing/dash/index.html", context)
 
 
@@ -152,9 +151,6 @@ class HelpView(LoginRequiredMixin, TemplateView):
                         help_type=HelpPage.HELP_TEXT_INTERNAL,
                     ).order_by("-version")
                     context["help"] = qs.first()
-            #                else:
-            #                    return TemplateResponse(self.request, 'leaseslicensing/not-permitted.html', context)
-            #                    context['permitted'] = False
             else:
                 qs = HelpPage.objects.filter(
                     application_type__name__icontains=application_type,
@@ -164,8 +160,11 @@ class HelpView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class ManagementCommandsView(LoginRequiredMixin, TemplateView):
+class ManagementCommandsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = "leaseslicensing/mgt-commands.html"
+
+    def test_func(self) -> bool | None:
+        return is_internal(self.request)
 
     def post(self, request):
         data = {}
