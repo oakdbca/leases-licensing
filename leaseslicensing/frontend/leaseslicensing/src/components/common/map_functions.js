@@ -5,6 +5,7 @@ import GeoJSON from 'ol/format/GeoJSON';
 import Feature from 'ol/Feature';
 import { Polygon } from 'ol/geom';
 import { Style, Fill, Stroke } from 'ol/style';
+import { Control } from 'ol/control';
 import { utils } from '@/utils/hooks';
 
 // Tile server url
@@ -288,6 +289,45 @@ export let owsQuery = {
         geometry: 'wkb_geometry',
     },
 };
+
+export class FeatureAutoSaveControl extends Control {
+    /** A checkbox control to toggle auto-save after changes to the map on or off
+     * @param {Object} component_map The map component
+     * @param {Object} [opt_options] Control option
+     */
+    constructor(component_map, opt_options) {
+        const options = opt_options || {};
+        const checked =
+            component_map.autoSave != undefined ? component_map.autoSave : true;
+
+        const checkBox = document.createElement('input');
+        checkBox.type = 'checkbox';
+        checkBox.checked = checked;
+        checkBox.title = 'Toggle auto-save';
+        checkBox.className = 'custom-ol-control';
+
+        const element = document.createElement('div');
+        element.className = 'ol-control ol-unselectable feature-auto-save';
+        element.appendChild(checkBox);
+
+        super({
+            element: element,
+            target: options.target,
+        });
+
+        this.component_map = component_map || {};
+
+        checkBox.addEventListener(
+            'click',
+            this.handleAutoSaveToggle.bind(this),
+            false
+        );
+    }
+
+    handleAutoSaveToggle() {
+        this.component_map.autoSave = !this.component_map.autoSave;
+    }
+}
 
 /**
  * Module with map related helper functions

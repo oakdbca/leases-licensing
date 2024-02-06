@@ -166,8 +166,8 @@
                                 level="internal"
                                 @validate-feature="validateFeature.bind(this)()"
                                 @refresh-from-response="refreshFromResponse"
-                                @finished-drawing="saveMapFeatures"
-                                @deleted-features="saveMapFeatures"
+                                @finished-drawing="onFinishedDrawing"
+                                @deleted-features="onFinishedDrawing"
                             />
                         </FormSection>
                     </div>
@@ -1324,6 +1324,11 @@ export default {
                     id: val.id,
                     name: val.name,
                 });
+            }
+        },
+        onFinishedDrawing: function () {
+            if (this.$refs.component_map.autoSave) {
+                this.saveMapFeatures();
             }
         },
         saveMapFeatures: function () {

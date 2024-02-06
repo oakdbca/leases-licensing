@@ -44,7 +44,7 @@
 }
 .optional-layers-wrapper {
     position: absolute;
-    top: 70px;
+    top: 7.0em;
     left: 0.5em;
 }
 .optional-layers-button-wrapper {
@@ -158,4 +158,21 @@ input.layer_option {
     min-width: 340px;
     font-size: 0.875rem;
     pointer-events: auto;
+}
+.custom-ol-control {
+    height: 1.325em;
+    width: 1.325em;
+    text-align: center;
+    background-color: white;
+    margin: 1px;
+    padding: 0;
+    color: #666;
+    font-size: inherit;
+    border: none;
+    border-radius: 2px;
+}
+.feature-auto-save {
+    top: 3.75em;
+    left: 0.5em;
+    height: 1.425em;
 }
