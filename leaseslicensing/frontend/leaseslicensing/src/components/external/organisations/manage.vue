@@ -17,7 +17,7 @@
                             <div class="row mb-3">
                                 <label
                                     for="ledger_organisation_name"
-                                    class="col-sm-3 control-label"
+                                    class="col-sm-2 control-label"
                                     >Organisation Name</label
                                 >
                                 <div class="col-sm-4">
@@ -37,7 +37,7 @@
                             <div class="row mb-3">
                                 <label
                                     for="ledger_organisation_trading_name"
-                                    class="col-sm-3 control-label"
+                                    class="col-sm-2 control-label"
                                     >Trading Name</label
                                 >
                                 <div class="col-sm-4">
@@ -55,7 +55,7 @@
                             <div class="row mb-3">
                                 <label
                                     for="ledger_organisation_abn"
-                                    class="col-sm-3 control-label"
+                                    class="col-sm-2 control-label"
                                     >ABN
                                 </label>
                                 <div class="col-sm-4">
@@ -72,7 +72,7 @@
                             <div class="row mb-3">
                                 <label
                                     for="ledger_organisation_email"
-                                    class="col-sm-3 control-label"
+                                    class="col-sm-2 control-label"
                                     >Email
                                 </label>
                                 <div class="col-sm-4">
@@ -88,8 +88,8 @@
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <div class="col-sm-12">
+                            <div class="row">
+                                <div class="col-sm-6">
                                     <BootstrapLoadingButton
                                         text="Update"
                                         :is-loading="updatingDetails"
@@ -115,18 +115,18 @@
                             novalidate
                             @submit.prevent=""
                         >
-                            <fieldset class="mb-3">
+                            <fieldset class="mb-3 w-50">
                                 <legend>Postal Address</legend>
                                 <div class="address-box">
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="postalAddressLine1"
                                                 class="form-label"
                                                 >Street</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <input
                                                 id="postalAddressLine1"
                                                 v-model="
@@ -144,14 +144,14 @@
                                         </div>
                                     </div>
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="postalLocality"
                                                 class="form-label"
                                                 >Town/Suburb</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <input
                                                 id="postalLocality"
                                                 v-model="
@@ -169,14 +169,14 @@
                                         </div>
                                     </div>
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="postalState"
                                                 class="form-label"
                                                 >State</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <input
                                                 id="postalState"
                                                 v-model="
@@ -194,14 +194,14 @@
                                         </div>
                                     </div>
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="postalPostcode"
                                                 class="form-label"
                                                 >Postcode</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <input
                                                 id="postalPostcode"
                                                 v-model="
@@ -220,14 +220,14 @@
                                         </div>
                                     </div>
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="postalPostcode"
                                                 class="form-label"
                                                 >Country</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <select
                                                 id="country"
                                                 v-model="
@@ -237,6 +237,9 @@
                                                 class="form-select"
                                                 name="Country"
                                                 required
+                                                @change="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
                                             >
                                                 <option
                                                     v-for="c in countries"
@@ -249,8 +252,8 @@
                                         </div>
                                     </div>
                                     <div class="row mb-2">
-                                        <div class="col-md-2">&nbsp;</div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">&nbsp;</div>
+                                        <div class="col-md-8">
                                             <div class="form-check form-switch">
                                                 <label
                                                     for="billingPostcodeSame"
@@ -276,20 +279,20 @@
                                 </div>
                             </fieldset>
                             <fieldset
-                                class="mb-3"
+                                class="mb-3 w-50"
                                 :disabled="org.billing_same_as_postal"
                             >
                                 <legend>Billing Address</legend>
                                 <div class="address-box">
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="billingAddressLine1"
                                                 class="form-label"
                                                 >Street</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <input
                                                 id="billingAddressLine1"
                                                 v-model="
@@ -305,14 +308,14 @@
                                     </div>
 
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="billingLocality"
                                                 class="form-label"
                                                 >Town/Suburb</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <input
                                                 id="billingLocality"
                                                 v-model="
@@ -328,14 +331,14 @@
                                     </div>
 
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="billingState"
                                                 class="form-label"
                                                 >State</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <input
                                                 id="billingState"
                                                 v-model="
@@ -350,14 +353,14 @@
                                         </div>
                                     </div>
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="billingPostcode"
                                                 class="form-label"
                                                 >Postcode</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <input
                                                 id="billingPostcode"
                                                 v-model="
@@ -373,14 +376,14 @@
                                         </div>
                                     </div>
                                     <div class="row mb-4">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label
                                                 for="billingPostcode"
                                                 class="form-label"
                                                 >Country</label
                                             >
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-8">
                                             <select
                                                 id="country"
                                                 v-model="
@@ -404,12 +407,16 @@
                                 </div>
                             </fieldset>
 
-                            <BootstrapLoadingButton
-                                text="Update"
-                                :is-loading="updatingAddress"
-                                class="btn btn-primary float-end"
-                                @click="validateForm('address-details')"
-                            />
+                            <div class="row">
+                                <div class="col-md-6 px-2">
+                                    <BootstrapLoadingButton
+                                        text="Update"
+                                        :is-loading="updatingAddress"
+                                        class="btn btn-primary float-end"
+                                        @click="validateForm('address-details')"
+                                    />
+                                </div>
+                            </div>
                         </form>
                     </FormSection>
 

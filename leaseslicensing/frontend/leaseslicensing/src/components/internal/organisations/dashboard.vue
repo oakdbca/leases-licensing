@@ -1,23 +1,19 @@
 <template>
-    <div id="organisationRequestsDash" class="container">
-        <FormSection
-            :form-collapse="false"
-            label="Organisation Access Requests"
-            index="organisationRequests"
-        >
-            <OrganisationRequestsTable level="internal" />
+    <div id="organisations-dashboard" class="container">
+        <FormSection label="Organisations" index="organisations">
+            <OrganisationsTable />
         </FormSection>
     </div>
 </template>
 
 <script>
 import FormSection from '@/components/forms/section_toggle.vue';
-import OrganisationRequestsTable from '@/components/common/table_organisation_requests.vue';
+import OrganisationsTable from '@/components/common/table_organisations.vue';
 export default {
     name: 'InternalOrganisationRequestsDashboard',
     components: {
         FormSection,
-        OrganisationRequestsTable,
+        OrganisationsTable,
     },
 };
 </script>

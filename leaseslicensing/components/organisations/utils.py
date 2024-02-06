@@ -3,6 +3,7 @@ import string
 
 from django.conf import settings
 from django.core.exceptions import EmptyResultSet
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.helpers import belongs_to_by_user_id
 
@@ -44,6 +45,17 @@ def is_last_admin(organisation, user):
 
 def can_admin_org(organisation, user_id):
     from leaseslicensing.components.organisations.models import OrganisationContact
+
+    try:
+        emailuser = EmailUser.objects.get(id=user_id)
+    except EmailUser.DoesNotExist:
+        return False
+
+    if emailuser.is_superuser:
+        return True
+
+    if belongs_to_by_user_id(user_id, settings.ADMIN_GROUP):
+        return True
 
     try:
         org_contact = OrganisationContact.objects.get(

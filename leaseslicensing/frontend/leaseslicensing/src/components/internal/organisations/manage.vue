@@ -1,9 +1,7 @@
 <template>
     <div id="internalOrgInfo" class="container">
         <div v-if="org" class="row">
-            <h3>
-                {{ org.ledger_organisation_name }} [ABN: {{ formattedABN }}]
-            </h3>
+            <h3>{{ organisation_name }} [ABN: {{ formattedABN }}]</h3>
             <div class="col-md-3">
                 <CommsLogs
                     :comms_url="comms_url"
@@ -48,13 +46,16 @@
                     >
                         <FormSection
                             :form-collapse="false"
-                            label="Details"
+                            label="Organisation Details"
                             index="details"
                         >
                             <form
-                                class="form-horizontal"
-                                name="personal_form"
-                                method="post"
+                                id="organisation-details-form"
+                                class="needs-validation"
+                                novalidate
+                                @submit.prevent="
+                                    validateForm('organisation-details-form')
+                                "
                             >
                                 <div class="row mb-2">
                                     <label
@@ -64,20 +65,21 @@
                                     >
                                     <div class="col-sm-9">
                                         <input
+                                            id="ledger_organisation_name"
                                             v-model="
                                                 org.ledger_organisation_name
                                             "
                                             type="text"
                                             class="form-control"
                                             name="ledger_organisation_name"
-                                            :readonly="true"
+                                            required
                                         />
+                                        <div class="invalid-feedback">
+                                            Please enter an organisation name
+                                        </div>
                                     </div>
                                 </div>
-                                <div
-                                    v-if="org.ledger_organisation_trading_name"
-                                    class="row mb-2"
-                                >
+                                <div class="row mb-2">
                                     <label
                                         for="ledger_organisation_trading_name"
                                         class="col-sm-3 control-label"
@@ -85,22 +87,25 @@
                                     >
                                     <div class="col-sm-9">
                                         <input
+                                            id="ledger_organisation_trading_name"
                                             v-model="
                                                 org.ledger_organisation_trading_name
                                             "
                                             type="text"
                                             class="form-control"
                                             name="ledger_organisation_trading_name"
-                                            :readonly="true"
                                         />
                                     </div>
                                 </div>
                                 <div class="row mb-2">
-                                    <label for="" class="col-md-3 control-label"
+                                    <label
+                                        for="ledger_organisation_abn"
+                                        class="col-md-3 control-label"
                                         >ABN</label
                                     >
-                                    <div class="col-md-2">
+                                    <div class="col-md-4">
                                         <input
+                                            id="ledger_organisation_abn"
                                             v-model="
                                                 org.ledger_organisation_abn
                                             "
@@ -108,28 +113,44 @@
                                             class="form-control"
                                             name="ledger_organisation_abn"
                                             placeholder=""
-                                            :disabled="
-                                                !is_leaseslicensing_admin
-                                            "
-                                            :readonly="true"
                                         />
+                                        <div class="invalid-feedback">
+                                            Please enter an organisation ABN,
+                                            ACN (Or other identifier for
+                                            international organisations)
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="row mb-2">
-                                    <label for="" class="col-sm-3 control-label"
+                                <div class="row mb-4">
+                                    <label
+                                        for="ledger_organisation_email"
+                                        class="col-sm-3 control-label"
                                         >Email</label
                                     >
                                     <div class="col-sm-6">
                                         <input
+                                            id="ledger_organisation_email"
                                             v-model="
                                                 org.ledger_organisation_email
                                             "
-                                            type="text"
+                                            type="email"
                                             class="form-control"
                                             name="ledger_organisation_email"
                                             placeholder=""
-                                            :readonly="true"
+                                            required
                                         />
+                                        <div class="invalid-feedback">
+                                            Please enter a valid email address
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <button
+                                            class="btn btn-primary float-end"
+                                        >
+                                            Update
+                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -141,91 +162,316 @@
                             index="addressdetails"
                         >
                             <form
-                                class="form-horizontal"
-                                action="index.html"
-                                method="post"
+                                id="organisation-address-form"
+                                class="needs-validation"
+                                novalidate
+                                @submit.prevent="
+                                    validateForm('organisation-address-form')
+                                "
                             >
-                                <div class="row mb-2">
-                                    <label for="" class="col-sm-3 control-label"
-                                        >Street</label
-                                    >
-                                    <div class="col-sm-6">
-                                        <input
-                                            v-model="org.address.line1"
-                                            type="text"
-                                            class="form-control"
-                                            name="street"
-                                            placeholder=""
-                                            :readonly="true"
-                                        />
-                                    </div>
-                                </div>
-                                <div class="row mb-2">
-                                    <label for="" class="col-sm-3 control-label"
-                                        >Town/Suburb</label
-                                    >
-                                    <div class="col-sm-6">
-                                        <input
-                                            v-model="org.address.locality"
-                                            type="text"
-                                            class="form-control"
-                                            name="surburb"
-                                            placeholder=""
-                                            :readonly="true"
-                                        />
-                                    </div>
-                                </div>
-                                <div class="row mb-2">
-                                    <label for="" class="col-sm-3 control-label"
-                                        >State</label
-                                    >
-                                    <div class="col-sm-2">
-                                        <input
-                                            v-model="org.address.state"
-                                            type="text"
-                                            class="form-control"
-                                            name="country"
-                                            placeholder=""
-                                            :readonly="true"
-                                        />
-                                    </div>
-                                    <label for="" class="col-sm-2 control-label"
-                                        >Postcode</label
-                                    >
-                                    <div class="col-sm-2">
-                                        <input
-                                            v-model="org.address.postcode"
-                                            type="text"
-                                            class="form-control"
-                                            name="postcode"
-                                            placeholder=""
-                                            :readonly="true"
-                                        />
-                                    </div>
-                                </div>
-                                <div class="row mb-2">
-                                    <label for="" class="col-sm-3 control-label"
-                                        >Country</label
-                                    >
-                                    <div class="col-sm-4">
-                                        <select
-                                            v-model="org.address.country"
-                                            class="form-control"
-                                            name="country"
-                                            :readonly="true"
+                                <fieldset class="mb-3">
+                                    <legend>Postal Address</legend>
+
+                                    <div class="row mb-2">
+                                        <label
+                                            for="street"
+                                            class="col-sm-3 control-label"
+                                            >Street</label
                                         >
-                                            <option
-                                                v-for="c in countries"
-                                                :key="c.alpha2Code"
-                                                :value="c.alpha2Code"
+                                        <div class="col-sm-6">
+                                            <input
+                                                id="street"
+                                                v-model="
+                                                    org.address.postal_address
+                                                        .line1
+                                                "
+                                                type="text"
+                                                class="form-control"
+                                                name="street"
+                                                placeholder=""
+                                                required
+                                                @keyup="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
+                                            />
+                                            <div class="invalid-feedback">
+                                                Please enter a street address
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <label
+                                            for="suburb"
+                                            class="col-sm-3 control-label"
+                                            >Town/Suburb</label
+                                        >
+                                        <div class="col-sm-6">
+                                            <input
+                                                id="suburb"
+                                                v-model="
+                                                    org.address.postal_address
+                                                        .locality
+                                                "
+                                                type="text"
+                                                class="form-control"
+                                                name="suburb"
+                                                placeholder=""
+                                                required
+                                                @keyup="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
+                                            />
+                                            <div class="invalid-feedback">
+                                                Please enter a town or suburb
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <label
+                                            for="state"
+                                            class="col-sm-3 control-label"
+                                            >State</label
+                                        >
+                                        <div class="col-sm-2">
+                                            <input
+                                                id="state"
+                                                v-model="
+                                                    org.address.postal_address
+                                                        .state
+                                                "
+                                                type="text"
+                                                class="form-control"
+                                                name="state"
+                                                placeholder=""
+                                                required
+                                                @keyup="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
+                                            />
+                                            <div class="invalid-feedback">
+                                                Please enter a state
+                                            </div>
+                                        </div>
+                                        <label
+                                            for="postcode"
+                                            class="col-sm-2 control-label"
+                                            >Postcode</label
+                                        >
+                                        <div class="col-sm-2">
+                                            <input
+                                                id="postcode"
+                                                v-model="
+                                                    org.address.postal_address
+                                                        .postcode
+                                                "
+                                                type="text"
+                                                class="form-control"
+                                                name="postcode"
+                                                placeholder=""
+                                                required
+                                                @keyup="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
+                                            />
+                                            <div class="invalid-feedback">
+                                                Please enter a postcode
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <label
+                                            for="country"
+                                            class="col-sm-3 control-label"
+                                            >Country</label
+                                        >
+                                        <div class="col-sm-4">
+                                            <select
+                                                id="country"
+                                                v-model="
+                                                    org.address.postal_address
+                                                        .country
+                                                "
+                                                class="form-select"
+                                                name="country"
+                                                @change="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
                                             >
-                                                {{ c.name }}
-                                            </option>
-                                        </select>
+                                                <option
+                                                    v-for="c in countries"
+                                                    :key="c.code"
+                                                    :value="c.code"
+                                                >
+                                                    {{ c.name }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-sm-3">&nbsp;</div>
+                                        <div class="col-sm-6">
+                                            <div class="form-check form-switch">
+                                                <label
+                                                    for="billingPostcodeSame"
+                                                    class="form-label"
+                                                >
+                                                    Billing Address same as
+                                                    Postal Address</label
+                                                >
+                                                <input
+                                                    id="toggleBillingAddressFieldsDisabled"
+                                                    v-model="
+                                                        org.billing_same_as_postal
+                                                    "
+                                                    class="form-check-input"
+                                                    type="checkbox"
+                                                    @change="
+                                                        toggleBillingAddressFieldsDisabled
+                                                    "
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                                <fieldset
+                                    class="mb-3"
+                                    :disabled="org.billing_same_as_postal"
+                                >
+                                    <legend>Billing Address</legend>
+
+                                    <div class="row mb-2">
+                                        <label
+                                            for="billing-street"
+                                            class="col-sm-3 control-label"
+                                            >Street</label
+                                        >
+                                        <div class="col-sm-6">
+                                            <input
+                                                id="billing-street"
+                                                v-model="
+                                                    org.address.billing_address
+                                                        .line1
+                                                "
+                                                type="text"
+                                                class="form-control billing-address"
+                                                name="billing-street"
+                                                placeholder=""
+                                                required
+                                            />
+                                            <div class="invalid-feedback">
+                                                Please enter a street address
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <label
+                                            for="billing-suburb"
+                                            class="col-sm-3 control-label"
+                                            >Town/Suburb</label
+                                        >
+                                        <div class="col-sm-6">
+                                            <input
+                                                id="billing-suburb"
+                                                v-model="
+                                                    org.address.billing_address
+                                                        .locality
+                                                "
+                                                type="text"
+                                                class="form-control billing-address"
+                                                name="billing-suburb"
+                                                placeholder=""
+                                                required
+                                            />
+                                            <div class="invalid-feedback">
+                                                Please enter a town or suburb
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <label
+                                            for="billing-state"
+                                            class="col-sm-3 control-label"
+                                            >State</label
+                                        >
+                                        <div class="col-sm-2">
+                                            <input
+                                                id="billing-state"
+                                                v-model="
+                                                    org.address.billing_address
+                                                        .state
+                                                "
+                                                type="text"
+                                                class="form-control billing-address"
+                                                name="billing-state"
+                                                placeholder=""
+                                                required
+                                            />
+                                            <div class="invalid-feedback">
+                                                Please enter a state
+                                            </div>
+                                        </div>
+                                        <label
+                                            for="billing-postcode"
+                                            class="col-sm-2 control-label"
+                                            >Postcode</label
+                                        >
+                                        <div class="col-sm-2">
+                                            <input
+                                                id="billing-postcode"
+                                                v-model="
+                                                    org.address.billing_address
+                                                        .postcode
+                                                "
+                                                type="text"
+                                                class="form-control billing-address"
+                                                name="billing-postcode"
+                                                placeholder=""
+                                                required
+                                            />
+                                            <div class="invalid-feedback">
+                                                Please enter a postcode
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <label
+                                            for="billing-country"
+                                            class="col-sm-3 control-label"
+                                            >Country</label
+                                        >
+                                        <div class="col-sm-4">
+                                            <select
+                                                id="billing-country"
+                                                v-model="
+                                                    org.address.billing_address
+                                                        .country
+                                                "
+                                                class="form-select billing-address"
+                                                name="billing-country"
+                                            >
+                                                <option
+                                                    v-for="c in countries"
+                                                    :key="c.code"
+                                                    :value="c.code"
+                                                >
+                                                    {{ c.name }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                                <div class="row">
+                                    <div class="col">
+                                        <button
+                                            class="btn btn-primary float-end"
+                                        >
+                                            Update
+                                        </button>
                                     </div>
                                 </div>
                             </form>
                         </FormSection>
+
                         <FormSection
                             :form-collapse="false"
                             label="Contacts"
@@ -402,11 +648,10 @@ import TableOrganisationContacts from '@/components/common/table_organisation_co
 import CommsLogs from '@common-utils/comms_logs.vue';
 import AddContact from '@common-utils/add_contact.vue';
 import utils from '../utils';
-import Swal from 'sweetalert2';
 import FormSection from '@/components/forms/section_toggle.vue';
 
 export default {
-    name: 'Organisation',
+    name: 'ManageOrganisation',
     components: {
         CommsLogs,
         ApplicationsTable,
@@ -419,27 +664,13 @@ export default {
     data() {
         let vm = this;
         return {
-            adBody: 'adBody' + vm._uid,
-            aBody: 'aBody' + vm._uid,
-            pdBody: 'pdBody' + vm._uid,
-            pBody: 'pBody' + vm._uid,
-            cdBody: 'cdBody' + vm._uid,
-            cBody: 'cBody' + vm._uid,
-            oBody: 'oBody' + vm._uid,
-            dTab: 'dTab' + vm._uid,
-            oTab: 'oTab' + vm._uid,
+            organisation_name: '',
+            organisation_abn: '',
             org: null,
-            loading: [],
             countries: [],
             updatingDetails: false,
             updatingAddress: false,
             updatingContact: false,
-            empty_list: '/api/empty_list',
-            logsTable: null,
-            prev_licence_discount: null,
-            prev_application_discount: null,
-            is_leaseslicensing_admin: false,
-            DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
             activate_tables: false,
             comms_url: helpers.add_endpoint_json(
                 api_endpoints.organisations,
@@ -462,10 +693,6 @@ export default {
                 'Email',
                 'Action',
             ],
-
-            //proposals_url: helpers.add_endpoint_json(api_endpoints.organisations,vm.$route.params.org_id+'/proposals'),
-            //approvals_url: api_endpoints.approvals+'?org_id='+vm.$route.params.org_id,
-            //compliances_url: api_endpoints.compliances+'?org_id='+vm.$route.params.org_id,
 
             proposals_url:
                 api_endpoints.proposals_paginated_external +
@@ -524,17 +751,16 @@ export default {
         };
     },
     computed: {
-        isLoading: function () {
-            return this.loading.length == 0;
-        },
         formattedABN: function () {
-            if (
-                this.org.ledger_organisation_abn == null ||
-                this.org.ledger_organisation_abn == ''
-            ) {
+            if (this.organisation_abn == null || this.organisation_abn == '') {
                 return '';
             }
-            return helpers.formatABN(this.org.ledger_organisation_abn);
+            if (this.organisation_abn.length == 9) {
+                return helpers.formatACN(this.organisation_abn);
+            } else if (this.organisation_abn.length == 11) {
+                return helpers.formatABN(this.organisation_abn);
+            }
+            return this.organisation_abn;
         },
         orgHasAddress: function () {
             return (
@@ -553,173 +779,215 @@ export default {
         Promise.all(initialisers).then((data) => {
             vm.countries = data[0];
             vm.org = data[1];
+            this.assignNameAndABN();
             vm.org.address = vm.org.address != null ? vm.org.address : {};
             vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
         });
     },
-    mounted: function () {
-        this.personal_form = document.forms.personal_form;
-    },
     methods: {
-        handleApplicationCurrencyInput(e) {
-            // allow max 2dp
-            let vm = this;
-            let stringValue = e.target.value.toString();
-            let regex = /^\d*(\.\d{1,2})?$/;
-            if (!stringValue.match(regex) && vm.org.licence_discount !== '') {
-                vm.org.application_discount = vm.prev_application_discount;
-            }
-            vm.prev_application_discount = vm.org.application_discount;
+        assignNameAndABN: function () {
+            // Prevent the page heading being reactive when the user is editing name and abn
+            this.organisation_name = Object.assign(
+                {},
+                this.org
+            ).ledger_organisation_name;
+            this.organisation_abn = Object.assign(
+                {},
+                this.org
+            ).ledger_organisation_abn;
         },
-        handleLicenceCurrencyInput(e) {
-            // allow max 2dp
-            let vm = this;
-            let stringValue = e.target.value.toString();
-            let regex = /^\d*(\.\d{1,2})?$/;
-            if (!stringValue.match(regex) && vm.org.licence_discount !== '') {
-                vm.org.licence_discount = vm.prev_licence_discount;
+        toggleBillingAddressFieldsDisabled: function () {
+            if (!this.org.billing_same_as_postal) {
+                $('.billing-address').first().focus();
+            } else {
+                this.copyPostalAddressToBillingAddress();
             }
-            vm.prev_licence_discount = vm.org.licence_discount;
         },
-        validateApplicationDiscount: function () {
-            if (
-                this.org.application_discount < 0 ||
-                this.org.application_discount > 10000
-            ) {
-                return false;
-            }
-            return true;
+        copyPostalAddressToBillingAddress: function () {
+            this.org.address.billing_address.line1 =
+                this.org.address.postal_address.line1;
+            this.org.address.billing_address.locality =
+                this.org.address.postal_address.locality;
+            this.org.address.billing_address.state =
+                this.org.address.postal_address.state;
+            this.org.address.billing_address.postcode =
+                this.org.address.postal_address.postcode;
+            this.org.address.billing_address.country =
+                this.org.address.postal_address.country;
         },
-        validateLicenceDiscount: function () {
-            if (
-                this.org.licence_discount < 0 ||
-                this.org.licence_discount > 10000
-            ) {
-                return false;
+        updatePostalAddressFromBillingAddress: function () {
+            if (this.org.billing_same_as_postal) {
+                this.copyPostalAddressToBillingAddress();
             }
-            return true;
-        },
-        can_update: function () {
-            // can update the Organisation section
-            if (
-                this.validateApplicationDiscount() &&
-                this.validateLicenceDiscount()
-            ) {
-                return true;
-            }
-            return false;
         },
         personRedirect: function (id) {
             window.location.href = '/internal/person/details/' + id;
         },
+        validateForm: function (formId) {
+            let vm = this;
+            var form = document.getElementById(formId);
+
+            if (form.checkValidity()) {
+                if (formId == 'organisation-address-form') {
+                    const code1 = vm.org.address.postal_address.postcode;
+                    const code2 = vm.org.address.billing_address.postcode;
+                    if (
+                        isNaN(Number.parseInt(code1)) ||
+                        isNaN(Number.parseInt(code2))
+                    ) {
+                        swal.fire(
+                            'Failure updating organisation details.',
+                            'Postcode should only contain numeric value.',
+                            'error'
+                        );
+                    } else {
+                        vm.updateAddress();
+                    }
+                } else if (formId == 'organisation-details-form') {
+                    vm.updateDetails();
+                }
+            } else {
+                form.classList.add('was-validated');
+                $(form).find('input:invalid').first().focus();
+            }
+            return false;
+        },
         updateDetails: function () {
             let vm = this;
             vm.updatingDetails = true;
-            vm.$http
-                .post(
-                    helpers.add_endpoint_json(
-                        api_endpoints.organisations,
-                        vm.org.id + '/update_details'
-                    ),
-                    JSON.stringify(vm.org),
-                    {
-                        emulateJSON: true,
+            let payload = JSON.stringify({
+                organisation_id: vm.org.ledger_organisation_id,
+                organisation_name: vm.org.ledger_organisation_name
+                    ? vm.org.ledger_organisation_name
+                    : null,
+                organisation_abn: vm.org.ledger_organisation_abn
+                    ? vm.org.ledger_organisation_abn
+                    : null,
+                organisation_email: vm.org.ledger_organisation_email
+                    ? vm.org.ledger_organisation_email
+                    : null,
+                organisation_trading_name: vm.org
+                    .ledger_organisation_trading_name
+                    ? vm.org.ledger_organisation_trading_name
+                    : null,
+            });
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisations,
+                    vm.org.id + '/update_details'
+                ),
+                {
+                    method: 'PUT',
+                    body: payload,
+                }
+            )
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText;
+                        return Promise.reject(error);
                     }
-                )
-                .then(
-                    (response) => {
-                        vm.updatingDetails = false;
-                        vm.org = response.body;
-                        if (vm.org.address == null) {
-                            vm.org.address = {};
-                        }
-                        Swal.fire(
-                            'Saved',
-                            'Organisation details have been saved',
-                            'success'
-                        );
-                    },
-                    (error) => {
-                        var text = helpers.apiVueResourceError(error);
-                        if (typeof text == 'object') {
-                            if (
-                                Object.prototype.hasOwnProperty.call(
-                                    text,
-                                    'email'
-                                )
-                            ) {
-                                text = text.email[0];
-                            }
-                        }
-                        Swal.fire(
-                            'Error',
-                            'Organisation details have cannot be saved because of the following error: ' +
-                                text,
-                            'error'
-                        );
-                        vm.updatingDetails = false;
-                    }
-                );
+                    this.assignNameAndABN();
+                    swal.fire(
+                        'Success',
+                        'Organisation details updated successfully.',
+                        'success'
+                    );
+                })
+                .catch((error) => {
+                    swal.fire(
+                        'Failure updating organisation details.',
+                        error,
+                        'error'
+                    );
+                    console.error(error);
+                })
+                .finally(() => {
+                    vm.updatingDetails = false;
+                });
         },
         updateAddress: function () {
             let vm = this;
             vm.updatingAddress = true;
-            vm.$http
-                .post(
-                    helpers.add_endpoint_json(
-                        api_endpoints.organisations,
-                        vm.org.id + '/update_address'
-                    ),
-                    JSON.stringify(vm.org.address),
-                    {
-                        emulateJSON: true,
-                    }
-                )
-                .then(
-                    (response) => {
-                        vm.updatingAddress = false;
-                        vm.org = response.body;
-                        Swal.fire(
-                            'Saved',
-                            'Address details have been saved',
-                            'success'
-                        );
-                        if (vm.org.address == null) {
-                            vm.org.address = {};
-                        }
-                    },
-                    (error) => {
+            let payload = JSON.stringify({
+                organisation_id: vm.org.ledger_organisation_id,
+                postal_address: {
+                    postal_line1: vm.org.address.postal_address.line1,
+                    postal_locality: vm.org.address.postal_address.locality,
+                    postal_state: vm.org.address.postal_address.state,
+                    postal_postcode: vm.org.address.postal_address.postcode,
+                    postal_country: vm.org.address.postal_address.country,
+                },
+                billing_address: {
+                    billing_line1: vm.org.address.billing_address.line1,
+                    billing_locality: vm.org.address.billing_address.locality,
+                    billing_state: vm.org.address.billing_address.state,
+                    billing_postcode: vm.org.address.billing_address.postcode,
+                    billing_country: vm.org.address.billing_address.country,
+                },
+            });
+
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisations,
+                    vm.org.id + '/update_address'
+                ),
+                {
+                    method: 'POST',
+                    body: payload,
+                }
+            )
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText;
                         console.error(error);
-                        vm.updatingAddress = false;
+                        return Promise.reject(error);
                     }
-                );
+                    vm.org.billing_same_as_postal =
+                        vm.isBillingAddressSame != null
+                            ? vm.isBillingAddressSame
+                            : false;
+                    swal.fire(
+                        'Success',
+                        'Organisation address updated successfully',
+                        'success'
+                    );
+                })
+                .catch((error) => {
+                    swal.fire(
+                        'Failure updating organisation address.',
+                        'Something went wrong! Please try again.',
+                        'error'
+                    );
+                    console.error(error);
+                })
+                .finally(() => {
+                    vm.updatingAddress = false;
+                });
         },
     },
 };
 </script>
 
-<style scoped>
-.top-buffer-s {
-    margin-top: 10px;
-}
-
-.actionBtn {
-    cursor: pointer;
-}
-
-.hidePopover {
-    display: none;
-}
-
-.discount {
-    width: 100px;
-}
-
-.row-waiver {
-    height: 32px;
-}
-
+<style>
 .badge {
     cursor: pointer;
+}
+
+fieldset,
+legend {
+    all: revert;
+}
+
+legend {
+    color: grey;
+}
+
+fieldset {
+    border-color: #efefef;
+    border-style: solid;
 }
 </style>
