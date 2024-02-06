@@ -1,7 +1,8 @@
 import { RouterView } from 'vue-router';
 import InternalDashboard from '@/components/internal/dashboard.vue';
-import OrgAccessTable from '@/components/internal/organisations/dashboard.vue';
+import OrgAccessTable from '@/components/internal/organisations/access-dashboard.vue';
 import OrgAccess from '@/components/internal/organisations/access.vue';
+import OrganisationsDashboard from '@/components/internal/organisations/dashboard.vue';
 import Organisation from '@/components/internal/organisations/manage.vue';
 import Proposal from '@/components/internal/proposals/proposal.vue';
 import ApprovalDash from '@/components/internal/approvals/dashboard.vue';
@@ -67,6 +68,11 @@ export default {
             path: 'organisations',
             component: RouterView,
             children: [
+                {
+                    path: '',
+                    component: OrganisationsDashboard,
+                    name: 'organisations-dashboard',
+                },
                 {
                     path: 'access',
                     component: OrgAccessTable,
