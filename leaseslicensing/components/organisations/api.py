@@ -483,7 +483,12 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     def update_details(self, request, *args, **kwargs):
         instance = self.get_object()
         if not can_admin_org(instance, request.user.id):
-            return {"status": status.HTTP_403_FORBIDDEN, "message": "Forbidden."}
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data={
+                    "message": "You do not have permission to update this organisation."
+                },
+            )
 
         response_ledger = update_organisation_obj(request.data)
         cache.delete(
