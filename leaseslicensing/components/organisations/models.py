@@ -59,7 +59,7 @@ class Organisation(models.Model):
         max_length=255,
         verbose_name="Ledger Organisation Trading Name",
         editable=False,
-        default="",
+        null=True,
     )
     ledger_organisation_abn = models.CharField(
         max_length=50,
