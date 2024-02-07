@@ -131,6 +131,7 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
     page_size = 10
     queryset = Compliance.objects.none()
     serializer_class = ComplianceSerializer
+    permission_classes = [IsAssessor | HasObjectPermission]
 
     def get_queryset(self):
         if not is_internal(self.request) and not is_customer(self.request):
@@ -252,8 +253,8 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
 
 class ComplianceViewSet(viewsets.ModelViewSet):
     serializer_class = ComplianceSerializer
-    # queryset = Compliance.objects.all()
     queryset = Compliance.objects.none()
+    permission_classes = [IsAssessor | HasObjectPermission]
 
     def get_queryset(self):
         if is_internal(self.request):
