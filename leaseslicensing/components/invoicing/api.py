@@ -48,7 +48,7 @@ from leaseslicensing.components.main.api import (
 )
 from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.helpers import is_customer, is_finance_officer
-from leaseslicensing.permissions import IsFinanceOfficer
+from leaseslicensing.permissions import IsAssessor, IsFinanceOfficer
 
 logger = logging.getLogger(__name__)
 
@@ -138,12 +138,22 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def statuses(self, request, *args, **kwargs):
-        return Response(
-            [
-                {"id": status[0], "name": status[1]}
-                for status in Invoice.INVOICE_STATUS_CHOICES
+        status_choices = [
+            {"id": status[0], "name": status[1]}
+            for status in Invoice.INVOICE_STATUS_CHOICES
+        ]
+        if is_customer(request):
+            status_choices = [
+                status
+                for status in status_choices
+                if status["id"]
+                not in [
+                    Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+                    Invoice.INVOICE_STATUS_VOID,
+                    Invoice.INVOICE_STATUS_DISCARDED,
+                ]
             ]
-        )
+        return Response(status_choices)
 
     @action(detail=True, methods=["get"])
     def transactions(self, request, *args, **kwargs):
@@ -318,6 +328,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 class InvoiceTransactionViewSet(viewsets.ModelViewSet):
     queryset = InvoiceTransaction.objects.all()
     serializer_class = InvoiceTransactionSerializer
+    permission_classes = [IsAssessor | IsFinanceOfficer]
 
 
 class CPICalculationMethodViewSet(
