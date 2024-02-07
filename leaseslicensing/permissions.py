@@ -38,9 +38,6 @@ class IsFinanceOfficer(BasePermission):
 
 
 class HasObjectPermission(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_superuser
-
     def has_object_permission(self, request, view, obj):
         if request.user.is_superuser:
             return True
@@ -108,6 +105,11 @@ class IsAssignedReferee(BasePermission):
             return True
 
         return request.user.id == obj.referral
+
+
+class IsComplianceReferee(BasePermission):
+    def has_permission(self, request, view):
+        return is_compliance_referee(request)
 
 
 class IsAssignedComplianceReferee(BasePermission):
