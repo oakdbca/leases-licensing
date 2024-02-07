@@ -46,12 +46,13 @@ from leaseslicensing.components.main.models import (
 )
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.serializers import SendReferralSerializer
-from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.helpers import is_compliance_referee, is_customer, is_internal
 from leaseslicensing.permissions import (
     HasObjectPermission,
     IsAsignedAssessor,
     IsAssessor,
     IsAssignedComplianceReferee,
+    IsComplianceReferee,
 )
 
 logger = logging.getLogger(__name__)
@@ -129,23 +130,24 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
     pagination_class = DatatablesPageNumberPagination
     renderer_classes = (ProposalRenderer,)
     page_size = 10
-    queryset = Compliance.objects.none()
+    queryset = Compliance.objects.all()
     serializer_class = ComplianceSerializer
-    permission_classes = [IsAssessor | HasObjectPermission]
+    permission_classes = [IsAssessor | IsComplianceReferee | HasObjectPermission]
 
     def get_queryset(self):
+        queryset = super().get_queryset()
         if not is_internal(self.request) and not is_customer(self.request):
-            return Compliance.objects.none()
+            return queryset.none()
 
-        if is_internal(self.request):
-            qs = Compliance.objects.all().exclude(
-                processing_status=Compliance.PROCESSING_STATUS_DISCARDED
-            )
+        if is_compliance_referee(self.request):
+            queryset = Compliance.objects.exclude(
+                processing_status=Compliance.PROCESSING_STATUS_DISCARDED,
+            ).filter(referrals__referral=self.request.user.id)
 
         elif is_customer(self.request):
-            qs = Compliance.objects.filter(
-                Q(proposal__submitter=self.request.user.id)
-            ).exclude(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
+            queryset = queryset.exclude(
+                processing_status=Compliance.PROCESSING_STATUS_DISCARDED
+            ).filter(Q(proposal__submitter=self.request.user.id))
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
@@ -156,11 +158,11 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             and int(target_organisation_id) > 0
         ):
             target_organisation_id = int(target_organisation_id)
-            qs = qs.exclude(approval__org_applicant__isnull=True).filter(
+            queryset = queryset.exclude(approval__org_applicant__isnull=True).filter(
                 approval__org_applicant__id=target_organisation_id
             )
 
-        return qs
+        return queryset
 
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
@@ -253,20 +255,21 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
 
 class ComplianceViewSet(viewsets.ModelViewSet):
     serializer_class = ComplianceSerializer
-    queryset = Compliance.objects.none()
-    permission_classes = [IsAssessor | HasObjectPermission]
+    queryset = Compliance.objects.all()
+    permission_classes = [IsAssessor | IsComplianceReferee | HasObjectPermission]
 
     def get_queryset(self):
-        if is_internal(self.request):
-            return Compliance.objects.all().exclude(
-                processing_status=Compliance.PROCESSING_STATUS_DISCARDED
-            )
+        queryset = super().get_queryset()
+        if is_compliance_referee(self.request):
+            logger.debug(f"User {self.request.user} is a compliance referee")
+            queryset = queryset.filter(referrals__referral=self.request.user.id)
         elif is_customer(self.request):
-            queryset = Compliance.objects.filter(
-                Q(proposal__submitter=self.request.user.id)
-            ).exclude(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
-            return queryset
-        return Compliance.objects.none()
+            logger.debug(f"User {self.request.user} is a customer")
+            queryset = queryset.exclude(
+                processing_status=Compliance.PROCESSING_STATUS_DISCARDED
+            ).filter(Q(proposal__submitter=self.request.user.id))
+
+        return queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
