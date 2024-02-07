@@ -25,7 +25,6 @@ module.exports = {
     fee_configurations: '/api/fee_configurations',
     fee_seasons_dict: '/api/fee_seasons_dict',
     filtered_organisations: '/api/filtered_organisations',
-    filtered_users: '/api/filtered_users',
     invoices: '/api/invoices/',
     invoicing_details: '/api/invoicing_details/',
     my_organisations: '/api/my_organisations/',
