@@ -47,7 +47,12 @@ from leaseslicensing.components.main.models import (
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.serializers import SendReferralSerializer
 from leaseslicensing.helpers import is_customer, is_internal
-from leaseslicensing.permissions import IsAsignedAssessor, IsAssignedComplianceReferee
+from leaseslicensing.permissions import (
+    HasObjectPermission,
+    IsAsignedAssessor,
+    IsAssessor,
+    IsAssignedComplianceReferee,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -596,6 +601,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
 class ComplianceAmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = ComplianceAmendmentRequest.objects.all()
     serializer_class = ComplianceAmendmentRequestSerializer
+    permission_classes = [IsAssessor | HasObjectPermission]
 
     @basic_exception_handler
     def create(self, request, *args, **kwargs):
