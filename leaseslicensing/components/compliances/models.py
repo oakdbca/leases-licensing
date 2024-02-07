@@ -441,6 +441,8 @@ class Compliance(LicensingModelVersioned):
         return ComplianceUserAction.log_action(self, action, request.user.id)
 
     def user_has_object_permission(self, user_id):
+        if self.referrals.filter(referral=user_id).exists():
+            return True
         return self.approval.user_has_object_permission(user_id)
 
     def switch_status(self, user_id, new_processing_status):
