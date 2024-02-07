@@ -325,6 +325,7 @@ class CPICalculationMethodViewSet(
 ):
     queryset = CPICalculationMethod.objects.filter(archived=False)
     serializer_class = CPICalculationMethodSerializer
+    permission_classes = [IsFinanceOfficer]
 
 
 class PayInvoiceSuccessCallbackView(APIView):
