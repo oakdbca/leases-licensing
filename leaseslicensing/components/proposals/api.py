@@ -218,15 +218,6 @@ class GetProposalType(views.APIView):
             )
 
 
-class GetEmptyList(views.APIView):
-    renderer_classes = [
-        JSONRenderer,
-    ]
-
-    def get(self, request, format=None):
-        return Response([])
-
-
 class ProposalFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
@@ -1661,9 +1652,9 @@ class ProposalViewSet(UserActionLoggingViewset):
 
         data = {
             "org_applicant": org_applicant,
-            "ind_applicant": request.user.id
-            if not request.data.get("org_applicant")
-            else None,  # if no org_applicant, assume this proposal is for individual.
+            "ind_applicant": (
+                request.user.id if not request.data.get("org_applicant") else None
+            ),  # if no org_applicant, assume this proposal is for individual.
             "application_type_id": application_type.id,
             "proposal_type_id": proposal_type.id,
         }
