@@ -138,17 +138,9 @@ api_patterns = [
         name="get-repetition-types",
     ),
     url(
-        r"^api/filtered_users$",
-        users_api.UserListFilterView.as_view(),
-        name="filtered_users",
-    ),
-    url(
         r"^api/proposal_type$",
         proposal_api.GetProposalType.as_view(),
         name="get-proposal-type",
-    ),
-    url(
-        r"^api/empty_list$", proposal_api.GetEmptyList.as_view(), name="get-empty-list"
     ),
     url(
         r"^api/create_organisation/$",
