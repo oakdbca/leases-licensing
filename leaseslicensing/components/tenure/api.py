@@ -32,6 +32,7 @@ from leaseslicensing.components.tenure.serializers import (
     TenureSerializer,
     VestingSerializer,
 )
+from leaseslicensing.permissions import IsAssessor
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class IdentifierViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = IdentifierSerializer
     queryset = Identifier.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class VestingViewSet(
@@ -54,6 +56,7 @@ class VestingViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = VestingSerializer
     queryset = Vesting.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class NameViewSet(
@@ -64,6 +67,7 @@ class NameViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = NameSerializer
     queryset = Name.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class ActViewSet(
@@ -74,6 +78,7 @@ class ActViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = ActSerializer
     queryset = Act.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class TenureViewSet(
@@ -84,6 +89,7 @@ class TenureViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = TenureSerializer
     queryset = Tenure.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class CategoryViewSet(
@@ -95,6 +101,7 @@ class CategoryViewSet(
     key_value_display_field = "name"
     select2_search_case_sensitive = True
     queryset = Category.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class RegionViewSet(
@@ -105,6 +112,7 @@ class RegionViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = RegionSerializer
     queryset = Region.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class DistrictViewSet(
@@ -115,6 +123,7 @@ class DistrictViewSet(
     key_value_serializer_class = DistrictKeyValueSerializer
     key_value_display_field = "name"
     queryset = District.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class LGAViewSet(
@@ -125,6 +134,7 @@ class LGAViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = LGASerializer
     queryset = LGA.objects.all()
+    permission_classes = [IsAssessor]
 
 
 class GroupViewSet(
@@ -135,3 +145,4 @@ class GroupViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = GroupSerializer
     queryset = Group.objects.all()
+    permission_classes = [IsAssessor]
