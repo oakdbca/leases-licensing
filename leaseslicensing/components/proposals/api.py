@@ -114,6 +114,7 @@ from leaseslicensing.permissions import (
     HasObjectPermission,
     IsAssessor,
     IsAssessorOrReferrer,
+    IsAssignedReferee,
 )
 from leaseslicensing.settings import APPLICATION_TYPES
 
@@ -2426,6 +2427,7 @@ class AssessorChecklistViewSet(viewsets.ReadOnlyModelViewSet):
 class ProposalAssessmentViewSet(viewsets.ModelViewSet):
     queryset = ProposalAssessment.objects.all()
     serializer_class = ProposalAssessmentSerializer
+    permission_classes = [IsAssessor | IsAssignedReferee]
 
     @detail_route(methods=["post"], detail=True)
     @basic_exception_handler
