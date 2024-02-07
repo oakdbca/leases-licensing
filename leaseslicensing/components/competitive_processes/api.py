@@ -42,6 +42,7 @@ from leaseslicensing.components.main.utils import (
 )
 from leaseslicensing.components.proposals.models import Proposal
 from leaseslicensing.helpers import is_internal
+from leaseslicensing.permissions import IsCompetitiveProcessEditor
 
 logger = logging.getLogger("leaseslicensing")
 
@@ -90,6 +91,7 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset, Select2ListMixin):
     filter_backends = (CompetitiveProcessFilterBackend,)
     lookup_field = "id"
     key_value_display_field = "lodgement_number"
+    permission_classes = [IsCompetitiveProcessEditor]
 
     def perform_create(self, serializer):
         """
