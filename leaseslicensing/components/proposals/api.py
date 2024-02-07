@@ -110,7 +110,11 @@ from leaseslicensing.helpers import (
     is_referee,
 )
 from leaseslicensing.ledger_api_utils import retrieve_email_user
-from leaseslicensing.permissions import IsAssessorOrReferrer
+from leaseslicensing.permissions import (
+    HasObjectPermission,
+    IsAssessor,
+    IsAssessorOrReferrer,
+)
 from leaseslicensing.settings import APPLICATION_TYPES
 
 logger = logging.getLogger(__name__)
@@ -1135,6 +1139,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             "GET",
         ],
         detail=True,
+        permission_classes=[IsAssessor | HasObjectPermission],
     )
     @basic_exception_handler
     def amendment_request(self, request, *args, **kwargs):
@@ -2316,6 +2321,7 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
 class AmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = AmendmentRequest.objects.all()
     serializer_class = AmendmentRequestSerializer
+    permission_classes = [IsAssessor | HasObjectPermission]
 
     @basic_exception_handler
     def create(self, request, *args, **kwargs):
