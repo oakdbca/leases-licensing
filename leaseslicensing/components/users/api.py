@@ -7,9 +7,8 @@ from django.db.models import CharField, Q, Value
 from django.db.models.functions import Concat
 from django_countries import countries
 from ledger_api_client.api import get_account_details
-from ledger_api_client.ledger_models import Address
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser  # EmailUserAction
-from rest_framework import filters, generics, views
+from rest_framework import views
 from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -29,9 +28,6 @@ from leaseslicensing.components.main.serializers import (
     EmailUserSerializer,
     LimitedEmailUserSerializer,
 )
-from leaseslicensing.components.organisations.serializers import (
-    OrganisationRequestDTSerializer,
-)
 from leaseslicensing.components.proposals.models import (
     Proposal,
     ProposalApplicant,
@@ -39,17 +35,17 @@ from leaseslicensing.components.proposals.models import (
 )
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.components.users.serializers import (
-    ContactSerializer,
     EmailUserActionSerializer,
     EmailUserLogEntrySerializer,
-    PersonalSerializer,
     ProposalApplicantSerializer,
-    UserAddressSerializer,
-    UserFilterSerializer,
     UserSerializer,
 )
 from leaseslicensing.helpers import is_internal
-from leaseslicensing.permissions import IsInternal
+from leaseslicensing.permissions import (
+    IsApprover,
+    IsAssessor,
+    IsCompetitiveProcessEditor,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +124,14 @@ class GetProposalApplicant(views.APIView):
     ]
 
     def get(self, request, proposal_pk, format=None):
+        user = request.user
         proposal = Proposal.objects.get(id=proposal_pk)
+        if not user.is_superuser and not is_internal(user):
+            if not proposal.user_has_object_permission(request.user.id):
+                return Response(
+                    {"error": "Forbidden"},
+                    status=403,
+                )
         try:
             proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
         except ProposalApplicant.DoesNotExist:
@@ -150,21 +153,12 @@ class GetProfile(views.APIView):
         return Response(serializer.data)
 
 
-class UserListFilterView(generics.ListAPIView):
-    """https://cop-internal.dbca.wa.gov.au/api/filtered_users?search=russell"""
-
-    queryset = EmailUser.objects.all()
-    serializer_class = UserFilterSerializer
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ("email", "first_name", "last_name")
-
-
 class UserViewSet(UserActionLoggingViewset):
     """TODO: Make sure to do a full security audit on this viewset"""
 
     queryset = EmailUser.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsInternal]
+    permission_classes = [IsAssessor | IsApprover | IsCompetitiveProcessEditor]
 
     def get_serializer_class(self):
         if not is_internal(self.request):
@@ -200,7 +194,6 @@ class UserViewSet(UserActionLoggingViewset):
             "GET",
         ],
         detail=False,
-        permission_classes=[IsInternal],
     )
     def person_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
@@ -236,7 +229,6 @@ class UserViewSet(UserActionLoggingViewset):
             "GET",
         ],
         detail=False,
-        permission_classes=[IsInternal],
     )
     @basic_exception_handler
     def get_referees(self, request, *args, **kwargs):
@@ -310,7 +302,6 @@ class UserViewSet(UserActionLoggingViewset):
             "GET",
         ],
         detail=False,
-        permission_classes=[IsInternal],
     )
     @basic_exception_handler
     def get_department_users(self, request, *args, **kwargs):
@@ -340,98 +331,6 @@ class UserViewSet(UserActionLoggingViewset):
         ]
 
         return Response({"results": data_transform})
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    @basic_exception_handler
-    def update_personal(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = PersonalSerializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        serializer = UserSerializer(instance, context={"request": request})
-        return Response(serializer.data)
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    @basic_exception_handler
-    def update_contact(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = ContactSerializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        serializer = UserSerializer(instance, context={"request": request})
-        return Response(serializer.data)
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    @basic_exception_handler
-    def update_address(self, request, *args, **kwargs):
-        instance = self.get_object()
-        # residential address
-        residential_serializer = UserAddressSerializer(
-            data=request.data.get("residential_address")
-        )
-        residential_serializer.is_valid(raise_exception=True)
-        residential_address, created = Address.objects.get_or_create(
-            line1=residential_serializer.validated_data["line1"],
-            locality=residential_serializer.validated_data["locality"],
-            state=residential_serializer.validated_data["state"],
-            country=residential_serializer.validated_data["country"],
-            postcode=residential_serializer.validated_data["postcode"],
-            user=instance,
-        )
-        instance.residential_address = residential_address
-        # postal address
-        postal_address_data = request.data.get("postal_address")
-        if request.data.get("postal_same_as_residential"):
-            instance.postal_same_as_residential = True
-            instance.postal_address = residential_address
-        elif postal_address_data:
-            postal_serializer = UserAddressSerializer(data=postal_address_data)
-            postal_serializer.is_valid(raise_exception=True)
-            postal_address, created = Address.objects.get_or_create(
-                line1=postal_serializer.validated_data["line1"],
-                locality=postal_serializer.validated_data["locality"],
-                state=postal_serializer.validated_data["state"],
-                country=postal_serializer.validated_data["country"],
-                postcode=postal_serializer.validated_data["postcode"],
-                user=instance,
-            )
-            instance.postal_address = postal_address
-            instance.postal_same_as_residential = False
-
-        instance.save()
-        serializer = UserSerializer(instance, context={"request": request})
-        return Response(serializer.data)
-
-    @detail_route(
-        methods=[
-            "GET",
-        ],
-        detail=True,
-    )
-    @basic_exception_handler
-    def pending_org_requests(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = OrganisationRequestDTSerializer(
-            instance.organisationrequest_set.filter(status="with_assessor"),
-            many=True,
-            context={"request": request},
-        )
-        return Response(serializer.data)
 
     @detail_route(
         methods=[
