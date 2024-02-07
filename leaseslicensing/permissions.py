@@ -141,6 +141,17 @@ class IsAssessor(BasePermission):
         return is_assessor(request)
 
 
+class IsApprover(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        if request.user.is_superuser:
+            return True
+
+        return is_approver(request)
+
+
 class IsCompetitiveProcessEditor(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
