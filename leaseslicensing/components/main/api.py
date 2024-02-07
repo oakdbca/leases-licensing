@@ -20,7 +20,6 @@ from leaseslicensing import helpers
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.models import (
     ApplicationType,
-    Question,
     TemporaryDocumentCollection,
 )
 from leaseslicensing.components.main.process_document import (
@@ -31,18 +30,12 @@ from leaseslicensing.components.main.process_document import (
 from leaseslicensing.components.main.serializers import (
     ApplicationTypeKeyValueSerializer,
     ApplicationTypeSerializer,
-    QuestionSerializer,
     SecureDocumentSerializer,
     TemporaryDocumentCollectionSerializer,
 )
 from leaseslicensing.permissions import IsInternalOrHasObjectPermission
 
 logger = logging.getLogger(__name__)
-
-
-class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Question.objects.all()
-    serializer_class = QuestionSerializer
 
 
 class TemporaryDocumentCollectionViewSet(viewsets.ModelViewSet):
