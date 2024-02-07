@@ -5,6 +5,7 @@ from rest_framework.permissions import BasePermission
 from leaseslicensing.helpers import (
     is_approver,
     is_assessor,
+    is_competitive_process_editor,
     is_compliance_referee,
     is_customer,
     is_finance_officer,
@@ -127,3 +128,25 @@ class IsAssessorOrReferrer(BasePermission):
             return False
 
         return is_assessor(request) or is_approver(request)
+
+
+class IsAssessor(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        if request.user.is_superuser:
+            return True
+
+        return is_assessor(request)
+
+
+class IsCompetitiveProcessEditor(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        if request.user.is_superuser:
+            return True
+
+        return is_competitive_process_editor(request)
