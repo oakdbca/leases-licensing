@@ -37,6 +37,20 @@ class IsFinanceOfficer(BasePermission):
         return False
 
 
+class HasObjectPermission(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_superuser:
+            return True
+        if is_customer(request):
+            if not hasattr(obj, "user_has_object_permission"):
+                raise AttributeError(
+                    f"Object: {obj} must define a user_has_object_permission method to use this permission."
+                )
+            return obj.user_has_object_permission(request.user.id)
+
+        return False
+
+
 class IsInternalOrHasObjectPermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.user.is_superuser:
