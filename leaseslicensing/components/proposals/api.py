@@ -2281,6 +2281,7 @@ class ProposalRequirementViewSet(LicensingViewset):
 class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProposalStandardRequirement.objects.all()
     serializer_class = ProposalStandardRequirementSerializer
+    permission_classes = [IsAssessor]
 
     @list_route(
         methods=[
