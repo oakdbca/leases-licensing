@@ -295,7 +295,7 @@
                                     >Compliance</a
                                 >
                             </li>
-                            <li class="nav-item">
+                            <li v-if="showRelatedItemsTab" class="nav-item">
                                 <a
                                     id="pills-related-items-tab"
                                     class="nav-link"
@@ -771,6 +771,14 @@ export default {
                       'datatable_list/?compliance_id=' +
                       this.compliance.id
                 : '';
+        },
+        showRelatedItemsTab: function () {
+            if (this.profile) {
+                if (this.profile.is_assessor) {
+                    return true;
+                }
+            }
+            return false;
         },
         canViewonly: function () {
             return (
