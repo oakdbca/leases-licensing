@@ -57,10 +57,6 @@ router.register(
     invoicing_api.CPICalculationMethodViewSet,
     basename="cpi_calculation_methods",
 )
-
-router.register(
-    r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"
-)
 router.register(
     r"proposal_paginated",
     proposal_api.ProposalPaginatedViewSet,

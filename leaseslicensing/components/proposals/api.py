@@ -416,24 +416,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
         return self.paginator.get_paginated_response(serializer.data)
 
 
-class ProposalSubmitViewSet(viewsets.ModelViewSet):
-    queryset = Proposal.objects.none()
-    serializer_class = ProposalSerializer
-    lookup_field = "id"
-
-    def get_queryset(self):
-        user = self.request.user
-
-        if not is_internal(self.request) and not is_customer(self.request):
-            return Proposal.objects.none()
-
-        if is_internal(self.request):
-            return Proposal.objects.all()
-
-        elif is_customer(self.request):
-            return Proposal.get_proposals_for_emailuser(user.id)
-
-
 class ProposalViewSet(UserActionLoggingViewset):
     queryset = Proposal.objects.none()
     serializer_class = ProposalSerializer
@@ -2458,6 +2440,7 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
 class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
     queryset = ExternalRefereeInvite.objects.filter(archived=False)
     serializer_class = ExternalRefereeInviteSerializer
+    # TODO: Fix permission for this viewset
     permission_classes = [IsAssessorOrReferrer]
 
     @detail_route(methods=["post"], detail=True)
