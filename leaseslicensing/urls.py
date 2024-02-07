@@ -70,7 +70,11 @@ router.register(r"approval_paginated", approval_api.ApprovalPaginatedViewSet)
 router.register(
     r"competitive_process", competitive_process_api.CompetitiveProcessViewSet
 )
-router.register(r"compliance_paginated", compliances_api.CompliancePaginatedViewSet)
+router.register(
+    r"compliance_paginated",
+    compliances_api.CompliancePaginatedViewSet,
+    basename="compliance_paginated",
+)
 router.register(r"compliance_referrals", compliances_api.ComplianceReferralViewSet)
 router.register(r"compliance_assessments", compliances_api.ComplianceAssessmentViewSet)
 router.register(r"referrals", proposal_api.ReferralViewSet)
