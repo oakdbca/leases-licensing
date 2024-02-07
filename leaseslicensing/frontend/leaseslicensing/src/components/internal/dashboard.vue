@@ -142,7 +142,6 @@ export default {
     },
     data() {
         return {
-            empty_list: '/api/empty_list',
             accessing_user: null,
             loadMap: false,
             proposals_url: api_endpoints.proposals_paginated_external,
