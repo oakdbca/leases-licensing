@@ -140,14 +140,14 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             return queryset.none()
 
         if is_compliance_referee(self.request):
-            queryset = Compliance.objects.exclude(
+            queryset = queryset.exclude(
                 processing_status=Compliance.PROCESSING_STATUS_DISCARDED,
             ).filter(referrals__referral=self.request.user.id)
 
-        elif is_customer(self.request):
+        if is_customer(self.request):
             queryset = queryset.exclude(
                 processing_status=Compliance.PROCESSING_STATUS_DISCARDED
-            ).filter(Q(proposal__submitter=self.request.user.id))
+            ).filter(proposal__submitter=self.request.user.id)
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
