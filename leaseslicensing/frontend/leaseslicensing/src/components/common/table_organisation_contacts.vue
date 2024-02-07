@@ -11,7 +11,7 @@
                 </button>
             </div>
         </div>
-        <CollapsibleComponent
+        <CollapsibleFilters
             ref="collapsible_filters"
             component-title="Filters"
             class="mb-2"
@@ -21,7 +21,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Role</label>
-                        <select v-model="filterRole" class="form-control">
+                        <select v-model="filterRole" class="form-select">
                             <option value="">All</option>
                             <option value="consultant">Consultant</option>
                             <option value="organisation_user">Employee</option>
@@ -30,7 +30,7 @@
                     </div>
                 </div>
             </div>
-        </CollapsibleComponent>
+        </CollapsibleFilters>
 
         <div class="row">
             <div class="col-lg-12">
@@ -51,6 +51,7 @@
 import { v4 as uuid } from 'uuid';
 import datatable from '@/utils/vue/datatable.vue';
 import AddContact from '@common-utils/add_contact.vue';
+import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 import { api_endpoints, helpers, constants } from '@/utils/hooks';
 
 export default {
@@ -58,6 +59,7 @@ export default {
     components: {
         datatable,
         AddContact,
+        CollapsibleFilters,
     },
     props: {
         level: {
@@ -101,7 +103,6 @@ export default {
                 url += '&organisation_id=' + this.organisationId;
             }
             return url;
-            s;
         },
         filterApplied: function () {
             if (this.filterRole.toLowerCase() === '') {
@@ -299,7 +300,7 @@ export default {
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
-                this.$refs.collapsible_filters.showWarningIcon(
+                this.$refs.collapsible_filters.show_warning_icon(
                     this.filterApplied
                 );
             }
@@ -308,7 +309,9 @@ export default {
     created: function () {},
     methods: {
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.showWarningIcon(this.filterApplied);
+            this.$refs.collapsible_filters.show_warning_icon(
+                this.filterApplied
+            );
         },
         expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded;
