@@ -25,7 +25,7 @@
                                         <div class="form-group">
                                             <select
                                                 v-show="isLoading"
-                                                class="form-control"
+                                                class="form-select"
                                             >
                                                 <option value="">
                                                     Loading...
@@ -40,7 +40,7 @@
                                                     isFinalised ||
                                                     !check_assessor()
                                                 "
-                                                class="form-control"
+                                                class="form-select"
                                                 @change="assignTo"
                                             >
                                                 <option value="null">
