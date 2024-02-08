@@ -12,7 +12,7 @@
                         <label for="">Organisation</label>
                         <select
                             v-model="filterInvoiceOrganisation"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -30,7 +30,7 @@
                         <label for="">Payment Status</label>
                         <select
                             v-model="filterInvoiceStatus"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option

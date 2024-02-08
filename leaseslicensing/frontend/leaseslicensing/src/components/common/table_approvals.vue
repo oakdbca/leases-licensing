@@ -12,7 +12,7 @@
                         <label for="">Type</label>
                         <select
                             v-model="filterApprovalType"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -30,7 +30,7 @@
                         <label for="">Status</label>
                         <select
                             v-model="filterApprovalStatus"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -81,7 +81,7 @@
                         <select
                             id="filter-region"
                             v-model="filterApprovalOrganisation"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -100,7 +100,7 @@
                         <select
                             id="filter-region"
                             v-model="filterApprovalRegion"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -119,7 +119,7 @@
                         <select
                             id=" filter-district"
                             v-model="filterApprovalDistrict"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -138,7 +138,7 @@
                         <select
                             id="filter-group"
                             v-model="filterApprovalGroup"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option

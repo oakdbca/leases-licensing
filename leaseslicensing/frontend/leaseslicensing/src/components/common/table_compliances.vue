@@ -12,7 +12,7 @@
                         <label for="">Approval Type</label>
                         <select
                             v-model="filterApprovalType"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -30,7 +30,7 @@
                         <label for="">Status</label>
                         <select
                             v-model="filterComplianceStatus"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option

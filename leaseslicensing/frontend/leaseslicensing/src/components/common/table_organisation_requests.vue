@@ -12,7 +12,7 @@
                         <label for="">Organisation</label>
                         <select
                             v-model="filterOrganisation"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="">All</option>
                             <option
@@ -28,7 +28,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Role</label>
-                        <select v-model="filterRole" class="form-control">
+                        <select v-model="filterRole" class="form-select">
                             <option value="">All</option>
                             <option value="employee">Employee</option>
                             <option value="consultant">Consultant</option>
@@ -38,7 +38,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Status</label>
-                        <select v-model="filterStatus" class="form-control">
+                        <select v-model="filterStatus" class="form-select">
                             <option value="">All</option>
                             <option value="with_assessor">With Assessor</option>
                             <option value="approved">Approved</option>
