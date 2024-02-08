@@ -132,7 +132,7 @@ class IsAssignedComplianceReferee(BasePermission):
         return request.user.id == obj.referral
 
 
-class IsAssessorOrReferrer(BasePermission):
+class IsReferee(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
@@ -140,13 +140,7 @@ class IsAssessorOrReferrer(BasePermission):
         if request.user.is_superuser:
             return True
 
-        if request.user.is_superuser:
-            return True
-
-        if not is_internal(request):
-            return False
-
-        return is_assessor(request) or is_approver(request)
+        return is_referee(request)
 
 
 class IsAssessor(BasePermission):
