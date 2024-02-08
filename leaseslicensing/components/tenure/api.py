@@ -32,13 +32,16 @@ from leaseslicensing.components.tenure.serializers import (
     TenureSerializer,
     VestingSerializer,
 )
-from leaseslicensing.permissions import IsAssessor
+from leaseslicensing.permissions import IsAssessor, IsReferee
 
 logger = logging.getLogger(__name__)
 
 
 class IdentifierViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = Identifier
     serializer_class = IdentifierSerializer
@@ -49,7 +52,10 @@ class IdentifierViewSet(
 
 
 class VestingViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = Vesting
     serializer_class = VestingSerializer
@@ -60,7 +66,10 @@ class VestingViewSet(
 
 
 class NameViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = Name
     serializer_class = NameSerializer
@@ -71,7 +80,10 @@ class NameViewSet(
 
 
 class ActViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = Act
     serializer_class = ActSerializer
@@ -82,7 +94,10 @@ class ActViewSet(
 
 
 class TenureViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = Tenure
     serializer_class = TenureSerializer
@@ -93,7 +108,10 @@ class TenureViewSet(
 
 
 class CategoryViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = Category
     serializer_class = CategorySerializer
@@ -105,7 +123,10 @@ class CategoryViewSet(
 
 
 class RegionViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = Region
     serializer_class = RegionSerializer
@@ -116,7 +137,10 @@ class RegionViewSet(
 
 
 class DistrictViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = District
     serializer_class = DistrictSerializer
@@ -127,7 +151,10 @@ class DistrictViewSet(
 
 
 class LGAViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = LGA
     serializer_class = LGASerializer
@@ -138,11 +165,14 @@ class LGAViewSet(
 
 
 class GroupViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+    viewsets.ReadOnlyModelViewSet,
+    KeyValueListMixin,
+    NoPaginationListMixin,
+    Select2ListMixin,
 ):
     model = Group
     serializer_class = GroupSerializer
     key_value_display_field = "name"
     key_value_serializer_class = GroupSerializer
     queryset = Group.objects.all()
-    permission_classes = [IsAssessor]
+    permission_classes = [IsAssessor | IsReferee]
