@@ -112,6 +112,16 @@
                                 >
                             </div>
                         </div>
+                        <div v-else class="row mb-3">
+                            <label class="col-sm-3 col-form-label">{{
+                                decisionLabel
+                            }}</label>
+                            <div class="col-sm-9">
+                                <span class="badge bg-success p-2 fs-6">
+                                    Approve</span
+                                >
+                            </div>
+                        </div>
                         <div class="row mb-3">
                             <label
                                 for="registration_of_interest_details"
@@ -226,6 +236,29 @@
                     </div>
                     <div v-if="leaseLicence" class="col-sm-12">
                         <div class="form-group">
+                            <div
+                                v-if="proposal.proposed_decline_status"
+                                class="row mb-3 align-items-center"
+                            >
+                                <label class="col-sm-3 col-form-label">
+                                    {{ decisionLabel }}
+                                </label>
+                                <div class="col-sm-9">
+                                    <span class="badge bg-danger p-2 fs-6">
+                                        Decline</span
+                                    >
+                                </div>
+                            </div>
+                            <div v-else class="row mb-3">
+                                <label class="col-sm-3 col-form-label">{{
+                                    decisionLabel
+                                }}</label>
+                                <div class="col-sm-9">
+                                    <span class="badge bg-success p-2 fs-6">
+                                        Approve</span
+                                    >
+                                </div>
+                            </div>
                             <div
                                 v-if="!proposal.proposed_decline_status"
                                 class="row mb-3"
