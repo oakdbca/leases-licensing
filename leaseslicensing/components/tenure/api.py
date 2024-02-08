@@ -32,7 +32,7 @@ from leaseslicensing.components.tenure.serializers import (
     TenureSerializer,
     VestingSerializer,
 )
-from leaseslicensing.permissions import IsAssessor, IsReferee
+from leaseslicensing.permissions import IsApprover, IsAssessor, IsReferee
 
 logger = logging.getLogger(__name__)
 
@@ -175,4 +175,4 @@ class GroupViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = GroupSerializer
     queryset = Group.objects.all()
-    permission_classes = [IsAssessor | IsReferee]
+    permission_classes = [IsAssessor | IsApprover | IsReferee]
