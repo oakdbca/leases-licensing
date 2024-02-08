@@ -114,7 +114,7 @@ class InvoiceFilterBackend(DatatablesFilterBackend):
         return queryset
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
+class InvoiceViewSet(LicensingViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
     filter_backends = [InvoiceFilterBackend]
@@ -325,7 +325,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         raise Http404
 
 
-class InvoiceTransactionViewSet(viewsets.ModelViewSet):
+class InvoiceTransactionViewSet(LicensingViewSet):
     queryset = InvoiceTransaction.objects.all()
     serializer_class = InvoiceTransactionSerializer
     permission_classes = [IsAssessor | IsFinanceOfficer]

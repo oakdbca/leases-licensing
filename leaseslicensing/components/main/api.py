@@ -39,6 +39,10 @@ logger = logging.getLogger(__name__)
 
 
 class TemporaryDocumentCollectionViewSet(viewsets.ModelViewSet):
+    # TODO: I believe this viewset has a security issue. Doesn't it allow any user to
+    # perform arbitrary actions on any TemporaryDocumentCollection
+    # instance? It should be restricted to the user who created the instance.
+    # but should also have some throttling etc. to prevent abuse.
     queryset = TemporaryDocumentCollection.objects.all()
     serializer_class = TemporaryDocumentCollectionSerializer
 

@@ -41,6 +41,7 @@ from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.serializers import InvoiceSerializer
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
+    LicensingViewSet,
     UserActionLoggingViewset,
 )
 from leaseslicensing.components.main.decorators import basic_exception_handler
@@ -749,7 +750,7 @@ class CheckRefereeEmailThrottle(UserRateThrottle):
         rate = "4/hour"
 
 
-class ApprovalTransferViewSet(viewsets.ModelViewSet):
+class ApprovalTransferViewSet(LicensingViewSet):
     queryset = ApprovalTransfer.objects.all()
     serializer_class = ApprovalTransferSerializer
     permission_classes = [IsAssessor | HasObjectPermission]

@@ -114,7 +114,6 @@ from leaseslicensing.permissions import (
     HasObjectPermission,
     IsAssessor,
     IsAssignedReferee,
-    IsReferee,
 )
 from leaseslicensing.settings import APPLICATION_TYPES
 
@@ -283,7 +282,7 @@ class ProposalRenderer(DatatablesRenderer):
         return super().render(data, accepted_media_type, renderer_context)
 
 
-class ProposalPaginatedViewSet(viewsets.ModelViewSet):
+class ProposalPaginatedViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (ProposalFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
     renderer_classes = (ProposalRenderer,)
@@ -1964,16 +1963,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         return Response(response)
 
 
-class ReferralViewSet(viewsets.ModelViewSet):
-    # queryset = Referral.objects.all()
+class ReferralViewSet(LicensingViewSet):
     queryset = Referral.objects.none()
     serializer_class = ReferralSerializer
 
     def get_queryset(self):
         user = self.request.user
-        # if user.is_authenticated() and is_internal(self.request):
         if user.is_authenticated and is_internal(self.request):
-            # queryset =  Referral.objects.filter(referral=user)
             queryset = Referral.objects.all()
             return queryset
         return Referral.objects.none()
@@ -1986,7 +1982,6 @@ class ReferralViewSet(viewsets.ModelViewSet):
     )
     def filter_list(self, request, *args, **kwargs):
         """Used by the external dashboard filters"""
-        # qs =  self.get_queryset().filter(referral=request.user)
         qs = self.get_queryset()
         submitter_qs = (
             qs.filter(proposal__submitter__isnull=False)
@@ -2036,7 +2031,6 @@ class ReferralViewSet(viewsets.ModelViewSet):
     def user_list(self, request, *args, **kwargs):
         qs = self.get_queryset().filter(referral=request.user)
         serializer = DTReferralSerializer(qs, many=True)
-        # serializer = DTReferralSerializer(self.get_queryset(), many=True)
         return Response(serializer.data)
 
     @list_route(
@@ -2302,7 +2296,7 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class AmendmentRequestViewSet(viewsets.ModelViewSet):
+class AmendmentRequestViewSet(LicensingViewSet):
     queryset = AmendmentRequest.objects.all()
     serializer_class = AmendmentRequestSerializer
     permission_classes = [IsAssessor | HasObjectPermission]
@@ -2407,7 +2401,7 @@ class AssessorChecklistViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
 
-class ProposalAssessmentViewSet(viewsets.ModelViewSet):
+class ProposalAssessmentViewSet(LicensingViewSet):
     queryset = ProposalAssessment.objects.all()
     serializer_class = ProposalAssessmentSerializer
     permission_classes = [IsAssessor | IsAssignedReferee]
@@ -2438,11 +2432,11 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
+class ExternalRefereeInviteViewSet(LicensingViewSet):
     queryset = ExternalRefereeInvite.objects.filter(archived=False)
     serializer_class = ExternalRefereeInviteSerializer
     # TODO: Fix permission for this viewset
-    permission_classes = [IsAssessor | IsReferee]
+    permission_classes = [IsAssessor | HasObjectPermission]
 
     @detail_route(methods=["post"], detail=True)
     @basic_exception_handler

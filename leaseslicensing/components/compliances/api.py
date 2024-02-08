@@ -125,7 +125,7 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
         return queryset
 
 
-class CompliancePaginatedViewSet(viewsets.ModelViewSet):
+class CompliancePaginatedViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (ComplianceFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
     renderer_classes = (ProposalRenderer,)
@@ -253,7 +253,7 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
         return self.paginator.get_paginated_response(serializer.data)
 
 
-class ComplianceViewSet(viewsets.ModelViewSet):
+class ComplianceViewSet(LicensingViewSet):
     serializer_class = ComplianceSerializer
     queryset = Compliance.objects.all()
     permission_classes = [IsAssessor | IsComplianceReferee | HasObjectPermission]
@@ -633,7 +633,7 @@ class ComplianceAmendmentReasonChoicesView(views.APIView):
         return Response(choices_list)
 
 
-class ComplianceReferralViewSet(viewsets.ModelViewSet):
+class ComplianceReferralViewSet(LicensingViewSet):
     queryset = ComplianceReferral.objects.all()
     serializer_class = ComplianceReferralSerializer
     permission_classes = [IsAssignedComplianceReferee]
