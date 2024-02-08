@@ -4308,6 +4308,9 @@ class AmendmentRequest(ProposalRequest):
 
         self.save()
 
+    def user_has_object_permission(self, user_id):
+        return self.proposal.user_has_object_permission(user_id)
+
 
 class Assessment(ProposalRequest):
     STATUS_CHOICES = (
