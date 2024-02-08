@@ -1252,7 +1252,7 @@
         </div>
 
         <ProposedApproval
-            v-if="proposal"
+            v-if="proposal && profile && profile.is_assessor"
             ref="proposed_approval"
             :key="proposedApprovalKey"
             :proposal="proposal"
@@ -1269,6 +1269,7 @@
             :assessment="assessment"
         />
         <ProposedDecline
+            v-if="profile && profile.is_assessor"
             ref="proposed_decline"
             :processing_status="proposal.processing_status"
             :proposal="proposal"
