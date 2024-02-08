@@ -37,7 +37,7 @@ from leaseslicensing.components.compliances.serializers import (
     UpdateComplianceAssessmentSerializer,
     UpdateComplianceReferralSerializer,
 )
-from leaseslicensing.components.main.api import LicensingViewset
+from leaseslicensing.components.main.api import LicensingViewSet
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import (
@@ -732,7 +732,7 @@ class ComplianceReferralViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ComplianceAssessmentViewSet(LicensingViewset):
+class ComplianceAssessmentViewSet(LicensingViewSet):
     queryset = ComplianceAssessment.objects.all()
     serializer_class = ComplianceAssessmentSerializer
     permission_classes = [IsAsignedAssessor]

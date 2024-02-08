@@ -150,7 +150,7 @@ class NoPaginationListMixin:
         return Response(serializer.data)
 
 
-class LicensingViewset(viewsets.ModelViewSet):
+class LicensingViewSet(viewsets.ModelViewSet):
     http_method_names = ["head", "get", "post", "put", "patch"]
 
     def destroy(self, request, *args, **kwargs):
@@ -164,7 +164,7 @@ class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet, KeyValueListMixin):
     key_value_serializer_class = ApplicationTypeKeyValueSerializer
 
 
-class UserActionLoggingViewset(LicensingViewset):
+class UserActionLoggingViewset(LicensingViewSet):
     """Class that extends the ModelViewSet to log the common user actions
 
     will scan the instance provided for the fields listed in settings

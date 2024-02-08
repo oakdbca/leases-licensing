@@ -43,7 +43,7 @@ from leaseslicensing.components.invoicing.serializers import (
 from leaseslicensing.components.invoicing.utils import generate_ledger_invoice
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
-    LicensingViewset,
+    LicensingViewSet,
     NoPaginationListMixin,
 )
 from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
@@ -410,7 +410,7 @@ class PayInvoiceSuccessCallbackView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class InvoicingDetailsViewSet(LicensingViewset):
+class InvoicingDetailsViewSet(LicensingViewSet):
     queryset = InvoicingDetails.objects.all()
     serializer_class = InvoicingDetailsSerializer
     permission_classes = [IsFinanceOfficer]
@@ -440,7 +440,7 @@ class InvoicingDetailsViewSet(LicensingViewset):
         return Response(serializer.data)
 
 
-class OracleCodeViewSet(LicensingViewset, KeyValueListMixin):
+class OracleCodeViewSet(LicensingViewSet, KeyValueListMixin):
     queryset = OracleCode.objects.all()
     serializer_class = OracleCodeSerializer
     permission_classes = [IsFinanceOfficer]

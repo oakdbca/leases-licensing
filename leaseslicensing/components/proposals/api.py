@@ -27,7 +27,7 @@ from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.main.api import (
-    LicensingViewset,
+    LicensingViewSet,
     UserActionLoggingViewset,
 )
 from leaseslicensing.components.main.decorators import basic_exception_handler
@@ -113,8 +113,8 @@ from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.permissions import (
     HasObjectPermission,
     IsAssessor,
-    IsAssessorOrReferrer,
     IsAssignedReferee,
+    IsReferee,
 )
 from leaseslicensing.settings import APPLICATION_TYPES
 
@@ -2176,7 +2176,7 @@ class ReferralViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ProposalRequirementViewSet(LicensingViewset):
+class ProposalRequirementViewSet(LicensingViewSet):
     queryset = ProposalRequirement.objects.none()
     serializer_class = ProposalRequirementSerializer
 
@@ -2442,7 +2442,7 @@ class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
     queryset = ExternalRefereeInvite.objects.filter(archived=False)
     serializer_class = ExternalRefereeInviteSerializer
     # TODO: Fix permission for this viewset
-    permission_classes = [IsAssessorOrReferrer]
+    permission_classes = [IsAssessor | IsReferee]
 
     @detail_route(methods=["post"], detail=True)
     @basic_exception_handler
