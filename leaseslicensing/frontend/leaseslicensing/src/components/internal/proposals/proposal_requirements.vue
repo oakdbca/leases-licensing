@@ -66,6 +66,7 @@ export default {
     },
     props: {
         proposal: { type: Object, default: null },
+        profile: { type: Object, default: null },
     },
     emits: ['updateRequirement', 'refreshProposal'],
     data: function () {
@@ -257,7 +258,9 @@ export default {
         },
     },
     mounted: async function () {
-        await this.fetchRequirements();
+        if (this.profile.is_assessor) {
+            await this.fetchRequirements();
+        }
         this.$nextTick(() => {
             this.eventListeners();
             let tooltipTriggerList = [].slice.call(
