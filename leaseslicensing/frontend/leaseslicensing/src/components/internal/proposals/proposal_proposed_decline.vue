@@ -8,98 +8,93 @@
             @cancel="cancel()"
         >
             <div class="container-fluid">
-                <div class="row">
-                    <form class="form-horizontal" name="declineForm">
-                        <!--VueAlert :show.sync="showError" type="danger"><strong>{{errorString}}</strong></VueAlert-->
-                        <VueAlert v-model:show="showError" type="danger"
-                            ><strong v-html="errorString"></strong
-                        ></VueAlert>
-                        <div class="col-sm-12">
-                            <div class="form-group">
-                                <div class="row modal-input-row">
-                                    <div class="col-sm-3">
-                                        <label class="control-label" for="Name"
-                                            >Details</label
-                                        >
-                                        <!--label v-else class="control-label"  for="Name">Provide Reason for the proposed decline </label-->
-                                    </div>
-                                    <div class="col-sm-9">
-                                        <RichText
-                                            :id="
-                                                proposal.application_type
-                                                    .name == 'lease_licence'
-                                                    ? 'lease-licence-details-decline'
-                                                    : 'registration-of-interest-details-decline'
-                                            "
-                                            ref="decline_reason"
-                                            :key="uuid"
-                                            :proposal-data="
-                                                proposedDecisionDetails
-                                            "
-                                            placeholder_text="Add some details here"
-                                            :can_view_richtext_src="true"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div
-                                    class="row question-row"
-                                    style="margin-bottom: 10px"
+                <form class="form-horizontal" name="declineForm">
+                    <VueAlert v-if="showError" type="danger"
+                        ><strong>{{ errorString }}</strong></VueAlert
+                    >
+                    <div class="form-group">
+                        <div class="row mb-3 align-items-center">
+                            <label class="col-sm-3 col-form-label">
+                                Proposed Decision
+                            </label>
+                            <div class="col-sm-9">
+                                <span class="badge bg-danger p-2 fs-6">
+                                    Decline</span
                                 >
-                                    <div class="col-sm-3">
-                                        <label for="proposed_decline_documents"
-                                            >File</label
-                                        >
-                                    </div>
-                                    <div class="col-sm-9">
-                                        <FileField
-                                            id="proposed_decline_documents"
-                                            ref="proposed_decline_documents"
-                                            name="proposed_decline_documents"
-                                            :is-repeatable="true"
-                                            :document-action-url="
-                                                proposedDeclineDocumentsUrl
-                                            "
-                                            :replace_button_by_text="true"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class="row modal-input-row">
-                                    <div class="col-sm-3">
-                                        <label class="control-label" for="Name"
-                                            >CC email</label
-                                        >
-                                        <!--label v-else class="control-label"  for="Name">Proposed CC email</label-->
-                                    </div>
-                                    <div class="col-sm-9">
-                                        <input
-                                            v-model="decline.cc_email"
-                                            type="text"
-                                            style="width: 70%"
-                                            class="form-control"
-                                            name="cc_email"
-                                        />
-                                    </div>
-                                </div>
                             </div>
                         </div>
-                    </form>
-                </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="control-label" for="Name"
+                                    >Details</label
+                                >
+                            </div>
+                            <div class="col-sm-9">
+                                <RichText
+                                    :id="
+                                        proposal.application_type.name ==
+                                        'lease_licence'
+                                            ? 'lease-licence-details-decline'
+                                            : 'registration-of-interest-details-decline'
+                                    "
+                                    ref="decline_reason"
+                                    :key="uuid"
+                                    :proposal-data="proposedDecisionDetails"
+                                    placeholder_text="Add some details here"
+                                    :can_view_richtext_src="true"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div
+                            class="row question-row"
+                            style="margin-bottom: 10px"
+                        >
+                            <div class="col-sm-3">
+                                <label for="proposed_decline_documents"
+                                    >File</label
+                                >
+                            </div>
+                            <div class="col-sm-9">
+                                <FileField
+                                    id="proposed_decline_documents"
+                                    ref="proposed_decline_documents"
+                                    name="proposed_decline_documents"
+                                    :is-repeatable="true"
+                                    :document-action-url="
+                                        proposedDeclineDocumentsUrl
+                                    "
+                                    :replace_button_by_text="true"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="control-label" for="Name"
+                                    >CC email</label
+                                >
+                            </div>
+                            <div class="col-sm-9">
+                                <input
+                                    v-model="decline.cc_email"
+                                    type="text"
+                                    style="width: 70%"
+                                    class="form-control"
+                                    name="cc_email"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <!--div slot="footer">
-                <button type="button" v-if="decliningProposal" disabled class="btn btn-light" @click="ok"><i class="fa fa-spinner fa-spin"></i> Processing</button>
-                <button type="button" v-else class="btn btn-light" @click="ok">Ok</button>
-                <button type="button" class="btn btn-light" @click="cancel">Cancel</button>
-            </div-->
         </modal>
     </div>
 </template>
 
 <script>
-//import $ from 'jquery'
 import modal from '@vue-utils/bootstrap-modal.vue';
 import VueAlert from '@vue-utils/alert.vue';
 import RichText from '@/components/forms/richtext.vue';
@@ -122,10 +117,6 @@ export default {
         processing_status: {
             type: String,
             required: true,
-        },
-        proposedApprovalKey: {
-            type: String,
-            //default: ''
         },
     },
     data: function () {
@@ -154,6 +145,7 @@ export default {
             if (this.proposal) {
                 return this.proposal.id;
             }
+            return null;
         },
         showError: function () {
             var vm = this;
@@ -166,21 +158,12 @@ export default {
         },
         callFinalDecline: function () {
             let callFinalDecline = false;
-            //if (this.processing_status === constants.WITH_APPROVER){
             if (
                 this.proposal &&
                 this.proposal.processing_status_id === 'with_approver'
             ) {
                 callFinalDecline = true;
             }
-            /*
-            if ([constants.WL_PROPOSAL, constants.AA_PROPOSAL].includes(this.proposal.application_type_dict.code)){
-                if ([constants.WITH_ASSESSOR, constants.WITH_ASSESSOR_CONDITIONS].includes(this.processing_status)){
-                    // For the WLA or AAA, assessor can final decline
-                    callFinalDecline = true
-                }
-            }
-            */
             return callFinalDecline;
         },
         registrationOfInterest: function () {
@@ -191,6 +174,7 @@ export default {
             ) {
                 return true;
             }
+            return false;
         },
         leaseLicence: function () {
             if (
@@ -199,6 +183,7 @@ export default {
             ) {
                 return true;
             }
+            return false;
         },
         proposedDecisionDetails: function () {
             /** Returns the decline message.
@@ -211,7 +196,10 @@ export default {
                 return this.decline.reason;
             } else {
                 // Use standard text from admin
-                let id = this.$refs.hasOwnProperty('decline_reason')
+                let id = Object.prototype.hasOwnProperty.call(
+                    this.$refs,
+                    'decline_reason'
+                )
                     ? this.$refs.decline_reason.id
                     : '';
                 return this.detailsTexts[id] || '';
@@ -221,7 +209,6 @@ export default {
     created: function () {
         let vm = this;
         vm.form = document.forms.declineForm;
-        //vm.addFormValidations();
         this.decline = Object.assign({}, this.proposal.proposaldeclineddetails);
 
         let initialisers = [
@@ -238,11 +225,6 @@ export default {
         ok: function () {
             let vm = this;
             vm.sendData();
-            /*
-            if($(vm.form).valid()){
-                vm.sendData();
-            }
-            */
         },
         cancel: function () {
             this.close();
@@ -251,10 +233,6 @@ export default {
             this.isModalOpen = false;
             this.decline = {};
             this.errors = false;
-            /*
-            $('.has-error').removeClass('has-error');
-            this.validation_form.resetForm();
-            */
         },
 
         check_status: function () {
@@ -268,7 +246,6 @@ export default {
             let decline = JSON.parse(JSON.stringify(this.decline));
             this.decliningProposal = true;
             this.$nextTick(async () => {
-                //if (vm.processing_status != 'With Approver'){
                 if (this.callFinalDecline) {
                     const response = await fetch(
                         helpers.add_endpoint_json(
@@ -284,12 +261,10 @@ export default {
                     if (response.ok) {
                         this.decliningProposal = false;
                         this.close();
-                        //this.$emit('refreshFromResponse',response);
                         this.$router.push({ path: '/internal' }); //Navigate to dashboard page after Propose issue.
                     } else {
                         this.errors = true;
                         this.decliningProposal = false;
-                        //this.errorString = helpers.apiVueResourceError(error);
                         this.errorString =
                             await helpers.parseFetchError(response);
                     }
@@ -307,64 +282,16 @@ export default {
                     if (response.ok) {
                         this.decliningProposal = false;
                         this.close();
-                        //this.$emit('refreshFromResponse',response);
                         this.$router.push({ path: '/internal' }); //Navigate to dashboard after propose decline.
                     } else {
                         this.errors = true;
                         this.decliningProposal = false;
-                        //this.errorString = helpers.apiVueResourceError(error);
                         this.errorString =
                             await helpers.parseFetchError(response);
                     }
                 }
             });
         },
-        /*
-        addFormValidations: function() {
-            let vm = this;
-            vm.validation_form = $(vm.form).validate({
-                rules: {
-               //     reason:"required",
-                },
-                messages: {
-                    arrival:"field is required",
-                    departure:"field is required",
-                    campground:"field is required",
-                    campsite:"field is required"
-                },
-                showErrors: function(errorMap, errorList) {
-                    $.each(this.validElements(), function(index, element) {
-                        var $element = $(element);
-                        $element.attr("data-original-title", "").parents('.form-group').removeClass('has-error');
-                    });
-                    // destroy tooltips on valid elements
-                    $("." + this.settings.validClass).tooltip("destroy");
-                    // add or update tooltips
-                    for (var i = 0; i < errorList.length; i++) {
-                        var error = errorList[i];
-                        $(error.element)
-                            .tooltip({
-                                trigger: "focus"
-                            })
-                            .attr("data-original-title", error.message)
-                            .parents('.form-group').addClass('has-error');
-                    }
-                }
-            });
-       },
-       eventListerners:function () {
-           let vm = this;
-       }
-       */
     },
 };
 </script>
-
-<style lang="css">
-.modal-input-row {
-    margin-bottom: 20px;
-}
-.btn-light:hover {
-    background-color: lightgrey;
-}
-</style>
