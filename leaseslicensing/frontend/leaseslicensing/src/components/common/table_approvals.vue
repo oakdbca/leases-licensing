@@ -677,9 +677,6 @@ export default {
                         ) {
                             links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal}'>Reissue</a><br/>`;
                         }
-                        if (vm.is_internal && vm.wlaDash) {
-                            links += full.offer_link;
-                        }
                         if (full.is_assessor) {
                             if (full.can_reissue && full.can_action) {
                                 links += `<a href='#${full.id}' data-cancel-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Cancel</a><br/>`;
@@ -1285,17 +1282,6 @@ export default {
                 .catch((error) => {
                     console.error('There was an error!', error);
                 });
-            // Not totally sure what this does so commenting out for now
-            // const statusRes = await fetch(api_endpoints.approval_statuses_dict);
-            // const statusData = await statusRes.json()
-            // for (let s of statusData) {
-            //     if (this.wlaDash && !(['extended', 'awaiting_payment', 'approved'].includes(s.code))) {
-            //         this.statusValues.push(s);
-            //         //} else if (!(['extended', 'awaiting_payment', 'offered', 'approved'].includes(s.code))) {
-            //     } else if (!(['extended', 'awaiting_payment', 'offered', 'approved'].includes(s.code))) {
-            //         this.statusValues.push(s);
-            //     }
-            // }
         },
         reissueApproval: async function (proposal_id) {
             let vm = this;
