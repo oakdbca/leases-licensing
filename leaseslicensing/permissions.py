@@ -10,6 +10,7 @@ from leaseslicensing.helpers import (
     is_customer,
     is_finance_officer,
     is_internal,
+    is_organisation_access_officer,
     is_referee,
 )
 
@@ -174,3 +175,14 @@ class IsCompetitiveProcessEditor(BasePermission):
             return True
 
         return is_competitive_process_editor(request)
+
+
+class IsOrganisationAccessOfficer(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        if request.user.is_superuser:
+            return True
+
+        return is_organisation_access_officer(request)
