@@ -13,7 +13,7 @@
         </div>
         <CollapsibleFilters
             ref="collapsible_filters"
-            component-title="Filters"
+            component_title="Filters"
             class="mb-2"
             @created="collapsible_component_mounted"
         >
