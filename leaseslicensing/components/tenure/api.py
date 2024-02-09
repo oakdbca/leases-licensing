@@ -32,7 +32,12 @@ from leaseslicensing.components.tenure.serializers import (
     TenureSerializer,
     VestingSerializer,
 )
-from leaseslicensing.permissions import IsApprover, IsAssessor, IsReferee
+from leaseslicensing.permissions import (
+    IsAssessor,
+    IsFinanceOfficer,
+    IsInternal,
+    IsReferee,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +138,7 @@ class RegionViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = RegionSerializer
     queryset = Region.objects.all()
-    permission_classes = [IsAssessor]
+    permission_classes = [IsAssessor | IsFinanceOfficer]
 
 
 class DistrictViewSet(
@@ -147,7 +152,7 @@ class DistrictViewSet(
     key_value_serializer_class = DistrictKeyValueSerializer
     key_value_display_field = "name"
     queryset = District.objects.all()
-    permission_classes = [IsAssessor]
+    permission_classes = [IsAssessor | IsFinanceOfficer]
 
 
 class LGAViewSet(
@@ -175,4 +180,4 @@ class GroupViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = GroupSerializer
     queryset = Group.objects.all()
-    permission_classes = [IsAssessor | IsApprover | IsReferee]
+    permission_classes = [IsInternal | IsReferee]
