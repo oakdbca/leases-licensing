@@ -45,6 +45,7 @@ from leaseslicensing.permissions import (
     IsApprover,
     IsAssessor,
     IsCompetitiveProcessEditor,
+    IsFinanceOfficer,
 )
 
 logger = logging.getLogger(__name__)
@@ -158,7 +159,9 @@ class UserViewSet(UserActionLoggingViewset):
 
     queryset = EmailUser.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAssessor | IsApprover | IsCompetitiveProcessEditor]
+    permission_classes = [
+        IsAssessor | IsApprover | IsFinanceOfficer | IsCompetitiveProcessEditor
+    ]
 
     def get_serializer_class(self):
         if not is_internal(self.request):
