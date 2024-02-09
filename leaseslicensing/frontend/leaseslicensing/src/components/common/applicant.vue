@@ -621,7 +621,7 @@ export default {
         },
         fetchProfile: function () {
             let vm = this;
-            let url = api_endpoints.profile + '/' + vm.proposalId;
+            let url = api_endpoints.profile;
             utils
                 .fetchUrl(url)
                 .then((data) => {
