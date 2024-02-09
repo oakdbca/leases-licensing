@@ -18,8 +18,11 @@ def retrieve_email_user(email_user_id):
     cache_key = settings.CACHE_KEY_LEDGER_EMAIL_USER.format(email_user_id)
     email_user = cache.get(cache_key)
     if email_user is None:
-        email_user = EmailUser.objects.get(id=email_user_id)
-        cache.set(cache_key, email_user, settings.CACHE_TIMEOUT_10_SECONDS)
+        try:
+            email_user = EmailUser.objects.get(id=email_user_id)
+        except EmailUser.DoesNotExist:
+            return None
+        cache.set(cache_key, email_user, settings.CACHE_TIMEOUT_5_SECONDS)
     return email_user
 
 
