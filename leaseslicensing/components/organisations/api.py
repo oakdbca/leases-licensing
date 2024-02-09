@@ -71,6 +71,7 @@ from leaseslicensing.permissions import (
     IsAssessor,
     IsCompetitiveProcessEditor,
     IsFinanceOfficer,
+    IsOrganisationAccessOfficer,
 )
 
 logger = logging.getLogger(__name__)
@@ -82,7 +83,11 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     key_value_display_field = "ledger_organisation_name"
     key_value_serializer_class = OrganisationKeyValueSerializer
     permission_classes = [
-        IsAssessor | IsApprover | IsCompetitiveProcessEditor | IsFinanceOfficer
+        IsAssessor
+        | IsApprover
+        | IsOrganisationAccessOfficer
+        | IsCompetitiveProcessEditor
+        | IsFinanceOfficer
     ]
 
     def get_queryset(self):
@@ -1026,6 +1031,7 @@ class OrganisationContactPaginatedViewSet(viewsets.ReadOnlyModelViewSet):
 class OrganisationContactViewSet(LicensingViewSet):
     serializer_class = OrganisationContactSerializer
     queryset = OrganisationContact.objects.all()
+    permiission_classes = []
 
     def get_queryset(self):
         user = self.request.user
