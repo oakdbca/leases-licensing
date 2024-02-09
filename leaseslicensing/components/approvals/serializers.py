@@ -33,7 +33,7 @@ from leaseslicensing.components.proposals.utils import (
     get_proposal_geometries_for_map_component,
 )
 from leaseslicensing.components.users.serializers import UserSerializer
-from leaseslicensing.helpers import is_approver, is_assessor
+from leaseslicensing.helpers import is_approver, is_assessor, is_finance_officer
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +170,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     active_transfer = ApprovalTransferSerializer(read_only=True, allow_null=True)
     is_assessor = serializers.SerializerMethodField()
     is_approver = serializers.SerializerMethodField()
+    is_finance_officer = serializers.SerializerMethodField()
     requirement_docs = serializers.SerializerMethodField()
     submitter = serializers.SerializerMethodField()
     holder = serializers.SerializerMethodField()
@@ -257,6 +258,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "migrated",
             "is_assessor",
             "is_approver",
+            "is_finance_officer",
             "requirement_docs",
             "submitter",
             "groups_comma_list",
@@ -310,6 +312,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "migrated",
             "is_assessor",
             "is_approver",
+            "is_finance_officer",
             "requirement_docs",
             "submitter",
             "groups_comma_list",
@@ -379,6 +382,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
     def get_is_approver(self, obj):
         request = self.context["request"]
         return is_approver(request)
+
+    def get_is_finance_officer(self, obj):
+        request = self.context["request"]
+        return is_finance_officer(request)
 
     def get_requirement_docs(self, obj):
         if obj.requirement_docs and obj.requirement_docs._file:
