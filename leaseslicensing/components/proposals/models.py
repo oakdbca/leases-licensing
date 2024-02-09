@@ -4884,6 +4884,12 @@ class ExternalRefereeInvite(RevisionedMixin):
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
+    def user_has_object_permission(self, user_id):
+        emailuser = retrieve_email_user(user_id)
+        if emailuser and emailuser.email == self.email:
+            return True
+        return self.proposal.user_has_object_permission(user_id)
+
 
 class ProposalRequirement(RevisionedMixin):
     RECURRENCE_PATTERNS = [(1, "Weekly"), (2, "Monthly"), (3, "Yearly")]
