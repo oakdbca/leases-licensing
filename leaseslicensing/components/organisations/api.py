@@ -66,6 +66,12 @@ from leaseslicensing.components.organisations.utils import (
 )
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.permissions import (
+    IsApprover,
+    IsAssessor,
+    IsCompetitiveProcessEditor,
+    IsFinanceOfficer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +81,9 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     serializer_class = OrganisationSerializer
     key_value_display_field = "ledger_organisation_name"
     key_value_serializer_class = OrganisationKeyValueSerializer
+    permission_classes = [
+        IsAssessor | IsApprover | IsCompetitiveProcessEditor | IsFinanceOfficer
+    ]
 
     def get_queryset(self):
         user = self.request.user
