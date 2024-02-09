@@ -99,6 +99,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        canUnlock: {
+            type: Boolean,
+            default: false,
+        },
         canAssess: {
             type: Boolean,
             default: false,
@@ -184,7 +188,7 @@ export default {
         display_actions: function () {
             if (this.debug) return true;
 
-            return this.canAction;
+            return this.canAction || this.canUnlock;
         },
         assigned_officer_id: function () {
             if (this.competitiveProcess.assigned_officer) {

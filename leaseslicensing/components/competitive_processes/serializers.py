@@ -404,6 +404,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
     groups = serializers.SerializerMethodField(read_only=True)
     can_accessing_user_view = serializers.SerializerMethodField()
     can_accessing_user_process = serializers.SerializerMethodField()
+    can_accessing_user_unlock = serializers.SerializerMethodField()
     details_url = serializers.SerializerMethodField(read_only=True)
     created_at_display = serializers.DateTimeField(
         read_only=True, format="%d/%m/%Y", source="created_at"
@@ -428,6 +429,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
             "groups",
             "can_accessing_user_view",
             "can_accessing_user_process",
+            "can_accessing_user_unlock",
             "details_url",
             "gis_data",
         )
@@ -440,6 +442,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
             "site_name",
             "can_accessing_user_view",
             "can_accessing_user_process",
+            "can_accessing_user_unlock",
         )
 
     def get_groups(self, obj):
@@ -477,6 +480,11 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
         user = self.context.get("request").user
         can_process = obj.can_user_process(user)
         return can_process
+
+    def get_can_accessing_user_unlock(self, obj):
+        user = self.context.get("request").user
+        can_unlock = obj.can_user_unlock(user)
+        return can_unlock
 
     def get_gis_data(self, obj):
         return CompetititiveProcessGisDataSerializer(obj).data
@@ -546,6 +554,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             "gis_data",
             "can_accessing_user_view",
             "can_accessing_user_process",
+            "can_accessing_user_unlock",
             "accessing_user_is_competitive_process_editor",
             "accessing_user",
             "competitive_process_parties",
