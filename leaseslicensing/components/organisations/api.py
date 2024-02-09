@@ -17,6 +17,7 @@ from ledger_api_client.utils import (
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action, renderer_classes
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
@@ -116,6 +117,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             "GET",
         ],
         detail=False,
+        permission_classes=[IsAuthenticated],
     )
     def organisation_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
