@@ -134,24 +134,25 @@ class CompetitiveProcess(LicensingModelVersioned):
         from leaseslicensing.components.proposals.models import Proposal
 
         # Get the current winner before saving a potential change to the outcome
-        current_cp = CompetitiveProcess.objects.get(pk=self.pk)
-        current_winner = current_cp.winner
-        if (
-            current_winner
-            and self.status == CompetitiveProcess.STATUS_IN_PROGRESS_UNLOCKED
-        ):
-            # Get the current winner's proposal
-            current_winner_proposal = self.winner_proposal(current_winner.id)
+        if self.pk:
+            current_cp = CompetitiveProcess.objects.get(pk=self.pk)
+            current_winner = current_cp.winner
+            if (
+                current_winner
+                and self.status == CompetitiveProcess.STATUS_IN_PROGRESS_UNLOCKED
+            ):
+                # Get the current winner's proposal
+                current_winner_proposal = self.winner_proposal(current_winner.id)
 
-            # If the outcome has changed, discard the current winner's proposal if it exists
-            if current_winner_proposal and self.winner != current_winner:
-                current_winner_proposal.processing_status = (
-                    Proposal.PROCESSING_STATUS_DISCARDED
-                )
-                current_winner_proposal.save()
-                logger.info(
-                    f"Discarded proposal {current_winner_proposal} of previous winner."
-                )
+                # If the outcome has changed, discard the current winner's proposal if it exists
+                if current_winner_proposal and self.winner != current_winner:
+                    current_winner_proposal.processing_status = (
+                        Proposal.PROCESSING_STATUS_DISCARDED
+                    )
+                    current_winner_proposal.save()
+                    logger.info(
+                        f"Discarded proposal {current_winner_proposal} of previous winner."
+                    )
 
         super().save(*args, **kwargs)
 
@@ -307,10 +308,17 @@ class CompetitiveProcess(LicensingModelVersioned):
         return is_internal(request)
 
     def can_user_process(self, user):
-        return (
-            self.status != CompetitiveProcess.STATUS_DISCARDED
-            and self.is_user_competitive_process_editor(user.id)
-        )
+        return self.status not in [
+            CompetitiveProcess.STATUS_DISCARDED,
+            CompetitiveProcess.STATUS_COMPLETED_DECLINED,
+            CompetitiveProcess.STATUS_COMPLETED_APPLICATION,
+        ] and self.is_user_competitive_process_editor(user.id)
+
+    def can_user_unlock(self, user):
+        return self.status in [
+            CompetitiveProcess.STATUS_COMPLETED_DECLINED,
+            CompetitiveProcess.STATUS_COMPLETED_APPLICATION,
+        ] and self.is_user_competitive_process_editor(user.id)
 
     def is_user_competitive_process_editor(self, user_id):
         return belongs_to_by_user_id(user_id, settings.GROUP_COMPETITIVE_PROCESS_EDITOR)
