@@ -37,8 +37,14 @@ from leaseslicensing.components.compliances.serializers import (
     UpdateComplianceAssessmentSerializer,
     UpdateComplianceReferralSerializer,
 )
-from leaseslicensing.components.main.api import LicensingViewSet
-from leaseslicensing.components.main.decorators import basic_exception_handler
+from leaseslicensing.components.main.api import (
+    LicensingViewSet,
+    UserActionLoggingViewset,
+)
+from leaseslicensing.components.main.decorators import (
+    basic_exception_handler,
+    logging_action,
+)
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import (
     ApplicationType,
@@ -53,6 +59,7 @@ from leaseslicensing.permissions import (
     IsAssessor,
     IsAssignedComplianceReferee,
     IsComplianceReferee,
+    IsFinanceOfficer,
 )
 
 logger = logging.getLogger(__name__)
@@ -253,10 +260,12 @@ class CompliancePaginatedViewSet(viewsets.ReadOnlyModelViewSet):
         return self.paginator.get_paginated_response(serializer.data)
 
 
-class ComplianceViewSet(LicensingViewSet):
+class ComplianceViewSet(UserActionLoggingViewset):
     serializer_class = ComplianceSerializer
     queryset = Compliance.objects.all()
-    permission_classes = [IsAssessor | IsComplianceReferee | HasObjectPermission]
+    permission_classes = [
+        IsAssessor | IsFinanceOfficer | IsComplianceReferee | HasObjectPermission
+    ]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -283,7 +292,7 @@ class ComplianceViewSet(LicensingViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @list_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -311,7 +320,7 @@ class ComplianceViewSet(LicensingViewSet):
         )
         return Response(data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -324,7 +333,7 @@ class ComplianceViewSet(LicensingViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -368,7 +377,7 @@ class ComplianceViewSet(LicensingViewSet):
 
             return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -401,7 +410,7 @@ class ComplianceViewSet(LicensingViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -416,7 +425,7 @@ class ComplianceViewSet(LicensingViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -430,7 +439,7 @@ class ComplianceViewSet(LicensingViewSet):
         serializer = ComplianceSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -448,7 +457,7 @@ class ComplianceViewSet(LicensingViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -463,7 +472,7 @@ class ComplianceViewSet(LicensingViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -478,7 +487,7 @@ class ComplianceViewSet(LicensingViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -492,7 +501,7 @@ class ComplianceViewSet(LicensingViewSet):
         serializer = CompAmendmentRequestDisplaySerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -505,7 +514,7 @@ class ComplianceViewSet(LicensingViewSet):
         serializer = ComplianceActionSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -518,7 +527,7 @@ class ComplianceViewSet(LicensingViewSet):
         serializer = ComplianceCommsSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -547,7 +556,7 @@ class ComplianceViewSet(LicensingViewSet):
 
             return Response(serializer.data)
 
-    @detail_route(methods=["post"], detail=True)
+    @logging_action(methods=["post"], detail=True)
     @basic_exception_handler
     def assessor_send_referral(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -565,7 +574,7 @@ class ComplianceViewSet(LicensingViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -592,7 +601,7 @@ class ComplianceViewSet(LicensingViewSet):
             serializer = ComplianceSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
