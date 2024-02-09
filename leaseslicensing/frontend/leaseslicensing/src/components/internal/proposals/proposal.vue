@@ -148,6 +148,7 @@
                             :lease-licence="isLeaseLicence"
                             :navbar-buttons-disabled="navbarButtonsDisabled"
                             :saving-in-progress="savingProposal"
+                            @refresh-from-response="refreshFromResponse"
                             @form-mounted="applicationFormMounted"
                             @update:gis-data="updateGisData"
                             @finished-drawing="onFinishedDrawing"
@@ -2489,7 +2490,6 @@ export default {
                     ).then(
                         (res) => {
                             vm.proposal = res.body;
-                            //vm.refreshFromResponse(res);
                         },
                         (err) => {
                             console.error(err);
@@ -2976,6 +2976,9 @@ export default {
             await this.save(false, false).then(() => {
                 this.savingProposal = false;
             });
+        },
+        refreshFromResponse: function (data) {
+            this.proposal = Object.assign({}, data);
         },
     },
 };
