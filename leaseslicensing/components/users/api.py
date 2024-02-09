@@ -155,8 +155,6 @@ class GetProfile(views.APIView):
 
 
 class UserViewSet(UserActionLoggingViewset):
-    """TODO: Make sure to do a full security audit on this viewset"""
-
     queryset = EmailUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = [
