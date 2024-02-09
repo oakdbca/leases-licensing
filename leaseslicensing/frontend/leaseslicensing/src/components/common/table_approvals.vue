@@ -689,6 +689,15 @@ export default {
                                 links += `<a href='#${full.id}' data-reinstate-approval='${full.id}'>Reinstate</a><br/>`;
                             }
                             if (
+                                constants.APPROVAL_STATUS
+                                    .CURRENT_PENDING_RENEWAL_REVIEW.TEXT ==
+                                full.status
+                            ) {
+                                links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
+                            }
+                        }
+                        if (full.is_finance_officer) {
+                            if (
                                 [
                                     constants.APPROVAL_STATUS.CURRENT.TEXT,
                                     constants.APPROVAL_STATUS
@@ -707,14 +716,6 @@ export default {
                                     .CURRENT_EDITING_INVOICING.TEXT
                             ) {
                                 links += `<a href='/internal/approval/${full.id}#edit-invoicing'>Continue Editing Invoicing</a><br/>`;
-                            }
-
-                            if (
-                                constants.APPROVAL_STATUS
-                                    .CURRENT_PENDING_RENEWAL_REVIEW.TEXT ==
-                                full.status
-                            ) {
-                                links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
                             }
                         }
                         if (
