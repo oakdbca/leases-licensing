@@ -12,7 +12,7 @@
                         <label for="">Type</label>
                         <select
                             v-model="filterApprovalType"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -30,7 +30,7 @@
                         <label for="">Status</label>
                         <select
                             v-model="filterApprovalStatus"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -81,7 +81,7 @@
                         <select
                             id="filter-region"
                             v-model="filterApprovalOrganisation"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -100,7 +100,7 @@
                         <select
                             id="filter-region"
                             v-model="filterApprovalRegion"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -119,7 +119,7 @@
                         <select
                             id=" filter-district"
                             v-model="filterApprovalDistrict"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -138,7 +138,7 @@
                         <select
                             id="filter-group"
                             v-model="filterApprovalGroup"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -677,9 +677,6 @@ export default {
                         ) {
                             links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal}'>Reissue</a><br/>`;
                         }
-                        if (vm.is_internal && vm.wlaDash) {
-                            links += full.offer_link;
-                        }
                         if (full.is_assessor) {
                             if (full.can_reissue && full.can_action) {
                                 links += `<a href='#${full.id}' data-cancel-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Cancel</a><br/>`;
@@ -691,6 +688,15 @@ export default {
                             if (full.can_reinstate) {
                                 links += `<a href='#${full.id}' data-reinstate-approval='${full.id}'>Reinstate</a><br/>`;
                             }
+                            if (
+                                constants.APPROVAL_STATUS
+                                    .CURRENT_PENDING_RENEWAL_REVIEW.TEXT ==
+                                full.status
+                            ) {
+                                links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
+                            }
+                        }
+                        if (full.is_finance_officer) {
                             if (
                                 [
                                     constants.APPROVAL_STATUS.CURRENT.TEXT,
@@ -710,14 +716,6 @@ export default {
                                     .CURRENT_EDITING_INVOICING.TEXT
                             ) {
                                 links += `<a href='/internal/approval/${full.id}#edit-invoicing'>Continue Editing Invoicing</a><br/>`;
-                            }
-
-                            if (
-                                constants.APPROVAL_STATUS
-                                    .CURRENT_PENDING_RENEWAL_REVIEW.TEXT ==
-                                full.status
-                            ) {
-                                links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
                             }
                         }
                         if (
@@ -1285,17 +1283,6 @@ export default {
                 .catch((error) => {
                     console.error('There was an error!', error);
                 });
-            // Not totally sure what this does so commenting out for now
-            // const statusRes = await fetch(api_endpoints.approval_statuses_dict);
-            // const statusData = await statusRes.json()
-            // for (let s of statusData) {
-            //     if (this.wlaDash && !(['extended', 'awaiting_payment', 'approved'].includes(s.code))) {
-            //         this.statusValues.push(s);
-            //         //} else if (!(['extended', 'awaiting_payment', 'offered', 'approved'].includes(s.code))) {
-            //     } else if (!(['extended', 'awaiting_payment', 'offered', 'approved'].includes(s.code))) {
-            //         this.statusValues.push(s);
-            //     }
-            // }
         },
         reissueApproval: async function (proposal_id) {
             let vm = this;

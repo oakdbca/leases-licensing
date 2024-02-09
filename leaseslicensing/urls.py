@@ -57,10 +57,6 @@ router.register(
     invoicing_api.CPICalculationMethodViewSet,
     basename="cpi_calculation_methods",
 )
-
-router.register(
-    r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"
-)
 router.register(
     r"proposal_paginated",
     proposal_api.ProposalPaginatedViewSet,
@@ -70,7 +66,11 @@ router.register(r"approval_paginated", approval_api.ApprovalPaginatedViewSet)
 router.register(
     r"competitive_process", competitive_process_api.CompetitiveProcessViewSet
 )
-router.register(r"compliance_paginated", compliances_api.CompliancePaginatedViewSet)
+router.register(
+    r"compliance_paginated",
+    compliances_api.CompliancePaginatedViewSet,
+    basename="compliance_paginated",
+)
 router.register(r"compliance_referrals", compliances_api.ComplianceReferralViewSet)
 router.register(r"compliance_assessments", compliances_api.ComplianceAssessmentViewSet)
 router.register(r"referrals", proposal_api.ReferralViewSet)
@@ -102,7 +102,6 @@ router.register(
 )
 router.register(r"application_types", main_api.ApplicationTypeViewSet)
 router.register(r"assessments", proposal_api.ProposalAssessmentViewSet)
-router.register(r"questions", main_api.QuestionViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
 
 router.register(r"detailstext", textbody_api.DetailsTextViewSet)
@@ -138,17 +137,9 @@ api_patterns = [
         name="get-repetition-types",
     ),
     url(
-        r"^api/filtered_users$",
-        users_api.UserListFilterView.as_view(),
-        name="filtered_users",
-    ),
-    url(
         r"^api/proposal_type$",
         proposal_api.GetProposalType.as_view(),
         name="get-proposal-type",
-    ),
-    url(
-        r"^api/empty_list$", proposal_api.GetEmptyList.as_view(), name="get-empty-list"
     ),
     url(
         r"^api/create_organisation/$",

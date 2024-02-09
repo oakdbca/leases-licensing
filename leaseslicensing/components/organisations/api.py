@@ -17,12 +17,14 @@ from ledger_api_client.utils import (
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action, renderer_classes
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
+    LicensingViewSet,
     NoPaginationListMixin,
     UserActionLoggingViewset,
 )
@@ -65,6 +67,13 @@ from leaseslicensing.components.organisations.utils import (
 )
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.permissions import (
+    IsApprover,
+    IsAssessor,
+    IsCompetitiveProcessEditor,
+    IsFinanceOfficer,
+    IsOrganisationAccessOfficer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +83,13 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     serializer_class = OrganisationSerializer
     key_value_display_field = "ledger_organisation_name"
     key_value_serializer_class = OrganisationKeyValueSerializer
+    permission_classes = [
+        IsAssessor
+        | IsApprover
+        | IsOrganisationAccessOfficer
+        | IsCompetitiveProcessEditor
+        | IsFinanceOfficer
+    ]
 
     def get_queryset(self):
         user = self.request.user
@@ -101,6 +117,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             "GET",
         ],
         detail=False,
+        permission_classes=[IsAuthenticated],
     )
     def organisation_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
@@ -677,7 +694,7 @@ class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
         return queryset
 
 
-class OrganisationRequestPaginatedViewSet(viewsets.ModelViewSet):
+class OrganisationRequestPaginatedViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (OrganisationRequestFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
     renderer_classes = (ProposalRenderer,)
@@ -997,7 +1014,7 @@ class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
         return queryset
 
 
-class OrganisationContactPaginatedViewSet(viewsets.ModelViewSet):
+class OrganisationContactPaginatedViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (OrganisationContactFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
     renderer_classes = (ProposalRenderer,)
@@ -1013,9 +1030,10 @@ class OrganisationContactPaginatedViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class OrganisationContactViewSet(viewsets.ModelViewSet):
+class OrganisationContactViewSet(LicensingViewSet):
     serializer_class = OrganisationContactSerializer
     queryset = OrganisationContact.objects.all()
+    permiission_classes = []
 
     def get_queryset(self):
         user = self.request.user
@@ -1058,7 +1076,7 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class MyOrganisationsViewSet(viewsets.ModelViewSet):
+class MyOrganisationsViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Organisation.objects.all()
     serializer_class = MyOrganisationsSerializer
 

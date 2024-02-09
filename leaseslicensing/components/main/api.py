@@ -20,7 +20,6 @@ from leaseslicensing import helpers
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.models import (
     ApplicationType,
-    Question,
     TemporaryDocumentCollection,
 )
 from leaseslicensing.components.main.process_document import (
@@ -31,7 +30,6 @@ from leaseslicensing.components.main.process_document import (
 from leaseslicensing.components.main.serializers import (
     ApplicationTypeKeyValueSerializer,
     ApplicationTypeSerializer,
-    QuestionSerializer,
     SecureDocumentSerializer,
     TemporaryDocumentCollectionSerializer,
 )
@@ -40,12 +38,11 @@ from leaseslicensing.permissions import IsInternalOrHasObjectPermission
 logger = logging.getLogger(__name__)
 
 
-class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Question.objects.all()
-    serializer_class = QuestionSerializer
-
-
 class TemporaryDocumentCollectionViewSet(viewsets.ModelViewSet):
+    # TODO: I believe this viewset has a security issue. Doesn't it allow any user to
+    # perform arbitrary actions on any TemporaryDocumentCollection
+    # instance? It should be restricted to the user who created the instance.
+    # but should also have some throttling etc. to prevent abuse.
     queryset = TemporaryDocumentCollection.objects.all()
     serializer_class = TemporaryDocumentCollectionSerializer
 
@@ -157,7 +154,7 @@ class NoPaginationListMixin:
         return Response(serializer.data)
 
 
-class LicensingViewset(viewsets.ModelViewSet):
+class LicensingViewSet(viewsets.ModelViewSet):
     http_method_names = ["head", "get", "post", "put", "patch"]
 
     def destroy(self, request, *args, **kwargs):
@@ -171,7 +168,7 @@ class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet, KeyValueListMixin):
     key_value_serializer_class = ApplicationTypeKeyValueSerializer
 
 
-class UserActionLoggingViewset(LicensingViewset):
+class UserActionLoggingViewset(LicensingViewSet):
     """Class that extends the ModelViewSet to log the common user actions
 
     will scan the instance provided for the fields listed in settings

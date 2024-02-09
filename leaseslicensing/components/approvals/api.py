@@ -41,6 +41,7 @@ from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.serializers import InvoiceSerializer
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
+    LicensingViewSet,
     UserActionLoggingViewset,
 )
 from leaseslicensing.components.main.decorators import basic_exception_handler
@@ -51,7 +52,11 @@ from leaseslicensing.components.organisations.utils import get_organisation_ids_
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_assessor, is_customer, is_internal
-from leaseslicensing.permissions import IsInternalOrHasObjectPermission
+from leaseslicensing.permissions import (
+    HasObjectPermission,
+    IsAssessor,
+    IsFinanceOfficer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -222,13 +227,14 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
         return queryset
 
 
-class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
+class ApprovalPaginatedViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (ApprovalFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
     renderer_classes = (ProposalRenderer,)
     page_size = 10
     queryset = Approval.objects.none()
     serializer_class = ApprovalSerializer
+    permission_classes = [IsAssessor | IsFinanceOfficer | HasObjectPermission]
 
     def get_queryset(self):
         if not is_internal(self.request) and not is_customer(self.request):
@@ -277,14 +283,6 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
 
         return qs
 
-    #    def list(self, request, *args, **kwargs):
-    #        response = super(ProposalPaginatedViewSet, self).list(request, args, kwargs)
-    #
-    #        # Add extra data to response.data
-    #        #response.data['regions'] = self.get_queryset().filter
-    # (region__isnull=False).values_list('region__name', flat=True).distinct()
-    #        return response
-
     @list_route(
         methods=[
             "GET",
@@ -326,12 +324,12 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
 
 
 class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
-    # queryset = Approval.objects.all()
     queryset = Approval.objects.none()
     serializer_class = ApprovalSerializer
     pagination_class = DatatablesPageNumberPagination
     key_value_display_field = "lodgement_number"
     key_value_serializer_class = ApprovalKeyValueSerializer
+    permission_classes = [IsAssessor | IsFinanceOfficer | HasObjectPermission]
 
     def get_queryset(self):
         if is_internal(self.request):
@@ -752,10 +750,10 @@ class CheckRefereeEmailThrottle(UserRateThrottle):
         rate = "4/hour"
 
 
-class ApprovalTransferViewSet(viewsets.ModelViewSet):
+class ApprovalTransferViewSet(LicensingViewSet):
     queryset = ApprovalTransfer.objects.all()
     serializer_class = ApprovalTransferSerializer
-    permission_classes = [IsInternalOrHasObjectPermission]
+    permission_classes = [IsAssessor | HasObjectPermission]
 
     def get_queryset(self):
         if is_internal(self.request):

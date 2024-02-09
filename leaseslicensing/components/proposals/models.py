@@ -54,7 +54,6 @@ from leaseslicensing.components.main.models import (  # Organisation as ledger_o
     UserAction,
 )
 from leaseslicensing.components.main.related_item import RelatedItem
-from leaseslicensing.components.main.utils import is_department_user
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import (
     can_admin_org,
@@ -1778,12 +1777,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if not EmailUser.objects.filter(email__icontains=referral_email).exists():
             raise ValidationError(
                 "The user you want to send the referral to does not have an account in ledger."
-            )
-
-        # Check if the user is a member of the department
-        if not is_department_user(referral_email):
-            raise ValidationError(
-                "The user you want to send the referral to is not a member of the department"
             )
 
         user = EmailUser.objects.get(email__icontains=referral_email)
@@ -4315,6 +4308,9 @@ class AmendmentRequest(ProposalRequest):
 
         self.save()
 
+    def user_has_object_permission(self, user_id):
+        return self.proposal.user_has_object_permission(user_id)
+
 
 class Assessment(ProposalRequest):
     STATUS_CHOICES = (
@@ -4887,6 +4883,12 @@ class ExternalRefereeInvite(RevisionedMixin):
 
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+    def user_has_object_permission(self, user_id):
+        emailuser = retrieve_email_user(user_id)
+        if emailuser and emailuser.email == self.email:
+            return True
+        return self.proposal.user_has_object_permission(user_id)
 
 
 class ProposalRequirement(RevisionedMixin):

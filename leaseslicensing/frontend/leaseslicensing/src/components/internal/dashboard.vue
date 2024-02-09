@@ -142,7 +142,6 @@ export default {
     },
     data() {
         return {
-            empty_list: '/api/empty_list',
             accessing_user: null,
             loadMap: false,
             proposals_url: api_endpoints.proposals_paginated_external,
@@ -204,7 +203,9 @@ export default {
     methods: {
         tabClicked: function (param) {
             if (param == 'applications') {
-                this.$refs.applications_table.adjust_table_width();
+                if (this.show_applications_datatable) {
+                    this.$refs.applications_table.adjust_table_width();
+                }
                 this.$refs.applications_referred_to_me_table.adjust_table_width();
             } else if (param === 'competitive-processes') {
                 this.$refs.competitive_processes_table.adjust_table_width();

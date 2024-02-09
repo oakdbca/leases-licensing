@@ -275,7 +275,7 @@ export default {
         fetchLinkedOrganisations: function () {
             let vm = this;
             vm.loadingOrganisations = true;
-            fetch(api_endpoints.organisations)
+            fetch(api_endpoints.my_organisations)
                 .then(async (response) => {
                     const data = await response.json();
                     if (!response.ok) {

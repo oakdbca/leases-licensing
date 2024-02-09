@@ -71,7 +71,12 @@ from leaseslicensing.components.users.serializers import (
     UserAddressSerializer,
     UserSerializer,
 )
-from leaseslicensing.helpers import is_assessor, is_finance_officer, is_internal
+from leaseslicensing.helpers import (
+    is_assessor,
+    is_finance_officer,
+    is_internal,
+    is_referee,
+)
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import GROUP_NAME_CHOICES
 
@@ -1003,6 +1008,7 @@ class ProposalSerializer(BaseProposalSerializer):
     additional_document_types = ProposalAdditionalDocumentTypeSerializer(
         many=True, read_only=True
     )
+    assessor_assessment = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Proposal
@@ -1054,6 +1060,15 @@ class ProposalSerializer(BaseProposalSerializer):
 
     def get_processing_status_id(self, obj):
         return obj.processing_status
+
+    def get_assessor_assessment(self, obj):
+        request = self.context["request"]
+        if is_referee(request):
+            # External users that are referees should be able to see the assessor assessment
+            return ProposalAssessmentSerializer(
+                obj.assessor_assessment, context=self.context
+            ).data
+        return None
 
 
 class CreateProposalSerializer(BaseProposalSerializer):
@@ -1902,9 +1917,9 @@ class ReferralProposalSerializer(InternalProposalSerializer):
 
         return {
             "assessor_mode": True,
-            "assessor_can_assess": referral.can_assess_referral(user)
-            if referral
-            else None,
+            "assessor_can_assess": (
+                referral.can_assess_referral(user) if referral else None
+            ),
             "assessor_level": "referral",
             "assessor_box_view": obj.assessor_comments_view(user),
         }

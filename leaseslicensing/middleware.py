@@ -22,10 +22,10 @@ class FirstTimeNagScreenMiddleware:
             request.user.first_name
             and request.user.last_name
             and request.user.residential_address_id
-            and self.postal_address_fully_filled(request.user)
+            and self.residential_address_fully_filled(request.user)
             and (
                 request.user.postal_same_as_residential
-                or self.residential_address_fully_filled(request.user)
+                or self.postal_address_fully_filled(request.user)
             )
             and (request.user.phone_number or request.user.mobile_number)
         ):

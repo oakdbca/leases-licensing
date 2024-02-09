@@ -12,7 +12,7 @@
                         <label for="">Organisation</label>
                         <select
                             v-model="filterInvoiceOrganisation"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -30,7 +30,7 @@
                         <label for="">Payment Status</label>
                         <select
                             v-model="filterInvoiceStatus"
-                            class="form-control"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -106,6 +106,7 @@
             </div>
         </div>
         <GenerateAdHocInvoiceRecord
+            v-if="level == 'internal'"
             ref="invoice_raise_ad_hoc"
             @ad-hoc-invoice-record-generated="adHocInvoiceRecordGenerated"
         >
@@ -118,6 +119,7 @@
         >
         </InvoiceViewTransactions>
         <UploadOracleInvoice
+            v-if="level == 'internal'"
             ref="invoice_upload_oracle_invoice"
             :invoice-id="selectedInvoiceId"
             :invoice-lodgement-number="selectedInvoiceLodgementNumber"
@@ -127,6 +129,7 @@
         >
         </UploadOracleInvoice>
         <InvoiceRecordTransaction
+            v-if="level == 'internal'"
             ref="invoice_record_transaction"
             :invoice_id="selectedInvoiceId"
             :invoice_lodgement_number="selectedInvoiceLodgementNumber"

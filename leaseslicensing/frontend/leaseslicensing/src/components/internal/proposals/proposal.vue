@@ -101,6 +101,7 @@
                     <Requirements
                         :key="requirementsKey"
                         :proposal="proposal"
+                        :profile="profile"
                         @refresh-proposal="fetchProposal"
                         @update-requirement="updateRequirement"
                     />
@@ -1252,7 +1253,7 @@
         </div>
 
         <ProposedApproval
-            v-if="proposal"
+            v-if="showProposedModals"
             ref="proposed_approval"
             :key="proposedApprovalKey"
             :proposal="proposal"
@@ -1269,6 +1270,7 @@
             :assessment="assessment"
         />
         <ProposedDecline
+            v-if="showProposedModals"
             ref="proposed_decline"
             :processing_status="proposal.processing_status"
             :proposal="proposal"
@@ -1638,8 +1640,10 @@ export default {
         },
         display_requirements: function () {
             let ret_val =
-                this.proposal.processing_status_id ==
-                    constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
+                (this.profile &&
+                    this.proposal.processing_status_id ==
+                        constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS
+                            .ID) ||
                 ((this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                     this.isFinalised) &&
@@ -1744,6 +1748,13 @@ export default {
         },
         navbarButtonsDisabled: function () {
             return this.savingProposal;
+        },
+        showProposedModals: function () {
+            return (
+                this.proposal &&
+                this.profile &&
+                (this.profile.is_assessor || this.profile.is_approver)
+            );
         },
     },
     watch: {},

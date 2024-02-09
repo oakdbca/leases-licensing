@@ -200,7 +200,7 @@
                         <GisDataDetails
                             :selected-data="gis_data"
                             :readonly="is_external && leaseLicence"
-                            @update:selectedData="
+                            @update:selected-data="
                                 (property, value) => {
                                     $emit('update:GisData', property, value);
                                 }
@@ -603,9 +603,11 @@ export default {
         },
     },
     created: function () {
-        utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
-            this.groups = data;
-        });
+        if (this.is_internal || this.is_referee) {
+            utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
+                this.groups = data;
+            });
+        }
         this.uuid = uuid();
     },
     mounted: function () {

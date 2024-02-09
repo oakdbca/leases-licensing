@@ -5,10 +5,12 @@ from rest_framework.permissions import BasePermission
 from leaseslicensing.helpers import (
     is_approver,
     is_assessor,
+    is_competitive_process_editor,
     is_compliance_referee,
     is_customer,
     is_finance_officer,
     is_internal,
+    is_organisation_access_officer,
     is_referee,
 )
 
@@ -33,6 +35,20 @@ class IsFinanceOfficer(BasePermission):
             return True
         if is_finance_officer(request):
             return True
+        return False
+
+
+class HasObjectPermission(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_superuser:
+            return True
+        if is_customer(request):
+            if not hasattr(obj, "user_has_object_permission"):
+                raise AttributeError(
+                    f"Object: {obj} must define a user_has_object_permission method to use this permission."
+                )
+            return obj.user_has_object_permission(request.user.id)
+
         return False
 
 
@@ -92,6 +108,11 @@ class IsAssignedReferee(BasePermission):
         return request.user.id == obj.referral
 
 
+class IsComplianceReferee(BasePermission):
+    def has_permission(self, request, view):
+        return is_compliance_referee(request)
+
+
 class IsAssignedComplianceReferee(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
@@ -112,7 +133,7 @@ class IsAssignedComplianceReferee(BasePermission):
         return request.user.id == obj.referral
 
 
-class IsAssessorOrReferrer(BasePermission):
+class IsReferee(BasePermission):
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
@@ -120,10 +141,48 @@ class IsAssessorOrReferrer(BasePermission):
         if request.user.is_superuser:
             return True
 
+        return is_referee(request)
+
+
+class IsAssessor(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
         if request.user.is_superuser:
             return True
 
-        if not is_internal(request):
+        return is_assessor(request)
+
+
+class IsApprover(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
             return False
 
-        return is_assessor(request) or is_approver(request)
+        if request.user.is_superuser:
+            return True
+
+        return is_approver(request)
+
+
+class IsCompetitiveProcessEditor(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        if request.user.is_superuser:
+            return True
+
+        return is_competitive_process_editor(request)
+
+
+class IsOrganisationAccessOfficer(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        if request.user.is_superuser:
+            return True
+
+        return is_organisation_access_officer(request)

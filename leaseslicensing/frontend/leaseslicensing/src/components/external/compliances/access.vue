@@ -60,35 +60,41 @@
                             </alert>
                             <div
                                 v-if="
-                                    'Under Review' == compliance.customer_status
+                                    constants.COMPLIANCE_CUSTOMER_STATUS
+                                        .WITH_ASSESSOR.ID ==
+                                    compliance.customer_status
                                 "
                                 class="row mb-3"
                             >
-                                <label
-                                    class="col-form-label col-sm-2"
-                                    for="due_date"
+                                <label class="col-form-label col-sm-2" for=""
                                     >Status:</label
                                 >
                                 <div class="col-sm-6">
                                     <span class="badge bg-secondary py-2 mt-1"
                                         ><i class="fa fa-clock"></i>
-                                        {{ compliance.customer_status }}</span
+                                        {{
+                                            compliance.customer_status_display
+                                        }}</span
                                     >
                                 </div>
                             </div>
                             <div
-                                v-if="'Approved' == compliance.customer_status"
+                                v-if="
+                                    constants.COMPLIANCE_CUSTOMER_STATUS
+                                        .APPROVED.ID ==
+                                    compliance.customer_status
+                                "
                                 class="row mb-3"
                             >
-                                <label
-                                    class="col-form-label col-sm-2"
-                                    for="due_date"
+                                <label class="col-form-label col-sm-2" for=""
                                     >Status:</label
                                 >
                                 <div class="col-sm-6">
                                     <span class="badge bg-success py-2 mt-1"
                                         ><i class="fa fa-check"></i>
-                                        {{ compliance.customer_status }}</span
+                                        {{
+                                            compliance.customer_status_display
+                                        }}</span
                                     >
                                 </div>
                             </div>
@@ -425,6 +431,7 @@ export default {
                     name: '',
                 },
             ],
+            constants: constants,
         };
     },
     computed: {
@@ -439,7 +446,7 @@ export default {
             return (
                 this.compliance &&
                 this.compliance.customer_status ==
-                    constants.COMPLIANCE_PROCESSING_STATUS.DISCARDED
+                    constants.COMPLIANCE_PROCESSING_STATUS.DISCARDED.ID
             );
         },
         hasAttachments: function () {
@@ -659,14 +666,27 @@ export default {
                     const resData = await response.json();
                     vm.compliance = Object.assign({}, resData);
                     if (
-                        vm.compliance.customer_status == 'Under Review' ||
-                        vm.compliance.customer_status == 'Approved'
+                        vm.compliance.customer_status ==
+                            constants.COMPLIANCE_CUSTOMER_STATUS.WITH_ASSESSOR
+                                .ID ||
+                        vm.compliance.customer_status ==
+                            constants.COMPLIANCE_CUSTOMER_STATUS.APPROVED.ID
                     ) {
                         vm.isFinalised = true;
                     }
                     vm.status = vm.compliance.customer_status;
 
-                    if ('Under Review' == vm.compliance.customer_status) {
+                    if (
+                        vm.compliance.customer_status ==
+                        constants.COMPLIANCE_CUSTOMER_STATUS.WITH_ASSESSOR.ID
+                    ) {
+                        vm.title =
+                            'View Compliance - ' +
+                            this.compliance.lodgement_number;
+                    } else if (
+                        vm.compliance.customer_status ==
+                        constants.COMPLIANCE_CUSTOMER_STATUS.APPROVED.ID
+                    ) {
                         vm.title =
                             'View Compliance - ' +
                             this.compliance.lodgement_number;
@@ -699,8 +719,10 @@ export default {
             this.original_compliance = helpers.copyObject(resData);
             this.compliance = helpers.copyObject(resData);
             if (
-                this.compliance.customer_status == 'Under Review' ||
-                this.compliance.customer_status == 'Approved'
+                this.compliance.customer_status ==
+                    constants.COMPLIANCE_CUSTOMER_STATUS.WITH_ASSESSOR.ID ||
+                this.compliance.customer_status ==
+                    constants.COMPLIANCE_CUSTOMER_STATUS.APPROVED.ID
             ) {
                 this.isFinalised = true;
             }

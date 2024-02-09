@@ -282,28 +282,41 @@ class OrganisationCheckExistSerializer(serializers.Serializer):
         return data
 
 
-class MyOrganisationsSerializer(serializers.ModelSerializer):
+class MyOrganisationsSerializer(OrganisationSerializer):
     is_admin = serializers.SerializerMethodField(read_only=True)
     is_consultant = serializers.SerializerMethodField(read_only=True)
     user_id = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Organisation
-        fields = ("id", "name", "email", "abn", "is_admin", "is_consultant", "user_id")
+        fields = [
+            "id",
+            "ledger_organisation_id",
+            "ledger_organisation_name",
+            "ledger_organisation_trading_name",
+            "ledger_organisation_abn",
+            "ledger_organisation_email",
+            "phone_number",
+            "pins",
+            "delegates",
+            "delegate_organisation_contacts",
+            "contacts",
+            "address",
+            "is_consultant",
+            "is_admin",
+            "user_id",
+        ]
 
     def get_is_consultant(self, obj):
         user = self.context["request"].user
-        # Check if the request user is among the first five delegates in the organisation
         return is_consultant(obj, user)
 
     def get_is_admin(self, obj):
         user = self.context["request"].user
-        # Check if the request user is among the first five delegates in the organisation
         return can_admin_org(obj, user.id)
 
     def get_user_id(self, obj):
         user = self.context["request"].user
-        # Check if the request user is among the first five delegates in the organisation
         return user.id
 
 

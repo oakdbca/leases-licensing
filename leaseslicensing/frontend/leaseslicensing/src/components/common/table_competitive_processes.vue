@@ -32,7 +32,6 @@
                             ref="proposalDateFromPicker"
                             class="input-group date"
                         >
-                            <!-- input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterCompetitiveProcessCreatedFrom" -->
                             <input
                                 v-model="filterCompetitiveProcessCreatedFrom"
                                 type="date"
@@ -54,7 +53,6 @@
                             ref="proposalDateToPicker"
                             class="input-group date"
                         >
-                            <!-- input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterCompetitiveProcessCreatedTo" -->
                             <input
                                 v-model="filterCompetitiveProcessCreatedTo"
                                 type="date"
@@ -509,7 +507,7 @@ export default {
                 preConfirm: () => {
                     return true;
                 },
-                // confirmButtonColor:'#dc3545'
+                reverseButtons: true,
             })
                 .then(async (result) => {
                     if (result.isConfirmed) {

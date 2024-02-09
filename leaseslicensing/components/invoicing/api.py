@@ -43,12 +43,12 @@ from leaseslicensing.components.invoicing.serializers import (
 from leaseslicensing.components.invoicing.utils import generate_ledger_invoice
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
-    LicensingViewset,
+    LicensingViewSet,
     NoPaginationListMixin,
 )
 from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.helpers import is_customer, is_finance_officer
-from leaseslicensing.permissions import IsFinanceOfficer
+from leaseslicensing.permissions import IsAssessor, IsFinanceOfficer
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ class InvoiceFilterBackend(DatatablesFilterBackend):
         return queryset
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
+class InvoiceViewSet(LicensingViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
     filter_backends = [InvoiceFilterBackend]
@@ -138,12 +138,22 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def statuses(self, request, *args, **kwargs):
-        return Response(
-            [
-                {"id": status[0], "name": status[1]}
-                for status in Invoice.INVOICE_STATUS_CHOICES
+        status_choices = [
+            {"id": status[0], "name": status[1]}
+            for status in Invoice.INVOICE_STATUS_CHOICES
+        ]
+        if is_customer(request):
+            status_choices = [
+                status
+                for status in status_choices
+                if status["id"]
+                not in [
+                    Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+                    Invoice.INVOICE_STATUS_VOID,
+                    Invoice.INVOICE_STATUS_DISCARDED,
+                ]
             ]
-        )
+        return Response(status_choices)
 
     @action(detail=True, methods=["get"])
     def transactions(self, request, *args, **kwargs):
@@ -315,9 +325,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         raise Http404
 
 
-class InvoiceTransactionViewSet(viewsets.ModelViewSet):
+class InvoiceTransactionViewSet(LicensingViewSet):
     queryset = InvoiceTransaction.objects.all()
     serializer_class = InvoiceTransactionSerializer
+    permission_classes = [IsAssessor | IsFinanceOfficer]
 
 
 class CPICalculationMethodViewSet(
@@ -325,6 +336,7 @@ class CPICalculationMethodViewSet(
 ):
     queryset = CPICalculationMethod.objects.filter(archived=False)
     serializer_class = CPICalculationMethodSerializer
+    permission_classes = [IsFinanceOfficer]
 
 
 class PayInvoiceSuccessCallbackView(APIView):
@@ -398,7 +410,7 @@ class PayInvoiceSuccessCallbackView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class InvoicingDetailsViewSet(LicensingViewset):
+class InvoicingDetailsViewSet(LicensingViewSet):
     queryset = InvoicingDetails.objects.all()
     serializer_class = InvoicingDetailsSerializer
     permission_classes = [IsFinanceOfficer]
@@ -428,7 +440,7 @@ class InvoicingDetailsViewSet(LicensingViewset):
         return Response(serializer.data)
 
 
-class OracleCodeViewSet(LicensingViewset, KeyValueListMixin):
+class OracleCodeViewSet(LicensingViewSet, KeyValueListMixin):
     queryset = OracleCode.objects.all()
     serializer_class = OracleCodeSerializer
     permission_classes = [IsFinanceOfficer]

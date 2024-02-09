@@ -20,6 +20,7 @@
                     :declined="declined"
                     :finalised="finalised"
                     :can-action="canAction"
+                    :can-unlock="canUnlock"
                     :can-assess="canAssess"
                     :can_user_edit="competitive_process.can_user_edit"
                     class="mt-2"
@@ -601,6 +602,9 @@ export default {
         canAction: function () {
             return this.competitive_process.can_accessing_user_process;
         },
+        canUnlock: function () {
+            return this.competitive_process.can_accessing_user_unlock;
+        },
         canAssess: function () {
             return this.competitive_process.can_accessing_user_view;
         },
@@ -988,6 +992,7 @@ export default {
                     showCancelButton: true,
                     confirmButtonText: 'Complete',
                     confirmButtonColor: '#0d6efd',
+                    reverseButtons: true,
                 }).then(async (result) => {
                     if (result.isConfirmed) {
                         // When Yes
@@ -1088,10 +1093,11 @@ export default {
                 text: "Unlocking this competitive process will change the status to 'In Progress (Unlocked)'\
                             and allow to change the outcome to a different winner.\
                             Are you sure you want to unlock this competitive process?",
-                icon: 'warning',
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Unlock',
                 confirmButtonColor: '#0d6efd',
+                reverseButtons: true,
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     vm.processing = true;

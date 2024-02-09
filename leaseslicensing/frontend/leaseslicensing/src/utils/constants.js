@@ -75,6 +75,15 @@ module.exports = {
         DISCARDED: { ID: 'discarded', TEXT: 'Discarded' },
         OVERDUE: { ID: 'overdue', TEXT: 'Overdue' },
     },
+    COMPLIANCE_CUSTOMER_STATUS: {
+        DUE: { ID: 'due', TEXT: 'Due' },
+        FUTURE: { ID: 'future', TEXT: 'Future' },
+        WITH_ASSESSOR: { ID: 'with_assessor', TEXT: 'Under Review' },
+        WITH_REFERRAL: { ID: 'with_referral', TEXT: 'Under Review' },
+        APPROVED: { ID: 'approved', TEXT: 'Approved' },
+        DISCARDED: { ID: 'discarded', TEXT: 'Discarded' },
+        OVERDUE: { ID: 'overdue', TEXT: 'Overdue' },
+    },
     APPROVAL_STATUS: {
         CURRENT: { ID: 'current', TEXT: 'Current' },
         CURRENT_BASE_FEE_REVIEW: {

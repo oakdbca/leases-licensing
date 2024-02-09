@@ -45,6 +45,12 @@ def is_approver(context):
 
 
 @register.simple_tag(takes_context=True)
+def is_competitive_process_editor(context):
+    request = context["request"]
+    return leaseslicensing_helpers.is_competitive_process_editor(request)
+
+
+@register.simple_tag(takes_context=True)
 def is_model_backend(context):
     # Return True if user logged in via single sign-on (or False via social_auth
     # i.e. an external user signing in with a login-token)

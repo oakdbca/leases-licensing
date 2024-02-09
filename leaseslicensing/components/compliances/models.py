@@ -441,6 +441,8 @@ class Compliance(LicensingModelVersioned):
         return ComplianceUserAction.log_action(self, action, request.user.id)
 
     def user_has_object_permission(self, user_id):
+        if self.referrals.filter(referral=user_id).exists():
+            return True
         return self.approval.user_has_object_permission(user_id)
 
     def switch_status(self, user_id, new_processing_status):
@@ -586,26 +588,32 @@ class ComplianceAmendmentRequest(CompRequest):
     class Meta:
         app_label = "leaseslicensing"
 
+    @transaction.atomic
     def generate_amendment(self, request):
-        with transaction.atomic():
-            if self.status == "requested":
-                compliance = self.compliance
-                if compliance.processing_status != Compliance.PROCESSING_STATUS_DUE:
-                    compliance.processing_status = Compliance.PROCESSING_STATUS_DUE
-                    compliance.customer_status = Compliance.PROCESSING_STATUS_DUE
-                    compliance.save()
-                # Create a log entry for the proposal
-                compliance.log_user_action(
-                    ComplianceUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
-                )
+        if self.status != ComplianceAmendmentRequest.STATUS_CHOICE_REQUESTED:
+            return
 
-                # Create a log entry for the organisation
-                # Not sure what the intention of this was so commenting out for now
-                # applicant_field = getattr(
-                #     compliance.proposal, compliance.proposal.applicant_field
-                # )
+        compliance = self.compliance
+        if compliance.processing_status != Compliance.PROCESSING_STATUS_DUE:
+            compliance.processing_status = Compliance.PROCESSING_STATUS_DUE
+            compliance.customer_status = Compliance.PROCESSING_STATUS_DUE
+            compliance.save()
 
-                send_amendment_email_notification(self, request, compliance)
+        # Create a log entry for the proposal
+        compliance.log_user_action(
+            ComplianceUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
+        )
+
+        # Create a log entry for the applicant
+        self.applicant.log_user_action(
+            ComplianceUserAction.ACTION_ID_REQUEST_AMENDMENTS,
+            request,
+        )
+
+        send_amendment_email_notification(self, request, compliance)
+
+    def user_has_object_permission(self, user):
+        return self.compliance.user_has_object_permission(user)
 
 
 class ComplianceAssessment(RevisionedMixin):

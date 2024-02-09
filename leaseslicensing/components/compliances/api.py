@@ -37,8 +37,14 @@ from leaseslicensing.components.compliances.serializers import (
     UpdateComplianceAssessmentSerializer,
     UpdateComplianceReferralSerializer,
 )
-from leaseslicensing.components.main.api import LicensingViewset
-from leaseslicensing.components.main.decorators import basic_exception_handler
+from leaseslicensing.components.main.api import (
+    LicensingViewSet,
+    UserActionLoggingViewset,
+)
+from leaseslicensing.components.main.decorators import (
+    basic_exception_handler,
+    logging_action,
+)
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import (
     ApplicationType,
@@ -46,8 +52,15 @@ from leaseslicensing.components.main.models import (
 )
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.serializers import SendReferralSerializer
-from leaseslicensing.helpers import is_customer, is_internal
-from leaseslicensing.permissions import IsAsignedAssessor, IsAssignedComplianceReferee
+from leaseslicensing.helpers import is_compliance_referee, is_customer, is_internal
+from leaseslicensing.permissions import (
+    HasObjectPermission,
+    IsAsignedAssessor,
+    IsAssessor,
+    IsAssignedComplianceReferee,
+    IsComplianceReferee,
+    IsFinanceOfficer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -119,27 +132,29 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
         return queryset
 
 
-class CompliancePaginatedViewSet(viewsets.ModelViewSet):
+class CompliancePaginatedViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (ComplianceFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
     renderer_classes = (ProposalRenderer,)
     page_size = 10
-    queryset = Compliance.objects.none()
+    queryset = Compliance.objects.all()
     serializer_class = ComplianceSerializer
+    permission_classes = [IsAssessor | IsComplianceReferee | HasObjectPermission]
 
     def get_queryset(self):
+        queryset = super().get_queryset()
         if not is_internal(self.request) and not is_customer(self.request):
-            return Compliance.objects.none()
+            return queryset.none()
 
-        if is_internal(self.request):
-            qs = Compliance.objects.all().exclude(
+        if is_compliance_referee(self.request):
+            queryset = queryset.exclude(
+                processing_status=Compliance.PROCESSING_STATUS_DISCARDED,
+            ).filter(referrals__referral=self.request.user.id)
+
+        if is_customer(self.request):
+            queryset = queryset.exclude(
                 processing_status=Compliance.PROCESSING_STATUS_DISCARDED
-            )
-
-        elif is_customer(self.request):
-            qs = Compliance.objects.filter(
-                Q(proposal__submitter=self.request.user.id)
-            ).exclude(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
+            ).filter(proposal__submitter=self.request.user.id)
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
@@ -150,11 +165,11 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             and int(target_organisation_id) > 0
         ):
             target_organisation_id = int(target_organisation_id)
-            qs = qs.exclude(approval__org_applicant__isnull=True).filter(
+            queryset = queryset.exclude(approval__org_applicant__isnull=True).filter(
                 approval__org_applicant__id=target_organisation_id
             )
 
-        return qs
+        return queryset
 
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
@@ -245,22 +260,25 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
         return self.paginator.get_paginated_response(serializer.data)
 
 
-class ComplianceViewSet(viewsets.ModelViewSet):
+class ComplianceViewSet(UserActionLoggingViewset):
     serializer_class = ComplianceSerializer
-    # queryset = Compliance.objects.all()
-    queryset = Compliance.objects.none()
+    queryset = Compliance.objects.all()
+    permission_classes = [
+        IsAssessor | IsFinanceOfficer | IsComplianceReferee | HasObjectPermission
+    ]
 
     def get_queryset(self):
-        if is_internal(self.request):
-            return Compliance.objects.all().exclude(
-                processing_status=Compliance.PROCESSING_STATUS_DISCARDED
-            )
+        queryset = super().get_queryset()
+        if is_compliance_referee(self.request):
+            logger.debug(f"User {self.request.user} is a compliance referee")
+            queryset = queryset.filter(referrals__referral=self.request.user.id)
         elif is_customer(self.request):
-            queryset = Compliance.objects.filter(
-                Q(proposal__submitter=self.request.user.id)
-            ).exclude(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
-            return queryset
-        return Compliance.objects.none()
+            logger.debug(f"User {self.request.user} is a customer")
+            queryset = queryset.exclude(
+                processing_status=Compliance.PROCESSING_STATUS_DISCARDED
+            ).filter(Q(proposal__submitter=self.request.user.id))
+
+        return queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -274,7 +292,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @list_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -302,7 +320,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         )
         return Response(data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -315,7 +333,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -359,7 +377,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
 
             return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -392,7 +410,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -407,7 +425,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -421,7 +439,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = ComplianceSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -439,7 +457,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -454,7 +472,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -469,7 +487,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -483,7 +501,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = CompAmendmentRequestDisplaySerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -496,7 +514,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = ComplianceActionSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -509,7 +527,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = ComplianceCommsSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -538,7 +556,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
 
             return Response(serializer.data)
 
-    @detail_route(methods=["post"], detail=True)
+    @logging_action(methods=["post"], detail=True)
     @basic_exception_handler
     def assessor_send_referral(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -556,7 +574,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -583,7 +601,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
             serializer = ComplianceSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -596,6 +614,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
 class ComplianceAmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = ComplianceAmendmentRequest.objects.all()
     serializer_class = ComplianceAmendmentRequestSerializer
+    permission_classes = [IsAssessor | HasObjectPermission]
 
     @basic_exception_handler
     def create(self, request, *args, **kwargs):
@@ -623,7 +642,7 @@ class ComplianceAmendmentReasonChoicesView(views.APIView):
         return Response(choices_list)
 
 
-class ComplianceReferralViewSet(viewsets.ModelViewSet):
+class ComplianceReferralViewSet(LicensingViewSet):
     queryset = ComplianceReferral.objects.all()
     serializer_class = ComplianceReferralSerializer
     permission_classes = [IsAssignedComplianceReferee]
@@ -722,7 +741,7 @@ class ComplianceReferralViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ComplianceAssessmentViewSet(LicensingViewset):
+class ComplianceAssessmentViewSet(LicensingViewSet):
     queryset = ComplianceAssessment.objects.all()
     serializer_class = ComplianceAssessmentSerializer
     permission_classes = [IsAsignedAssessor]
