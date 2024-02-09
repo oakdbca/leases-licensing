@@ -40,7 +40,11 @@ export default {
     },
     computed: {
         show_compliances_form_section() {
-            return this.accessing_user && this.accessing_user.is_assessor;
+            return (
+                this.accessing_user &&
+                (this.accessing_user.is_assessor ||
+                    this.accessing_user.is_finance_officer)
+            );
         },
         show_compliances_referred_to_me_form_section() {
             return (
