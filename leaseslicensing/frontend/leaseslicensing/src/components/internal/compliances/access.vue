@@ -721,11 +721,6 @@ export default {
         CollapsibleFilters,
         MoreReferrals,
     },
-    beforeRouteEnter: function (to, from, next) {
-        next((vm) => {
-            vm.fetchCompliance(to.params.compliance_id);
-        });
-    },
     data() {
         let vm = this;
         return {
