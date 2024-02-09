@@ -38,7 +38,7 @@
                                                 "
                                                 :disabled="
                                                     isFinalised ||
-                                                    !check_assessor()
+                                                    !is_organisation_access_officer
                                                 "
                                                 class="form-select"
                                                 @change="assignTo"
@@ -57,7 +57,7 @@
                                             <a
                                                 v-if="
                                                     !isFinalised &&
-                                                    check_assessor() &&
+                                                    is_organisation_access_officer &&
                                                     access.assigned_officer !=
                                                         profile.id
                                                 "
@@ -70,7 +70,7 @@
                                     <div
                                         v-if="
                                             !isFinalised &&
-                                            check_assessor() &&
+                                            is_organisation_access_officer &&
                                             current_user_is_assigned()
                                         "
                                         class="col-sm-12 top-buffer-s"
@@ -425,6 +425,12 @@ export default {
                 this.access.status == 'Declined'
             );
         },
+        is_organisation_access_officer: function () {
+            if (this.profile) {
+                return this.profile.is_organisation_access_officer;
+            }
+            return false;
+        },
     },
     mounted: function () {
         const id = this.$route.params.access_id;
@@ -681,15 +687,6 @@ export default {
                     this.errorMessage = constants.ERRORS.API_ERROR;
                     console.error('There was an error!', error);
                 });
-        },
-        check_assessor: function () {
-            let vm = this;
-
-            var assessor = vm.members.filter(function (elem) {
-                return elem.name == vm.profile.full_name;
-            });
-            if (assessor.length > 0) return true;
-            else return false;
         },
         current_user_is_assigned: function () {
             let vm = this;
