@@ -93,6 +93,7 @@
                         v-if="'individual' == proposal.applicant_type"
                         id="proposalStartApplicant"
                         :proposal-id="proposal.id"
+                        :proposal-applicant="proposal.proposal_applicant"
                         :readonly="readonly"
                         :collapse-form-sections="false"
                     />
