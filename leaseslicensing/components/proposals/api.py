@@ -51,7 +51,6 @@ from leaseslicensing.components.proposals.models import (
     ChecklistQuestion,
     ExternalRefereeInvite,
     Proposal,
-    ProposalApplicant,
     ProposalAssessment,
     ProposalAssessmentAnswer,
     ProposalGeometry,
@@ -1696,23 +1695,20 @@ class ProposalViewSet(UserActionLoggingViewset):
     )
     @basic_exception_handler
     def update_personal(self, request, *args, **kwargs):
-        with transaction.atomic():
-            proposal = self.get_object()
-            proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
-            data = {}
-            # dob = request.data.get('dob', '')
-            # dob = datetime.strptime(dob, '%d/%m/%Y').date() if dob else dob
-            data["first_name"] = request.data.get("first_name")
-            data["last_name"] = request.data.get("last_name")
+        proposal = self.get_object()
+        data = {}
+        logger.debug(f"request.data = {request.data}")
+        data["first_name"] = request.data.get("first_name")
+        data["last_name"] = request.data.get("last_name")
 
-            serializer = ProposalApplicantSerializer(proposal_applicant, data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+        serializer = ProposalApplicantSerializer(proposal.proposal_applicant, data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-            logger.info(
-                f"Personal details of the proposal: {proposal} have been updated with the data: {data}"
-            )
-            return Response(serializer.data)
+        logger.info(
+            f"Personal details of the proposal: {proposal} have been updated with the data: {data}"
+        )
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1722,23 +1718,21 @@ class ProposalViewSet(UserActionLoggingViewset):
     )
     @basic_exception_handler
     def update_contact(self, request, *args, **kwargs):
-        with transaction.atomic():
-            proposal = self.get_object()
-            proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
-            data = {}
-            if request.data.get("mobile_number", ""):
-                data["mobile_number"] = request.data.get("mobile_number")
-            if request.data.get("phone_number", ""):
-                data["phone_number"] = request.data.get("phone_number")
+        proposal = self.get_object()
+        data = {}
+        if request.data.get("mobile_number", ""):
+            data["mobile_number"] = request.data.get("mobile_number")
+        if request.data.get("phone_number", ""):
+            data["phone_number"] = request.data.get("phone_number")
 
-            serializer = ProposalApplicantSerializer(proposal_applicant, data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+        serializer = ProposalApplicantSerializer(proposal.proposal_applicant, data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-            logger.info(
-                f"Contact details of the proposal: {proposal} have been updated with the data: {data}"
-            )
-            return Response(serializer.data)
+        logger.info(
+            f"Contact details of the proposal: {proposal} have been updated with the data: {data}"
+        )
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1748,48 +1742,46 @@ class ProposalViewSet(UserActionLoggingViewset):
     )
     @basic_exception_handler
     def update_address(self, request, *args, **kwargs):
-        with transaction.atomic():
-            proposal = self.get_object()
-            proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
-            data = {}
-            if "residential_line1" in request.data:
-                data["residential_line1"] = request.data.get("residential_line1")
-            if "residential_locality" in request.data:
-                data["residential_locality"] = request.data.get("residential_locality")
-            if "residential_state" in request.data:
-                data["residential_state"] = request.data.get("residential_state")
-            if "residential_postcode" in request.data:
-                data["residential_postcode"] = request.data.get("residential_postcode")
-            if "residential_country" in request.data:
-                data["residential_country"] = request.data.get("residential_country")
-            if request.data.get("postal_same_as_residential"):
-                data["postal_same_as_residential"] = True
-                data["postal_line1"] = ""
-                data["postal_locality"] = ""
-                data["postal_state"] = ""
-                data["postal_postcode"] = ""
-                data["postal_country"] = data["residential_country"]
-            else:
-                data["postal_same_as_residential"] = False
-                if "postal_line1" in request.data:
-                    data["postal_line1"] = request.data.get("postal_line1")
-                if "postal_locality" in request.data:
-                    data["postal_locality"] = request.data.get("postal_locality")
-                if "postal_state" in request.data:
-                    data["postal_state"] = request.data.get("postal_state")
-                if "postal_postcode" in request.data:
-                    data["postal_postcode"] = request.data.get("postal_postcode")
-                if "postal_country" in request.data:
-                    data["postal_country"] = request.data.get("postal_country")
+        proposal = self.get_object()
+        data = {}
+        if "residential_line1" in request.data:
+            data["residential_line1"] = request.data.get("residential_line1")
+        if "residential_locality" in request.data:
+            data["residential_locality"] = request.data.get("residential_locality")
+        if "residential_state" in request.data:
+            data["residential_state"] = request.data.get("residential_state")
+        if "residential_postcode" in request.data:
+            data["residential_postcode"] = request.data.get("residential_postcode")
+        if "residential_country" in request.data:
+            data["residential_country"] = request.data.get("residential_country")
+        if request.data.get("postal_same_as_residential"):
+            data["postal_same_as_residential"] = True
+            data["postal_line1"] = ""
+            data["postal_locality"] = ""
+            data["postal_state"] = ""
+            data["postal_postcode"] = ""
+            data["postal_country"] = data["residential_country"]
+        else:
+            data["postal_same_as_residential"] = False
+            if "postal_line1" in request.data:
+                data["postal_line1"] = request.data.get("postal_line1")
+            if "postal_locality" in request.data:
+                data["postal_locality"] = request.data.get("postal_locality")
+            if "postal_state" in request.data:
+                data["postal_state"] = request.data.get("postal_state")
+            if "postal_postcode" in request.data:
+                data["postal_postcode"] = request.data.get("postal_postcode")
+            if "postal_country" in request.data:
+                data["postal_country"] = request.data.get("postal_country")
 
-            serializer = ProposalApplicantSerializer(proposal_applicant, data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+        serializer = ProposalApplicantSerializer(proposal.proposal_applicant, data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-            logger.info(
-                f"Address details of the proposal: {proposal} have been updated with the data: {data}"
-            )
-            return Response(serializer.data)
+        logger.info(
+            f"Address details of the proposal: {proposal} have been updated with the data: {data}"
+        )
+        return Response(serializer.data)
 
     @detail_route(methods=["get"], detail=True)
     @basic_exception_handler
