@@ -78,7 +78,7 @@ export default {
             if (this.proposal.submitter) {
                 return this.proposal.submitter.email;
             } else {
-                return this.proposal.proposal_applicant.email;
+                return this.proposal.applicant_obj.email;
             }
         },
         applicant_email: function () {
