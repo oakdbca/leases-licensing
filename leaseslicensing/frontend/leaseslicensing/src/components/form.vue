@@ -493,9 +493,6 @@ export default {
         };
     },
     computed: {
-        email_user_applicant: function () {
-            return this.proposal.applicant_obj;
-        },
         debug: function () {
             if (this.$route.query.debug) {
                 return this.$route.query.debug === 'true';

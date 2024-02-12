@@ -39,7 +39,7 @@
                         ? proposal.submitter.email
                         : ''
                 "
-                :applicant_email="proposal.applicant_obj.email"
+                :applicant_email="proposal.propsal_applicant.email"
                 :proposed-approval-key="proposedApprovalKey"
                 :proposed-approval-state="proposedApprovalState"
                 :proposal-is-approved="displayApprovedMessage"
