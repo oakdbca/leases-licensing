@@ -420,6 +420,16 @@ class CompetitiveProcess(LicensingModelVersioned):
 
         return generated_proposal
 
+    @classmethod
+    @transaction.atomic
+    def purge_competitive_processes(cls):
+        """Purge multiple competitive processes and all related items"""
+        if not settings.DEBUG:
+            raise ValidationError(
+                "Purging competitive processes is only allowed in DEBUG mode."
+            )
+        cls.objects.all().delete()
+
 
 class CompetitiveProcessGeometry(models.Model):
     competitive_process = models.ForeignKey(
