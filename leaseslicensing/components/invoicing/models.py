@@ -11,6 +11,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models import F, Q, Sum, Window
 from django.db.models.functions import Coalesce
+from django.forms import ValidationError
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -1731,6 +1732,15 @@ class Invoice(LicensingModel):
     @property
     def amount_excl_gst(self):
         return self.amount - self.gst
+
+    def purge_invoice(self):
+        if not settings.DEBUG:
+            raise ValidationError("This method is only for use in DEBUG mode")
+        # This method is used to delete an invoice and all associated transactions
+        # It is used in the case of a failed invoice creation
+        # It is not used for voiding an invoice
+        self.transactions.all().delete()
+        self.delete()
 
 
 class InvoiceTransactionManager(models.Manager):
