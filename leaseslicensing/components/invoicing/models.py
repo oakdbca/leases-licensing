@@ -1736,9 +1736,6 @@ class Invoice(LicensingModel):
     def purge_invoice(self):
         if not settings.DEBUG:
             raise ValidationError("This method is only for use in DEBUG mode")
-        # This method is used to delete an invoice and all associated transactions
-        # It is used in the case of a failed invoice creation
-        # It is not used for voiding an invoice
         self.transactions.all().delete()
         self.delete()
 
