@@ -2443,7 +2443,9 @@ export default {
                 swal.fire({
                     title: `Unable to Transfer Lease/License`,
                     text: `Lease/License ${this.proposal.approval.lodgement_number} can not be transferred as it has outstanding compliances or invoices. \
-                    The current holder must submit any due compliances and pay any due invoices before it can be approved.`,
+                    The current holder must submit any due compliances and pay any due invoices before it can be approved \
+                    (Note: Invoices records for the lease/licence that don't yet have a due date because a finance officer hasn't uploaded the oracle invoice yet
+                    must also be processed by a finance officer before a transfer can occur).`,
                     icon: 'warning',
                     showCancelButton: true,
                     showConfirmButton: false,
