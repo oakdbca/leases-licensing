@@ -1057,6 +1057,15 @@ class Approval(LicensingModelVersioned):
 
         return self.expiry_date
 
+    def purge_approval(self):
+        if not settings.DEBUG:
+            raise ValidationError("This method can only be used in DEBUG mode")
+        for invoice in self.invoices.all():
+            invoice.purge_invoice()
+
+        self.transfers.all().delete()
+        self.delete()
+
 
 class ApprovalLogEntry(CommunicationsLogEntry):
     approval = models.ForeignKey(
