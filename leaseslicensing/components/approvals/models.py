@@ -535,9 +535,6 @@ class Approval(LicensingModelVersioned):
 
     @property
     def has_outstanding_invoices(self):
-        # TODO: Find out if the pending invoices with no due date should be included
-        # If so, shall we email the finance group when the user attempts to complete
-        # the transfer?
         return self.invoices.filter(
             Q(date_due__lte=timezone.now().date()) | Q(date_due__isnull=True),
             status__in=[
