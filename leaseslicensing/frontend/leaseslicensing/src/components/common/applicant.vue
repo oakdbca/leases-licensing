@@ -283,6 +283,7 @@
                                 "
                                 class="form-check-input"
                                 type="checkbox"
+                                :disabled="readonly"
                                 @change="toggleBillingAddressFieldsDisabled"
                             />
                         </div>
