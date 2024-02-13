@@ -3856,6 +3856,25 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         for document_field_name in document_field_names:
             getattr(self, document_field_name).all().update(can_delete=False)
 
+    def purge_proposal(self):
+        """Deletes all related objects and the proposal itself."""
+        if not settings.DEBUG:
+            raise ValidationError("This method is only available in DEBUG mode.")
+        if self.approval:
+            self.approval.purge_approval()
+
+        self.delete()
+
+    @classmethod
+    @transaction.atomic
+    def purge_proposals(cls):
+        """Deletes all proposals, approvals, invoices and any objects that allow cascade delete from those objects."""
+        if not settings.DEBUG:
+            raise ValidationError("This method is only available in DEBUG mode.")
+        for proposal in cls.objects.all():
+            print(proposal)
+            proposal.purge_proposal()
+
 
 class ProposalApplicant(BaseApplicant):
     proposal = models.ForeignKey(

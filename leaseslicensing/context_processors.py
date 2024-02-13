@@ -14,5 +14,7 @@ def leaseslicensing_url(request):
         "template_title": template_title,
         "organisations_user_can_admin": organisations_user_can_admin,
         "build_tag": settings.BUILD_TAG,
+        "LEDGER_UI_URL": settings.LEDGER_UI_URL,
+        "PAYMENT_SYSTEM_PREFIX": settings.PAYMENT_SYSTEM_PREFIX,
         "app_build_url": settings.DEV_APP_BUILD_URL,
     }

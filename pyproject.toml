@@ -18,7 +18,7 @@ python_dateutil = "^2.8"
 pytz = "^2020.1"
 reportlab = "^3.5"
 requests = "^2.3"
-setuptools = "^45.2"
+setuptools = "^69.1"
 six = "^1.0"
 # git+https://github.com/xzzy/webtemplate.git#egg=webtemplate_dbca
 webtemplate_dbca = {git = "https://github.com/dbca-wa/webtemplate2.git"}
@@ -51,6 +51,7 @@ pre-commit = "^3.4.0"
 python-decouple = "^3.8"
 appmonitor_client = {git = "https://github.com/dbca-wa/appmonitor_client.git", rev="main"}
 ipython = "^8.15"
+django-cron = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 django-debug-toolbar = "^3.4"

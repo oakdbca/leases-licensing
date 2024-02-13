@@ -11,7 +11,6 @@ import InvoicesDash from '@/components/internal/invoices/dashboard.vue';
 import Search from '@/components/internal/search/dashboard.vue';
 import PersonDetail from '@/components/internal/person/person_detail.vue';
 import Compliance from '../compliances/access.vue';
-import Reports from '@/components/reports/reports.vue';
 import Approval from '@/components/internal/approvals/approval.vue';
 import CompetitiveProcess from '@/components/internal/competitive_process/competitive_process.vue';
 import ProposalMigrate from '@/components/internal/proposal_migrate.vue';
@@ -58,11 +57,6 @@ export default {
             path: 'person/details/:id',
             component: PersonDetail,
             name: 'internal-person-detail',
-        },
-        {
-            path: 'reports',
-            name: 'reports',
-            component: Reports,
         },
         {
             path: 'organisations',

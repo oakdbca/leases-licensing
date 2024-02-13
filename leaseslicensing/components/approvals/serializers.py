@@ -28,7 +28,10 @@ from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.proposals.models import ProposalApplicant
-from leaseslicensing.components.proposals.serializers import ProposalGisDataSerializer
+from leaseslicensing.components.proposals.serializers import (
+    ProposalGisDataSerializer,
+    ProposalSerializer,
+)
 from leaseslicensing.components.proposals.utils import (
     get_proposal_geometries_for_map_component,
 )
@@ -206,6 +209,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     approved_by = serializers.SerializerMethodField()
     renewed_from_id = serializers.IntegerField(allow_null=True, read_only=True)
     renewed_from = serializers.CharField(allow_null=True, read_only=True)
+    current_proposal = ProposalSerializer(read_only=True)
 
     class Meta:
         model = Approval

@@ -499,6 +499,8 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "applicant_details",
             "details_text",
             "proposalgeometry",
+            "proposal_applicant",
+            "approval",
             # additional form fields for registration of interest
             "exclusive_use",
             "long_term_use",
@@ -557,8 +559,6 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "proponent_reference_number",
             "details_url",
             "competitive_process",
-            "proposal_applicant",
-            "approval",
         )
         read_only_fields = ("supporting_documents",)
 
@@ -1552,6 +1552,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "details_text",
             "added_internally",
             "competitive_process_to_copy_to",
+            "proposal_applicant",
             # additional form fields for registration of interest
             "exclusive_use",
             "long_term_use",

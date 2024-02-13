@@ -701,10 +701,6 @@ export default {
     data() {
         let vm = this;
         return {
-            adBody: 'adBody' + vm._uid,
-            pBody: 'pBody' + vm._uid,
-            cBody: 'cBody' + vm._uid,
-            oBody: 'oBody' + vm._uid,
             org: null,
             loading: [],
             countries: [],

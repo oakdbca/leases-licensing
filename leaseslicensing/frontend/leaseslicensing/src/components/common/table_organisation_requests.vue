@@ -132,7 +132,7 @@ export default {
             return [
                 'Number',
                 'Organisation',
-                'Applicant',
+                'Requester',
                 'Role',
                 'Status',
                 'Lodged On',

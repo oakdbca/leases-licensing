@@ -67,13 +67,6 @@ from leaseslicensing.components.organisations.utils import (
 )
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
-from leaseslicensing.permissions import (
-    IsApprover,
-    IsAssessor,
-    IsCompetitiveProcessEditor,
-    IsFinanceOfficer,
-    IsOrganisationAccessOfficer,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -83,13 +76,11 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     serializer_class = OrganisationSerializer
     key_value_display_field = "ledger_organisation_name"
     key_value_serializer_class = OrganisationKeyValueSerializer
-    permission_classes = [
-        IsAssessor
-        | IsApprover
-        | IsOrganisationAccessOfficer
-        | IsCompetitiveProcessEditor
-        | IsFinanceOfficer
-    ]
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["head", "get", "post", "put", "patch"]
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def get_queryset(self):
         user = self.request.user
@@ -1091,3 +1082,41 @@ class MyOrganisationsViewSet(viewsets.ReadOnlyModelViewSet):
                 contacts__user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
             )
         return Organisation.objects.none()
+
+    @logging_action(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def contacts(self, request, *args, **kwargs):
+        instance = self.get_object()
+        admin_user_count = instance.admin_user_count
+        queryset = instance.contacts.exclude(
+            user_status=OrganisationContact.USER_STATUS_CHOICE_PENDING
+        )
+        queryset = queryset.annotate(
+            admin_user_count=Value(admin_user_count, output_field=IntegerField())
+        )
+        serializer = OrganisationContactAdminCountSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @logging_action(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def contacts_exclude(self, request, *args, **kwargs):
+        instance = self.get_object()
+        admin_user_count = instance.admin_user_count
+        qs = instance.contacts.exclude(
+            user_status=OrganisationContact.USER_STATUS_CHOICE_DRAFT
+        )
+        qs = qs.annotate(
+            admin_user_count=Value(admin_user_count, output_field=IntegerField())
+        )
+        serializer = OrganisationContactSerializer(qs, many=True)
+        return Response(serializer.data)

@@ -47,11 +47,11 @@
                         role="tabpanel"
                         aria-labelledby="pills-details-tab"
                     >
-                        <Applicant
+                        <EmailUser
                             v-if="user"
-                            id="proposalStartApplicant"
+                            id="person-details"
                             :email-user="user"
-                            :readonly="readonly"
+                            :readonly="true"
                         />
                     </div>
                     <div
@@ -107,22 +107,22 @@
 
 <script>
 import FormSection from '@/components/forms/section_toggle.vue';
-import Applicant from '@/components/common/applicant.vue';
 import ApplicationsTable from '@/components/common/table_proposals';
 import AppprovalsTable from '@/components/common/table_approvals';
 import CompliancesTable from '@/components/common/table_compliances';
 import { api_endpoints, helpers, constants } from '@/utils/hooks';
 import CommsLogs from '@common-utils/comms_logs.vue';
+import EmailUser from '@/components/internal/person/emailuser.vue';
 
 export default {
     name: 'PersonDetail',
     components: {
         FormSection,
-        Applicant,
         ApplicationsTable,
         AppprovalsTable,
         CompliancesTable,
         CommsLogs,
+        EmailUser,
     },
     data() {
         let vm = this;
@@ -147,9 +147,6 @@ export default {
         };
     },
     computed: {
-        readonly: function () {
-            return true;
-        },
         userHeader: function () {
             if (this.user) {
                 if (this.user.dob) {

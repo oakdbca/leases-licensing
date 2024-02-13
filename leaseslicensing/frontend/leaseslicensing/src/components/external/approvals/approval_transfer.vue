@@ -79,7 +79,7 @@
                         role="tabpanel"
                         aria-labelledby="holder-tab"
                     >
-                        <Applicant
+                        <ApprovalTransferApplicant
                             v-if="'individual' == approval.applicant_type"
                             id="licenseHolder"
                             ref="license_holder"
@@ -461,7 +461,7 @@ import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import { v4 as uuid } from 'uuid';
 
 import FormSection from '@/components/forms/section_toggle.vue';
-import Applicant from '@/components/common/approval_transfer_applicant.vue';
+import ApprovalTransferApplicant from '@/components/common/approval_transfer_applicant.vue';
 import OrganisationApplicant from '@/components/common/organisation_applicant.vue';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import ErrorRenderer from '@common-utils/ErrorRenderer.vue';
@@ -471,7 +471,7 @@ export default {
     components: {
         ErrorRenderer,
         FormSection,
-        Applicant,
+        ApprovalTransferApplicant,
         FileField,
         OrganisationApplicant,
     },

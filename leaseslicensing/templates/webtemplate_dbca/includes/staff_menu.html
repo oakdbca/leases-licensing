@@ -1,0 +1,8 @@
+{% load users %}
+{% is_finance_officer as is_finance_officer %}
+
+{% if is_finance_officer %}
+<li>
+    <a  class="dropdown-item" target="_blank" href="{{ LEDGER_UI_URL }}/reports?system_id={{ PAYMENT_SYSTEM_PREFIX }} ">Financial Reports</a>
+</li>
+{% endif %}

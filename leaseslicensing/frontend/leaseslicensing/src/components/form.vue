@@ -93,6 +93,7 @@
                         v-if="'individual' == proposal.applicant_type"
                         id="proposalStartApplicant"
                         :proposal-id="proposal.id"
+                        :proposal-applicant="proposal.proposal_applicant"
                         :readonly="readonly"
                         :collapse-form-sections="false"
                     />
@@ -492,9 +493,6 @@ export default {
         };
     },
     computed: {
-        email_user_applicant: function () {
-            return this.proposal.applicant_obj;
-        },
         debug: function () {
             if (this.$route.query.debug) {
                 return this.$route.query.debug === 'true';

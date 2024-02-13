@@ -47,6 +47,7 @@ INSTALLED_APPS += [
     "reversion_compare",
     "webtemplate_dbca",
     "ledger_api_client",
+    "django_cron",
     "appmonitor_client",
     "leaseslicensing",
     "leaseslicensing.components.main",

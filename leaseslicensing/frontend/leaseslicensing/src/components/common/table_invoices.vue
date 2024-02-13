@@ -381,7 +381,7 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (!full.ledger_invoice_url) {
-                        return 'Not Yet Generated';
+                        return 'Not Yet Uploaded';
                     }
                     return `<a href="${full.ledger_invoice_url}" target="_blank">Invoice PDF
                                         <i

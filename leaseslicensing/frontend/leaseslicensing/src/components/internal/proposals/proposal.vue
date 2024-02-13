@@ -148,6 +148,7 @@
                             :lease-licence="isLeaseLicence"
                             :navbar-buttons-disabled="navbarButtonsDisabled"
                             :saving-in-progress="savingProposal"
+                            @refresh-from-response="refreshFromResponse"
                             @form-mounted="applicationFormMounted"
                             @update:gis-data="updateGisData"
                             @finished-drawing="onFinishedDrawing"
@@ -2442,7 +2443,9 @@ export default {
                 swal.fire({
                     title: `Unable to Transfer Lease/License`,
                     text: `Lease/License ${this.proposal.approval.lodgement_number} can not be transferred as it has outstanding compliances or invoices. \
-                    The current holder must submit any due compliances and pay any due invoices before it can be approved.`,
+                    The current holder must submit any due compliances and pay any due invoices before it can be approved \
+                    (Note: Invoices records for the lease/licence that don't yet have a due date because a finance officer hasn't uploaded the oracle invoice yet
+                    must also be processed by a finance officer before a transfer can occur).`,
                     icon: 'warning',
                     showCancelButton: true,
                     showConfirmButton: false,
@@ -2489,7 +2492,6 @@ export default {
                     ).then(
                         (res) => {
                             vm.proposal = res.body;
-                            //vm.refreshFromResponse(res);
                         },
                         (err) => {
                             console.error(err);
@@ -2976,6 +2978,9 @@ export default {
             await this.save(false, false).then(() => {
                 this.savingProposal = false;
             });
+        },
+        refreshFromResponse: function (data) {
+            this.proposal = Object.assign({}, data);
         },
     },
 };
