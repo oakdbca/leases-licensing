@@ -106,7 +106,9 @@ COPY --chown=oim:oim .git ./.git
 
 FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
 
-
+RUN touch /app/.env && \
+    poetry run python manage.py collectstatic --no-input
+    
 # The following patches must be applied for seggregated systems when setting up a new environment (i.e. local, dev, uat, prod)
 #
 # COPY --chown=oim:oim admin.patch.additional
@@ -133,6 +135,7 @@ RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm ci --omit=dev && \
 
 FROM install_build_vue3_leaseslicensing as launch_leaseslicensing
 
+# Requires two collectstatics as npm run build is referencing static file in the django static directory (this should be fixed to point to the static in the static directory instead)
 RUN touch /app/.env && \
     poetry run python manage.py collectstatic --no-input
 
