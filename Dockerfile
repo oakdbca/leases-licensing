@@ -105,8 +105,7 @@ COPY --chown=oim:oim leaseslicensing ./leaseslicensing
 COPY --chown=oim:oim .git ./.git
 
 FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
-RUN touch /app/.env && \
-    poetry run python manage.py collectstatic --no-input
+
 
 # The following patches must be applied for seggregated systems when setting up a new environment (i.e. local, dev, uat, prod)
 #
@@ -133,6 +132,9 @@ RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm ci --omit=dev && \
     cd /app/leaseslicensing/frontend/leaseslicensing ; npm run build
 
 FROM install_build_vue3_leaseslicensing as launch_leaseslicensing
+
+RUN touch /app/.env && \
+    poetry run python manage.py collectstatic --no-input
 
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
