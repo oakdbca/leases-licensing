@@ -232,7 +232,10 @@ TEST_ORACLE_CODE = env("TEST_ORACLE_CODE", "LEASES_LICENSING_TEST_ORACLE_CODE")
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
 
-CRON_CLASSES = ["appmonitor_client.cron.CronJobAppMonitorClient"]
+CRON_CLASSES = [
+    "appmonitor_client.cron.CronJobAppMonitorClient",
+    "ledger_api_client.cron.CronJobLedgerTotals",
+]
 
 PROTECTED_MEDIA_ROOT = env(
     "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")
