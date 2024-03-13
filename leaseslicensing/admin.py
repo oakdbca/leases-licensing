@@ -45,6 +45,8 @@ class CustomSystemGroupAdmin(SystemGroupAdmin):
     selection field for DjangoAdmin SystemGroup on Admin page
     """
 
+    filter_horizontal = ("permissions",)
+
     def get_fieldsets(self, request, obj=None):
         """Remove the ledger_permissions checkbox from the Admin page, if user is DjangoAdmin and NOT superuser"""
         fieldsets = super().get_fieldsets(request, obj)
