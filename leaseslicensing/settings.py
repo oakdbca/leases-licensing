@@ -216,7 +216,7 @@ OTHER_PAYMENT_ALLOWED = env("OTHER_PAYMENT_ALLOWED", False)  # Cash/Cheque
 EMAIL_DELIVERY = env("EMAIL_DELIVERY", "off")
 EMAIL_INSTANCE = env("EMAIL_INSTANCE", "DEV")
 
-OSCAR_BASKET_COOKIE_OPEN = "cols_basket"
+OSCAR_BASKET_COOKIE_OPEN = "leaseslicensing_basket"
 PAYMENT_SYSTEM_ID = env("PAYMENT_SYSTEM_ID", "S675")
 PAYMENT_SYSTEM_PREFIX = env(
     "PAYMENT_SYSTEM_PREFIX", PAYMENT_SYSTEM_ID.replace("S", "0")
@@ -232,7 +232,10 @@ TEST_ORACLE_CODE = env("TEST_ORACLE_CODE", "LEASES_LICENSING_TEST_ORACLE_CODE")
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
 
-CRON_CLASSES = ["appmonitor_client.cron.CronJobAppMonitorClient"]
+CRON_CLASSES = [
+    "appmonitor_client.cron.CronJobAppMonitorClient",
+    "ledger_api_client.cron.CronJobLedgerTotals",
+]
 
 PROTECTED_MEDIA_ROOT = env(
     "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")

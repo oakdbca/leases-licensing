@@ -34,7 +34,7 @@
         "@ckeditor/ckeditor5-theme-lark": "^40.0",
         "@ckeditor/ckeditor5-typing": "^40.0",
         "@ckeditor/ckeditor5-vue": "^5.1",
-        "@dbca/gov-vue3-components": "^0.0.11",
+        "@dbca/gov-vue3-components": "^0.0.15",
         "@fortawesome/fontawesome-free": "^6.0.0",
         "@vue/cli-service": "^5.0",
         "currency.js": "^2.0.4",

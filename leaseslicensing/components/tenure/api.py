@@ -36,6 +36,7 @@ from leaseslicensing.permissions import (
     IsAssessor,
     IsFinanceOfficer,
     IsInternal,
+    IsOrganisationAccessOfficer,
     IsReferee,
 )
 
@@ -138,7 +139,7 @@ class RegionViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = RegionSerializer
     queryset = Region.objects.all()
-    permission_classes = [IsAssessor | IsFinanceOfficer]
+    permission_classes = [IsAssessor | IsFinanceOfficer | IsOrganisationAccessOfficer]
 
 
 class DistrictViewSet(
@@ -152,7 +153,7 @@ class DistrictViewSet(
     key_value_serializer_class = DistrictKeyValueSerializer
     key_value_display_field = "name"
     queryset = District.objects.all()
-    permission_classes = [IsAssessor | IsFinanceOfficer]
+    permission_classes = [IsAssessor | IsFinanceOfficer | IsOrganisationAccessOfficer]
 
 
 class LGAViewSet(
