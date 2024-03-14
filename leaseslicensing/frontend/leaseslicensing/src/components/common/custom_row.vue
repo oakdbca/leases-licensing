@@ -207,7 +207,6 @@
 </template>
 
 <script>
-/*globals moment */
 import { helpers } from '@/utils/hooks';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import { v4 as uuid } from 'uuid';
