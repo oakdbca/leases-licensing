@@ -4,6 +4,7 @@ import OrgAccessTable from '@/components/internal/organisations/access-dashboard
 import OrgAccess from '@/components/internal/organisations/access.vue';
 import OrganisationsDashboard from '@/components/internal/organisations/dashboard.vue';
 import Organisation from '@/components/internal/organisations/manage.vue';
+import AddOrganisation from '@/components/internal/organisations/add.vue';
 import Proposal from '@/components/internal/proposals/proposal.vue';
 import ApprovalDash from '@/components/internal/approvals/dashboard.vue';
 import ComplianceDash from '@/components/internal/compliances/dashboard.vue';
@@ -66,6 +67,11 @@ export default {
                     path: '',
                     component: OrganisationsDashboard,
                     name: 'organisations-dashboard',
+                },
+                {
+                    path: 'add',
+                    component: AddOrganisation,
+                    name: 'add-organisation',
                 },
                 {
                     path: 'access',
