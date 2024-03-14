@@ -479,7 +479,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
     def get_can_accessing_user_process(self, obj):
         user = self.context.get("request").user
         can_process = obj.can_user_process(user)
-        return can_process
+        return can_process and obj.assigned_officer_id == user.id
 
     def get_can_accessing_user_unlock(self, obj):
         user = self.context.get("request").user
