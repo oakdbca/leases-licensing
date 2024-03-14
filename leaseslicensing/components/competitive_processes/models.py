@@ -173,7 +173,7 @@ class CompetitiveProcess(LicensingModelVersioned):
                 # 1. Create proposal for the winner
                 lease_licence = self.create_lease_licence_from_competitive_process()
 
-                self.generated_proposal.add(self, lease_licence)
+                self.generated_proposal.add(lease_licence)
 
                 # 2. Send email to the winner
                 send_winner_notification(request, self, lease_licence)
