@@ -146,11 +146,6 @@ export default {
                 keepInvalid: true,
                 allowInputToggle: true,
             },
-
-            // For Expandable row
-            td_expand_class_name: 'expand-icon',
-            td_collapse_class_name: 'collapse-icon',
-            expandable_row_class_name: 'expandable_row_class_name',
         };
     },
     computed: {
@@ -343,7 +338,6 @@ export default {
                         'id',
                         'competitive_process_id_' + competitive_process.id
                     );
-                    row_jq.children().first().addClass(vm.td_expand_class_name);
                 },
                 responsive: true,
                 serverSide: true,
