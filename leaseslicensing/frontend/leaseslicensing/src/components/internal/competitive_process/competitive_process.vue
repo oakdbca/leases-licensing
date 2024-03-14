@@ -1313,6 +1313,7 @@ export default {
             this.competitive_process.competitive_process_parties.push(
                 new_party_data
             );
+            this.save(true, false);
         },
         updatePartyDate: function (e) {
             let party =
