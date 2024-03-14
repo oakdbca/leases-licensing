@@ -86,6 +86,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        readonly: {
+            type: Boolean,
+            default: false,
+        },
     },
     emits: ['add-party'],
     data() {
@@ -202,6 +206,15 @@ export default {
                 },
             };
         },
+        column_actions: () => {
+            return {
+                data: 'id',
+                orderable: false,
+                render: function (row, type, full) {
+                    return `<button id="button-${full.id}" class="btn btn-sm btn-primary">Show Details</button>`;
+                },
+            };
+        },
         is_external: function () {
             return this.level == 'external';
         },
@@ -216,6 +229,7 @@ export default {
                     'Organisation',
                     'Phone',
                     'Mobile',
+                    'Actions',
                     'Email',
                 ];
             }
@@ -233,6 +247,7 @@ export default {
                     vm.column_organisation,
                     vm.column_phone,
                     vm.column_mobile,
+                    vm.column_actions,
                     vm.column_email,
                 ];
                 search = true;
@@ -253,10 +268,7 @@ export default {
                 createdRow: function (row, full_data) {
                     full_data.expanded = false;
                 },
-                rowCallback: function (row) {
-                    let $row = $(row);
-                    $row.children().first().addClass(vm.td_expand_class_name);
-                },
+                rowCallback: function () {},
                 responsive: true,
                 serverSide: false,
                 data: vm.competitiveProcessParties,
@@ -273,6 +285,7 @@ export default {
             // Returns whether an element is disabled
             // True while processing (saving), when discarded, finalized, declined, or completed
             return (
+                this.readonly ||
                 this.processing ||
                 this.discarded ||
                 this.finalised ||
@@ -391,7 +404,7 @@ export default {
 
             vm.$refs.parties_datatable.vmDataTable.on(
                 'click',
-                'td',
+                'tr button',
                 function () {
                     expandToggleParties(vm, this);
                 }
@@ -402,110 +415,16 @@ export default {
             let vm = this;
             vm.$refs.parties_datatable.vmDataTable.on(
                 'responsive-resize',
-                function (e, datatable) {
+                function () {
                     // This event can be used to inform external libraries and controls that Responsive has changed the visibility of columns in the table in response to a resize or recalculation event.
                     vm.updateCustomRowColSpan();
-                    datatable.rows().every(function () {
-                        // Work on each row
-                        let full_data = this.data();
-                        if (full_data.expanded) {
-                            this.child.show();
-                        } else {
-                            this.child.hide();
-                        }
-                    });
                 }
             );
         },
-        addTableDrawListener: function () {
-            /** Listens on datatable draw events and adds a negative id to new rows.
-             *  This is because new rows are not yet saved to the database and therefore
-             *  do not have an id, but need to be distinguishable in the frontend for
-             *  adding new details/documents.
-             */
-
-            let vm = this;
-            // The id of the datatable
-            let id = $(vm.$refs.parties_datatable)[0].id;
-
-            $(`#${id}`)
-                .DataTable()
-                .on('draw.dt', function (e, table) {
-                    // Iterate through all new rows and add a negative id to those with id = 0
-                    $(table.aoData).each(function (_, row) {
-                        let _id = row._aData['id'];
-                        if (_id == 0) {
-                            row._aData['id'] = vm.new_party_id;
-                            vm.new_party_id--;
-                        }
-                    });
-                });
-        },
         addEventListeners: function () {
-            this.addTableDrawListener();
             this.addClickEventHandler();
             this.addResponsiveResizeHandler();
         },
     },
 };
 </script>
-
-<style scoped>
-.collapse-icon {
-    cursor: pointer;
-}
-
-.collapse-icon::before {
-    top: 5px;
-    left: 4px;
-    height: 14px;
-    width: 14px;
-    border-radius: 14px;
-    line-height: 14px;
-    border: 2px solid white;
-    line-height: 14px;
-    content: '-';
-    color: white;
-    background-color: #d33333;
-    display: inline-block;
-    box-shadow: 0px 0px 3px #444;
-    box-sizing: content-box;
-    text-align: center;
-    text-indent: 0 !important;
-    font-family:
-        'Courier New',
-        Courier monospace;
-    margin: 5px;
-}
-
-.expand-icon {
-    cursor: pointer;
-}
-
-.expand-icon::before {
-    top: 5px;
-    left: 4px;
-    height: 14px;
-    width: 14px;
-    border-radius: 14px;
-    line-height: 14px;
-    border: 2px solid white;
-    line-height: 14px;
-    content: '+';
-    color: white;
-    background-color: #337ab7;
-    display: inline-block;
-    box-shadow: 0px 0px 3px #444;
-    box-sizing: content-box;
-    text-align: center;
-    text-indent: 0 !important;
-    font-family:
-        'Courier New',
-        Courier monospace;
-    margin: 5px;
-}
-
-.expandable_row {
-    background-color: lightgray !important;
-}
-</style>
