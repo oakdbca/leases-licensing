@@ -8,30 +8,37 @@ from django.utils.encoding import smart_text
 from ledger_api_client.managed_models import SystemGroup
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
+from leaseslicensing.components.organisations.utils import (
+    get_admin_emails_for_organisation,
+)
+from leaseslicensing.helpers import convert_internal_url_to_external_url
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
 
 
-def send_winner_notification(request, competitive_process):
+def send_winner_notification(request, competitive_process, lease_licence):
     email = TemplateEmailBase(
         subject="Winning, Leases and Licence proposal is ready",
         html_template="leaseslicensing/emails/competitive_processes/send_winner_notification.html",
-        # html_template="leaseslicensing/emails/proposals/send_referral_notification.html",
         txt_template="leaseslicensing/emails/competitive_processes/send_winner_notification.txt",
     )
 
     url = request.build_absolute_uri(
-        reverse(
-            "internal-competitiveprocess-detail", kwargs={"pk": competitive_process.id}
-        )
+        reverse("external-proposal-detail", kwargs={"proposal_pk": lease_licence.id})
     )
+    url = convert_internal_url_to_external_url(url)
+
     context = {"competitive_process": competitive_process, "url": url}
 
     winner = competitive_process.winner
-    id = winner.person.id if winner.is_person else winner.organisation.id
-    email_user_email = retrieve_email_user(id).email
-    msg = email.send(email_user_email, context=context)
+    if winner.is_person:
+        id = winner.person.id
+        to_email = retrieve_email_user(id).email
+    else:
+        to_email = get_admin_emails_for_organisation(winner.organisation.id)
+
+    msg = email.send(to_email, context=context)
 
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     log_competitive_process = _log_competitive_process_email(

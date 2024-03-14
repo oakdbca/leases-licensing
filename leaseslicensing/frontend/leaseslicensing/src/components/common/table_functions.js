@@ -157,32 +157,22 @@ export function expandToggleCP(vm, obj) {
 
 // used by `table_parties.vue`
 export function expandToggleParties(vm, obj) {
-    let td_link = $(obj);
-    if (
-        !(
-            td_link.hasClass(vm.td_expand_class_name) ||
-            td_link.hasClass(vm.td_collapse_class_name)
-        )
-    ) {
-        // This row is not configured as expandable row (at the rowCallback)
+    let tr = $(obj).parents('tr').first();
+    if (!tr.hasClass('odd') && !tr.hasClass('even')) {
         return;
     }
-    let tr = td_link.closest('tr');
-    let first_td = tr.children().first();
 
     // Get full data of this row
     let $row = vm.$refs.parties_datatable.vmDataTable.row(tr);
     let full_data = $row.data();
 
     if (full_data.expanded) {
+        tr.find('button').html('Show Details');
         // Collapse
         let siblings = tr.next('tr.' + vm.expandable_row_class_name);
         siblings.hide(0, function () {
             siblings.remove();
-            // Change icon
-            first_td
-                .removeClass(vm.td_collapse_class_name)
-                .addClass(vm.td_expand_class_name);
+
             // Hide child row, where hidden columns are
             $row.child.hide(0);
             // Toggle flag
@@ -192,13 +182,9 @@ export function expandToggleParties(vm, obj) {
                 vm.custom_row_apps[full_data.id].unmount();
                 vm.custom_row_apps[full_data.id] = undefined;
             }
-            // if (full_data.custom_row_app){
-            //     // Component mounted once cannot be remount easily.  Therefore unmount and delete it completely here and then when required, create it again.
-            //     full_data.custom_row_app.unmount()
-            //     full_data.custom_row_app = undefined
-            // }
         });
     } else {
+        tr.find('button').html('Hide Details');
         // Expand
         let details_elem = $(
             '<tr class="' +
@@ -215,6 +201,7 @@ export function expandToggleParties(vm, obj) {
         // Add vue component dynamically
         // -----------------------
         // Configure event listener (Ref: https://stackoverflow.com/questions/67516974/vue3-listen-to-event-from-dynamically-created-child-component-on-replacement)
+        // Whoever did this made a mistake, but I guess we have to live with our mistakes.
         const props = {
             partyFullData: full_data,
             competitiveProcessId: vm.competitiveProcessId,
@@ -258,10 +245,6 @@ export function expandToggleParties(vm, obj) {
 
         details_elem.show();
 
-        // Change icon
-        first_td
-            .removeClass(vm.td_expand_class_name)
-            .addClass(vm.td_collapse_class_name);
         // Show child row, where hidden columns are
         $row.child.show();
         // Toggle flag
