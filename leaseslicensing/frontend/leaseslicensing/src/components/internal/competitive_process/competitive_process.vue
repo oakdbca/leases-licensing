@@ -704,7 +704,7 @@ export default {
         possibleWinner: function () {
             // Returns list of possible winners without newly added parties
             return this.competitive_process.competitive_process_parties.filter(
-                (party) => party.id > 0
+                (party) => party.id > 0 && !party.removed_at
             );
         },
         /**
@@ -1316,11 +1316,13 @@ export default {
             this.$refs.competitive_process_parties.$refs.parties_datatable.vmDataTable.draw();
         },
         updatePartyDate: function (e) {
+            console.log('e', e);
             let party =
                 this.competitive_process.competitive_process_parties.find(
                     (party) => party.id == e.party_id
                 );
-            party[e.date_field] = e.date;
+            party[e.date_field] = e.new_date;
+            console.log('party', party);
         },
         incrementComponentMapKey: function () {
             this.componentMapKey++;
