@@ -513,7 +513,7 @@ class CompetitiveProcessParty(models.Model):
 
     @property
     def is_person(self):
-        return self.person_id
+        return bool(self.person_id)
 
     @property
     def person(self):
@@ -523,7 +523,7 @@ class CompetitiveProcessParty(models.Model):
 
     @property
     def is_organisation(self):
-        return self.organisation
+        return bool(self.organisation)
 
     @property
     def email_address(self):
