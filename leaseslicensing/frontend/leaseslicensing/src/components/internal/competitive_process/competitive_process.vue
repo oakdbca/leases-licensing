@@ -461,7 +461,6 @@ import {
     owsQuery,
     validateFeature,
 } from '@/components/common/map_functions.js';
-import { readonly } from 'vue';
 
 export default {
     name: 'CompetitiveProcess',
@@ -1314,6 +1313,7 @@ export default {
                 new_party_data
             );
             this.save(true, false);
+            this.$refs.competitive_process_parties.$refs.parties_datatable.vmDataTable.draw();
         },
         updatePartyDate: function (e) {
             let party =
