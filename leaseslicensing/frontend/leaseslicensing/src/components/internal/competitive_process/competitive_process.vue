@@ -129,6 +129,7 @@
                                 :declined="declined"
                                 :completed="completed"
                                 :finalised="finalised"
+                                :readonly="readonly"
                                 @add-detail="addDetail"
                                 @update-party-date="updatePartyDate"
                                 @add-party="addParty"
@@ -160,8 +161,8 @@
                                 "
                                 style-by="assessor"
                                 :filterable="false"
-                                :drawable="true"
-                                :editable="true"
+                                :drawable="!readonly"
+                                :editable="!readonly"
                                 :navbar-buttons-disabled="processing"
                                 :saving-features="processing"
                                 level="internal"
@@ -203,6 +204,7 @@
                                             class="form-control"
                                             type="text"
                                             name="site_name"
+                                            :readonly="readonly"
                                         />
                                     </div>
                                 </div>
@@ -222,6 +224,7 @@
                                             type="text"
                                             name="site_comments"
                                             style="height: 200px"
+                                            :readonly="readonly"
                                         />
                                     </div>
                                 </div>
@@ -242,6 +245,7 @@
                                             :multiple="true"
                                             :searchable="true"
                                             :loading="loadingGroups"
+                                            :disabled="readonly"
                                         />
                                     </div>
                                 </div>
@@ -257,7 +261,7 @@
                                         competitive_process.gis_data
                                     "
                                     :searchable="true"
-                                    :readonly="false"
+                                    :readonly="readonly"
                                     @update:selected-data="updateGISData"
                                 />
                             </FormSection>
@@ -410,7 +414,7 @@
                         type="button"
                         class="btn btn-primary me-1"
                         value="Save and Continue"
-                        ::disabled="disableSaveAndContinueBtn"
+                        :disabled="disableSaveAndContinueBtn"
                         @click.prevent="save_and_continue()"
                     />
 
@@ -457,6 +461,7 @@ import {
     owsQuery,
     validateFeature,
 } from '@/components/common/map_functions.js';
+import { readonly } from 'vue';
 
 export default {
     name: 'CompetitiveProcess',
@@ -624,7 +629,10 @@ export default {
             );
         },
         readonly: function () {
-            return false;
+            return (
+                this.competitive_process?.assigned_officer?.id !==
+                this.competitive_process?.accessing_user?.id
+            );
         },
         displaySaveBtns: function () {
             return true;
@@ -686,6 +694,7 @@ export default {
             // Returns whether an element is disabled
             // True while processing (saving), when discarded, or when finalized
             return (
+                this.readonly ||
                 this.processing ||
                 this.discarded ||
                 this.finalised ||
