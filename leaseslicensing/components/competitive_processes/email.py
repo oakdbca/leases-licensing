@@ -25,7 +25,7 @@ def send_winner_notification(request, competitive_process, lease_licence):
     )
 
     url = request.build_absolute_uri(
-        reverse("external-proposal-detail", kwargs={"pk": lease_licence.id})
+        reverse("external-proposal-detail", kwargs={"proposal_pk": lease_licence.id})
     )
     url = convert_internal_url_to_external_url(url)
 
