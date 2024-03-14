@@ -173,10 +173,10 @@ class CompetitiveProcess(LicensingModelVersioned):
                 # 1. Create proposal for the winner
                 lease_licence = self.create_lease_licence_from_competitive_process()
 
-                self.generated_proposal.add(lease_licence)
+                self.generated_proposal.add(self, lease_licence)
 
                 # 2. Send email to the winner
-                send_winner_notification(request, self)
+                send_winner_notification(request, self, lease_licence)
             else:
                 logger.info(
                     f"Competitive Process {self.pk} completed, but there is already a winner's proposal."
@@ -513,22 +513,17 @@ class CompetitiveProcessParty(models.Model):
 
     @property
     def is_person(self):
-        if self.person_id:
-            return True
-        return False
+        return self.person_id
 
     @property
     def person(self):
-        if self.person_id:
-            person = retrieve_email_user(self.person_id)
-            return person
-        return None
+        if not self.person_id:
+            return None
+        return retrieve_email_user(self.person_id)
 
     @property
     def is_organisation(self):
-        if self.organisation:
-            return True
-        return False
+        return self.organisation
 
     @property
     def email_address(self):
