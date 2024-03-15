@@ -864,6 +864,7 @@ class OrganisationAction(UserAction):
     ACTION_REQUEST_APPROVED = "Organisation Request {} Approved"
     ACTION_LINK = "Linked {}"
     ACTION_UNLINK = "Unlinked {}"
+    ACTION_ADD_NEW_ORGANISATION = "Added new organisation {}"
     ACTION_CONTACT_ADDED = "Added new contact {}"
     ACTION_CONTACT_REMOVED = "Removed contact {}"
     ACTION_CONTACT_DECLINED = "Declined contact {}"

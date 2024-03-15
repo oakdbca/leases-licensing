@@ -1,8 +1,21 @@
 <template>
     <div id="organisations-dashboard" class="container">
-        <FormSection label="Organisations" index="organisations">
-            <OrganisationsTable />
-        </FormSection>
+        <div class="row">
+            <div class="col">
+                <FormSection label="Organisations" index="organisations">
+                    <div class="d-flex flex-row-reverse mb-2">
+                        <a
+                            class="btn btn-primary"
+                            href="/internal/organisations/add"
+                        >
+                            <i class="fa-solid fa-circle-plus"></i> Add
+                            Organisation
+                        </a>
+                    </div>
+                    <OrganisationsTable />
+                </FormSection>
+            </div>
+        </div>
     </div>
 </template>
 
