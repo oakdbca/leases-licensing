@@ -149,6 +149,24 @@ class OrganisationCreateSerializer(serializers.Serializer):
         return value
 
 
+class InternalOrganisationCreateSerializer(serializers.Serializer):
+    ledger_organisation_name = serializers.CharField(max_length=255)
+    ledger_organisation_trading_name = serializers.CharField(
+        max_length=255, required=False, allow_blank=True
+    )
+    ledger_organisation_abn = serializers.CharField(min_length=9, max_length=11)
+    ledger_organisation_email = serializers.EmailField()
+
+    class Meta:
+        model = Organisation
+        fields = (
+            "ledger_organisation_name",
+            "ledger_organisation_trading_name",
+            "ledger_organisation_abn",
+            "ledger_organisation_email",
+        )
+
+
 class OrganisationSerializer(serializers.ModelSerializer):
     pins = serializers.SerializerMethodField(read_only=True)
     delegates = serializers.SerializerMethodField(read_only=True)
