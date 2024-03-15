@@ -2,7 +2,11 @@ from django.conf import settings
 from ledger_api_client import utils as ledger_api_utils
 
 from leaseslicensing.components.organisations.models import Organisation
-from leaseslicensing.settings import template_group, template_title
+from leaseslicensing.settings import (
+    template_group,
+    template_header_logo,
+    template_title,
+)
 
 
 def leaseslicensing_url(request):
@@ -13,6 +17,7 @@ def leaseslicensing_url(request):
     return {
         "GIS_SERVER_URL": settings.GIS_SERVER_URL,
         "template_group": template_group,
+        "template_header_logo": template_header_logo,
         "template_title": template_title,
         "organisations_user_can_admin": organisations_user_can_admin,
         "build_tag": settings.BUILD_TAG,
