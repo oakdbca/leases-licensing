@@ -170,9 +170,12 @@ export default {
                                 });
                             } else {
                                 vm.organisation = vm.emptyOrganisation();
-                                document
-                                    .getElementById('organisation-form')
-                                    .reset();
+                                let form =
+                                    document.getElementById(
+                                        'organisation-form'
+                                    );
+                                form.classList.remove('was-validated');
+                                form.reset();
                                 vm.$refs.ledger_organisation_name.focus();
                             }
                         },
