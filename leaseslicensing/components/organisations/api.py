@@ -116,9 +116,11 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
 
         # Check if this organisation already exists in ledger
         ledger_org = None
-        search_organisation_response = get_search_organisation(name, abn)
-        if 200 == search_organisation_response["status"]:
-            data = search_organisation_response["data"]
+        search_organisation_name_response = get_search_organisation(name, None)
+        search_organisation_abn_response = get_search_organisation(None, abn)
+
+        if 200 == search_organisation_name_response["status"]:
+            data = search_organisation_name_response["data"]
             ledger_org = data[0]
 
             # Check if this organisation already exists in leases licensing
@@ -127,7 +129,22 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             ).first()
             if org:
                 msg = (
-                    f"An organisation with that name or abn already exists: {org.ledger_organisation_name} "
+                    f"An organisation with that name already exists: {org.ledger_organisation_name} "
+                    f"(ABN/ACN: {org.ledger_organisation_abn})"
+                )
+                raise serializers.ValidationError(msg)
+
+        if 200 == search_organisation_abn_response["status"]:
+            data = search_organisation_abn_response["data"]
+            ledger_org = data[0]
+
+            # Check if this organisation already exists in leases licensing
+            org = Organisation.objects.filter(
+                ledger_organisation_id=ledger_org["organisation_id"]
+            ).first()
+            if org:
+                msg = (
+                    f"An organisation with that abn already exists: {org.ledger_organisation_name} "
                     f"(ABN/ACN: {org.ledger_organisation_abn})"
                 )
                 raise serializers.ValidationError(msg)
@@ -141,6 +158,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
                 ledger_org = data[0]
 
         organisation_dict = dict()
+        logger.debug("ledger_org: %s", ledger_org)
         organisation_dict["organisation_id"] = ledger_org["organisation_id"]
         organisation_dict["organisation_email"] = email
 
