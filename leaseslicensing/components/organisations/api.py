@@ -35,12 +35,14 @@ from leaseslicensing.components.main.decorators import (
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.organisations.models import (  # ledger_organisation,
     Organisation,
+    OrganisationAction,
     OrganisationContact,
     OrganisationRequest,
     OrganisationRequestUserAction,
     UserDelegation,
 )
 from leaseslicensing.components.organisations.serializers import (
+    InternalOrganisationCreateSerializer,
     MyOrganisationsSerializer,
     OrganisationActionSerializer,
     OrganisationCheckExistSerializer,
@@ -79,8 +81,10 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     permission_classes = [IsAuthenticated]
     http_method_names = ["head", "get", "post", "put", "patch"]
 
-    def destroy(self, request, *args, **kwargs):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    def get_serializer_class(self):
+        if self.action == "create":
+            return InternalOrganisationCreateSerializer
+        return super().get_serializer_class()
 
     def get_queryset(self):
         user = self.request.user
@@ -102,6 +106,66 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             )
 
         return Organisation.objects.none()
+
+    def perform_create(self, serializer):
+        """Create an organisation in ledger and in leases licensing"""
+        name = serializer.validated_data["ledger_organisation_name"]
+        trading_name = serializer.validated_data["ledger_organisation_trading_name"]
+        abn = serializer.validated_data["ledger_organisation_abn"]
+        email = serializer.validated_data["ledger_organisation_email"]
+
+        # Check if this organisation already exists in ledger
+        ledger_org = None
+        search_organisation_response = get_search_organisation(name, abn)
+        if 200 == search_organisation_response["status"]:
+            data = search_organisation_response["data"]
+            ledger_org = data[0]
+
+            # Check if this organisation already exists in leases licensing
+            org = Organisation.objects.filter(
+                ledger_organisation_id=ledger_org["organisation_id"]
+            ).first()
+            if org:
+                msg = (
+                    f"An organisation with that name or abn already exists: {org.ledger_organisation_name} "
+                    f"(ABN/ACN: {org.ledger_organisation_abn})"
+                )
+                raise serializers.ValidationError(msg)
+
+        if not ledger_org:
+            # Create this organisation in ledger
+            create_organisation(name, abn)
+            search_organisation_response = get_search_organisation(name, abn)
+            if 200 == search_organisation_response["status"]:
+                data = search_organisation_response["data"]
+                ledger_org = data[0]
+
+        organisation_dict = dict()
+        organisation_dict["organisation_id"] = ledger_org["organisation_id"]
+        organisation_dict["organisation_email"] = email
+
+        if trading_name:
+            organisation_dict["organisation_trading_name"] = trading_name
+
+        # Update the organisation email address (and trading name if provided)
+        ledger_org_response = update_organisation_obj(organisation_dict)
+
+        if 200 != ledger_org_response["status"]:
+            msg = f"Error updating ledger organisation: {ledger_org['organisation_id']}"
+            raise ValidationError(msg)
+
+        # Create the organisation in leases licensing
+        org, created = Organisation.objects.get_or_create(
+            ledger_organisation_id=ledger_org["organisation_id"]
+        )
+        logger.debug("type(self.request) ", type(self.request))
+        if created:
+            logger.info("Created organisation: %s", org)
+            org.log_user_action(
+                OrganisationAction.ACTION_ADD_NEW_ORGANISATION.format(org), self.request
+            )
+
+        serializer.instance = org
 
     @action(
         methods=[
