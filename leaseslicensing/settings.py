@@ -424,7 +424,8 @@ COMPLIANCES_DAYS_PRIOR_TO_SEND_REMINDER = env(
 )
 
 template_title = "Leases and Licensing"
-template_group = "parkswildlife"
+template_header_logo = "/static/leaseslicensing/img/leases_and_licensing_dbca_logo.png"
+template_group = "parkswildlifev2"
 
 LEDGER_TEMPLATE = "bootstrap5"
 LEDGER_UI_ACCOUNTS_MANAGEMENT = [
