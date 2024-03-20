@@ -2,7 +2,6 @@
 
 {% load static %}
 {% load utils %}
-{% system_name as system_name %}
 
 {% block left_menu_items %}
     <li><a  href="{% url 'ds_contact' %}">Contact Us</a></li>
@@ -29,15 +28,15 @@
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-header">
-                        <strong>{% system_name %} Login</strong>
+                        <strong>Access {% system_name %}</strong>
                     </div>
                     <div class="card-body">
                         <p class="card-text">
-                            When you click the login button you will be able to register or log in using your
-                            favourite provider (Microsoft, Facebook, Google, Apple) or you can use your email address
-                            if you prefer.
+                            At the Department of Biodiversity, Conservation and Attractions, we employ a password-less authentication system, meaning you never need to remember
+                            a password. When you need to login to a site, such as {% system_name %}, simply enter your email and an
+                            authentication code will be sent to your registered email address. From there, enter the code on screen to complete the login process.
                         </p>
-                        <a href="/ssologin" class="btn btn-primary">Login or Register</a>
+                        <a href="/ssologin" class="btn btn-primary">Login</a>
                     </div>
                   </div>
 
