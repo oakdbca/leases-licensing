@@ -108,7 +108,7 @@ FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
 
 RUN touch /app/.env && \
     poetry run python manage.py collectstatic --no-input
-    
+
 # The following patches must be applied for seggregated systems when setting up a new environment (i.e. local, dev, uat, prod)
 #
 # COPY --chown=oim:oim admin.patch.additional
@@ -137,7 +137,10 @@ FROM install_build_vue3_leaseslicensing as launch_leaseslicensing
 
 # Requires two collectstatics as npm run build is referencing static file in the django static directory (this should be fixed to point to the static in the static directory instead)
 RUN touch /app/.env && \
-    poetry run python manage.py collectstatic --no-input
+    poetry run python manage.py collectstatic --no-input && \
+    # Add K8s health check script
+    wget https://raw.githubusercontent.com/dbca-wa/wagov_utils/main/wagov_utils/bin/health_check.sh -O /bin/health_check.sh && \
+    chmod 755 /bin/health_check.sh
 
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
