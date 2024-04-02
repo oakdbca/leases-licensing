@@ -824,7 +824,7 @@ def validate_map_files(request, instance, foreign_key_field=None):
         else:
             gdf_transform = gdf.to_crs("epsg:4326")
 
-        geometries = gdf.geometry  # GeoSeries
+        geometries = gdf_transform.geometry  # GeoSeries
 
         # Only accept polygons
         geom_type = geometries.geom_type.values[0]
