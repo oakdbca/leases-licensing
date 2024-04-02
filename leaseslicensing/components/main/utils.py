@@ -818,6 +818,9 @@ def validate_map_files(request, instance, foreign_key_field=None):
     for shp_file_obj in shp_file_objs:
         gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
 
+        if gdf.empty:
+            raise ValidationError(f"Geometry is empty in {shp_file_obj.name}")
+
         # If no prj file assume WGS-84 datum
         if not gdf.crs:
             gdf_transform = gdf.set_crs("epsg:4326", inplace=True)
