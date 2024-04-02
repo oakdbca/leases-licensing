@@ -91,7 +91,9 @@ RUN chmod 0644 /etc/cron.d/dockercron && \
     mkdir /container-config/ && \
     chown -R oim.oim /container-config/ && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    touch /app/rand_hash
+    touch /app/rand_hash && \
+    wget https://raw.githubusercontent.com/dbca-wa/wagov_utils/main/wagov_utils/bin/health_check.sh -O /bin/health_check.sh && \
+    chmod 755 /bin/health_check.sh
 
 FROM builder_base_oim_leaseslicensing as python_dependencies_leaseslicensing
 WORKDIR /app
@@ -137,10 +139,7 @@ FROM install_build_vue3_leaseslicensing as launch_leaseslicensing
 
 # Requires two collectstatics as npm run build is referencing static file in the django static directory (this should be fixed to point to the static in the static directory instead)
 RUN touch /app/.env && \
-    poetry run python manage.py collectstatic --no-input && \
-    # Add K8s health check script
-    wget https://raw.githubusercontent.com/dbca-wa/wagov_utils/main/wagov_utils/bin/health_check.sh -O /bin/health_check.sh && \
-    chmod 755 /bin/health_check.sh
+    poetry run python manage.py collectstatic --no-input
 
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
