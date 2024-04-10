@@ -52,6 +52,7 @@ python-decouple = "^3.8"
 appmonitor_client = {git = "https://github.com/dbca-wa/appmonitor_client.git", rev="main"}
 ipython = "^8.15"
 django-cron = "^0.6.0"
+tomli = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
 django-debug-toolbar = "^3.4"
