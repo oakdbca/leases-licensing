@@ -1,7 +1,9 @@
 import hashlib
 import os
+import sys
 
 import confy
+import tomli
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -9,6 +11,8 @@ confy.read_environment_file(BASE_DIR + "/.env")
 os.environ.setdefault("BASE_DIR", BASE_DIR)
 
 from ledger_api_client.settings_base import *  # noqa: F403
+
+project = tomli.load(open(os.path.join(BASE_DIR, "pyproject.toml"), "rb"))
 
 WORKING_FROM_HOME = env("WORKING_FROM_HOME", False)
 
@@ -215,6 +219,34 @@ OTHER_PAYMENT_ALLOWED = env("OTHER_PAYMENT_ALLOWED", False)  # Cash/Cheque
 
 EMAIL_DELIVERY = env("EMAIL_DELIVERY", "off")
 EMAIL_INSTANCE = env("EMAIL_INSTANCE", "DEV")
+
+GIT_COMMIT_HASH = os.popen(
+    f"cd {BASE_DIR}; git log -1 --format=%H"
+).read()  # noqa: S605
+GIT_COMMIT_DATE = os.popen(
+    f"cd {BASE_DIR}; git log -1 --format=%cd"
+).read()  # noqa: S605
+
+APPLICATION_VERSION = project["tool"]["poetry"]["version"] + "-" + GIT_COMMIT_HASH[:7]
+
+RUNNING_DEVSERVER = len(sys.argv) > 1 and sys.argv[1] == "runserver"
+
+# Sentry settings
+SENTRY_DSN = env("SENTRY_DSN", default=None)
+SENTRY_SAMPLE_RATE = env("SENTRY_SAMPLE_RATE", default=1.0)  # Error sampling rate
+SENTRY_TRANSACTION_SAMPLE_RATE = env(
+    "SENTRY_TRANSACTION_SAMPLE_RATE", default=0.0
+)  # Transaction sampling
+if not RUNNING_DEVSERVER and SENTRY_DSN and EMAIL_INSTANCE:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        sample_rate=SENTRY_SAMPLE_RATE,
+        traces_sample_rate=SENTRY_TRANSACTION_SAMPLE_RATE,
+        environment=EMAIL_INSTANCE.lower(),
+        release=APPLICATION_VERSION,
+    )
 
 OSCAR_BASKET_COOKIE_OPEN = "leaseslicensing_basket"
 PAYMENT_SYSTEM_ID = env("PAYMENT_SYSTEM_ID", "S675")
