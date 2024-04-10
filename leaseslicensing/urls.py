@@ -23,6 +23,12 @@ from leaseslicensing.components.users import api as users_api
 from leaseslicensing.management.default_data_manager import DefaultDataManager
 from leaseslicensing.utils import are_migrations_running
 
+
+# To test sentry
+def trigger_error(request):
+    division_by_zero = 1 / 0  # noqa
+
+
 # API patterns
 router = routers.DefaultRouter()
 router.register("organisations", org_api.OrganisationViewSet, basename="organisations")
@@ -341,6 +347,7 @@ urlpatterns = (
             views.ExternalView.as_view(),
             name="external-pay-invoice-failure",
         ),
+        url("sentry-debug/", trigger_error),
     ]
     + ledger_patterns
     + media_serv_patterns
