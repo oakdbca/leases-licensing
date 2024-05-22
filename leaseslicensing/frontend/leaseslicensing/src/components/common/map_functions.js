@@ -11,6 +11,7 @@ import { utils } from '@/utils/hooks';
 // Tile server url
 // eslint-disable-next-line no-undef
 var url = `${env['kmi_server_url']}/geoserver/public/wms/?SERVICE=WMS&VERSION=1.0.0&REQUEST=GetCapabilities`;
+// var url = `${env['gis_server_url']}/geoserver/ows/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities`; // KB
 // Layer to use as map base layer
 export var baselayer_name = 'mapbox-emerald';
 // export var baselayer_name = 'mapbox-dark'
@@ -60,7 +61,7 @@ export async function addOptionalLayers(map_component) {
                 let layer = layers[j];
 
                 let l = new TileWMS({
-                    // eslint-disable-next-line no-undef
+                    // url: `${env['gis_server_url']}/geoserver/ows`, // KB
                     url: `${env['kmi_server_url']}/geoserver/public/wms`,
                     crossOrigin: 'anonymous', // Data for a image tiles can only be retrieved if the source's crossOrigin property is set (https://openlayers.org/en/latest/apidoc/module-ol_layer_Tile-TileLayer.html#getData)
                     params: {

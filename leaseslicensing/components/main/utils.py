@@ -93,46 +93,98 @@ def get_dbca_lands_and_waters_geos():
     return geoms
 
 
-def get_features_by_multipolygon(multipolygon, layer_name, properties):
-    namespace = layer_name.split(":")[0]
-    server_path = f"/geoserver/{namespace}/ows"
+def get_features_by_multipolygon(
+    multipolygon,
+    server_url,
+    layer_name,
+    properties,
+    version="1.0.0",
+    the_geom="wkb_geometry",
+    srsName="urn:x-ogc:def:crs:EPSG:4326",
+):
+    """Queries a geoserver for features that intersect with a multipolygon
+    and returns the response as a dict
+
+    Args:
+        multipolygon (shapely.geometry.MultiPolygon): A multipolygon geometry
+        server_url (str): The URL of the geoserver
+        layer_name (str): The name of the layer to query
+        properties (str): A comma separated list of properties to return
+        version (str): The WFS version to use
+        the_geom (str): The name of the geometry column in the layer
+        srsName (str): The name of the spatial reference system to return the data in
+    """
+
+    namespace = ""
+    server_path = ""
+    if ":" in layer_name:
+        namespace = layer_name.split(":")[0]
+        server_path = f"/geoserver/{namespace}/ows"
+
     params = {
         "service": "WFS",
-        "version": "1.0.0",
+        "version": version,
         "request": "GetFeature",
         "typeName": layer_name,
         "maxFeatures": "5000",
-        "srsName": "EPSG:4326",  # using the default projection for open layers and geodjango
+        "srsName": srsName,  # using the default projection for open layers and geodjango
         "outputFormat": "application/json",
         "propertyName": properties,
-        "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
+        "CQL_FILTER": f"INTERSECTS({the_geom}, {multipolygon.wkt})",
     }
     logger.info(
-        f"Requesting features from {settings.GIS_SERVER_URL}{server_path} with params: {params}"
+        f"Requesting features from {server_url}{server_path} with params: {params}"
     )
-    if "public" != namespace:
+    if "public" not in namespace:
         logger.debug("Using Basic HTTP Auth to access namespace: %s", namespace)
-        url = f"{settings.GIS_SERVER_URL}{server_path}"
+        url = f"{server_url}{server_path}"
         response = requests.post(
             url,
             data=params,
             auth=(settings.KMI_AUTH_USERNAME, settings.KMI_AUTH_PASSWORD),
         )
     else:
-        response = requests.post(f"{settings.GIS_SERVER_URL}{server_path}", data=params)
+        response = requests.post(f"{server_url}{server_path}", data=params)
     if not response.ok:
-        logger.error(f"Error getting features from KMI: {response.text}")
+        logger.error(f"Error getting features from {server_url}: {response.text}")
         raise serializers.ValidationError(
-            f"Error getting features from KMI (Server URL: {url}, Layer: {layer_name}"
+            f"Error getting features from geoserver (Server URL: {server_url}, Layer: {layer_name}"
         )
 
     logger.info(f"Request took: {response.elapsed.total_seconds()}")
-    return response.json()
+
+    try:
+        # Handle geoserver returning 200 while also returning an exception text message
+        return response.json()
+    except:
+        logger.error(f"Error parsing response from {server_url} : {response.text}")
+        raise serializers.ValidationError(
+            f"Error parsing geoserver response for layer: {layer_name}"
+        )
 
 
-def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, properties):
+def get_gis_data_for_geometries(
+    instance,
+    geometries_attribute,
+    server_url,
+    layer_name,
+    properties,
+    version="1.0.0",
+    the_geom="wkb_geometry",
+    invert_xy=False,
+):
     """Takes a model instance, the name of the related geometries attribute, the layer name
     and a list of property names and returns a dict of unique values for each property
+
+    Args:
+        instance (object): An instance of a model
+        geometries_attribute (str): The name of the related geometries attribute
+        server_url (str): The URL of the geoserver
+        layer_name (str): The name of the layer to query
+        properties (list): A list of property names to get unique values for
+        version (str): The WFS version to use
+        the_geom (str): The name of the geometry column in the layer
+        invert_xy (bool): Whether to first transform geometries in lon/lat to lat/lon
     """
     if not hasattr(instance, geometries_attribute):
         raise AttributeError(
@@ -147,9 +199,17 @@ def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, prop
         )
         return None
 
-    multipolygon = MultiPolygon(
-        list(geometries.all().values_list("polygon", flat=True))
-    )
+    polygons = list(geometries.all().values_list("polygon", flat=True))
+
+    if invert_xy:
+        # Transform lon/lat (x/y) points to lat/lon (y/x) points
+        from shapely import wkt
+        from shapely.ops import transform
+
+        polygons = [transform(lambda x, y: (y, x), wkt.loads(p.wkt)) for p in polygons]
+        polygons = [Polygon.from_ewkt(p.wkt) for p in polygons]
+
+    multipolygon = MultiPolygon(polygons)
     if not multipolygon.valid:
         from shapely import wkt
         from shapely.validation import explain_validity, make_valid
@@ -169,9 +229,12 @@ def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, prop
     else:
         properties_comma_list = properties[0]
     features = get_features_by_multipolygon(
-        multipolygon, layer_name, properties_comma_list
+        multipolygon, server_url, layer_name, properties_comma_list, version, the_geom
     )
     if 0 == features["totalFeatures"]:
+        logger.warn(
+            f"No GIS data found for {instance._meta.model.__name__} {instance.lodgement_number}"
+        )
         return None
 
     logger.info(
@@ -183,7 +246,7 @@ def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, prop
     data = {}
     for prop in properties:
         logger.info("Getting unique values for property: %s", prop)
-        data[prop] = set()
+        data[prop.lower()] = set()
 
     for feature in features["features"]:
         for prop in properties:
@@ -191,21 +254,21 @@ def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, prop
                 logger.error("Property %s not found in feature", prop)
                 raise AttributeError(f"Property {prop} not found in feature")
 
-            data[prop].add(feature["properties"][prop])
+            data[prop.lower()].add(feature["properties"][prop])
 
     return data
 
 
-def polygon_intersects_with_layer(polygon, layer_name):
+def polygon_intersects_with_layer(polygon, server_url, layer_name):
     """Checks if a polygon intersects with a layer"""
-    return polygons_intersect_with_layer([polygon], layer_name)
+    return polygons_intersect_with_layer([polygon], server_url, layer_name)
 
 
-def polygons_intersect_with_layer(polygons, layer_name):
+def polygons_intersect_with_layer(polygons, server_url, layer_name):
     """Checks if a polygon intersects with a layer"""
     multipolygon = MultiPolygon(polygons)
     features = get_features_by_multipolygon(
-        multipolygon, layer_name=layer_name, properties="objectid"
+        multipolygon, server_url, layer_name=layer_name, properties="objectid"
     )
     if 0 == features["totalFeatures"]:
         return False
@@ -272,7 +335,7 @@ def save_geometry(
 
         # check if it intersects with any of the lands geos
         if not polygon_intersects_with_layer(
-            polygon, "public:dbca_legislated_lands_and_waters"
+            polygon, settings.KMI_SERVER_URL, "public:dbca_legislated_lands_and_waters"
         ):
             # if it doesn't, raise a validation error (this should be prevented in the front end
             # and is here just in case
@@ -384,8 +447,13 @@ def populate_gis_data_lands_and_waters(
     gis_data_lands_and_waters = get_gis_data_for_geometries(
         instance,
         geometries_attribute,
+        settings.KMI_SERVER_URL,
         "public:dbca_legislated_lands_and_waters",
+        # "cpt_dbca_legislated_tenure",
         properties,
+        # version="2.0.0",
+        # the_geom="SHAPE",
+        # invert_xy=True
     )
     if gis_data_lands_and_waters is None:
         logger.warn(
@@ -507,11 +575,18 @@ def populate_gis_data_lands_and_waters(
 
 def populate_gis_data_regions(instance, geometries_attribute, foreign_key_field):
     properties = [
-        "drg_region_name",
+        "DRG_REGION_NAME",  # KB
     ]
     object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
     gis_data_regions = get_gis_data_for_geometries(
-        instance, geometries_attribute, "cddp:dbca_regions", properties
+        instance,
+        geometries_attribute,
+        settings.GIS_SERVER_URL,
+        "kaartdijin-boodja-public:CPT_DBCA_REGIONS",
+        properties,
+        version="2.0.0",
+        the_geom="SHAPE",
+        invert_xy=True,
     )
     if gis_data_regions is None:
         logger.warn(
@@ -520,8 +595,8 @@ def populate_gis_data_regions(instance, geometries_attribute, foreign_key_field)
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
         return
 
-    if gis_data_regions[properties[0]]:
-        for region_name in gis_data_regions[properties[0]]:
+    if gis_data_regions[properties[0].lower()]:
+        for region_name in gis_data_regions[properties[0].lower()]:
             region, created = Region.objects.get_or_create(name=region_name)
             if created:
                 logger.info(f"New Region created from GIS Data: {region}")
@@ -532,18 +607,25 @@ def populate_gis_data_regions(instance, geometries_attribute, foreign_key_field)
                 **{foreign_key_field: instance}, region=region
             )
             if not created:
-                object_ids[properties[0]].remove(obj.id)
+                object_ids[properties[0].lower()].remove(obj.id)
 
     delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
 
 
 def populate_gis_data_districts(instance, geometries_attribute, foreign_key_field):
     properties = [
-        "district",
+        "district",  # KMI
+        # "DDT_DISTRICT_NAME", # KB
     ]
+    # TODO: Property name changed completely in kb, no easy fix view cast to lower possible
     object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
+    # instance, geometries_attribute, settings.GIS_SERVER_URL, "kaartdijin-boodja-public:CPT_DBCA_DISTRICTS", properties, version="2.0.0", the_geom="SHAPE", invert_xy=True
     gis_data_districts = get_gis_data_for_geometries(
-        instance, geometries_attribute, "cddp:dbca_districts", properties
+        instance,
+        geometries_attribute,
+        settings.KMI_SERVER_URL,
+        "public:dbca_districts_public",
+        properties,
     )
     if gis_data_districts is None:
         logger.warn(
@@ -574,8 +656,14 @@ def populate_gis_data_lgas(instance, geometries_attribute, foreign_key_field):
         "lga_label",
     ]
     object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
+    # TODO: Implement query to -private kb url, requires auth
+    # instance, geometries_attribute, settings.GIS_SERVER_URL, "kaartdijin-boodja-private:CPT_LOCAL_GOVT_AREAS", properties, version="2.0.0", the_geom="SHAPE", invert_xy=True
     gis_data_lgas = get_gis_data_for_geometries(
-        instance, geometries_attribute, "cddp:local_gov_authority", properties
+        instance,
+        geometries_attribute,
+        settings.KMI_SERVER_URL,
+        "cddp:local_gov_authority",
+        properties,
     )
     if gis_data_lgas is None:
         logger.warn("No GIS LGA data found for instance %s", instance.lodgement_number)
@@ -649,16 +737,20 @@ def gis_property_to_model_ids(instance, properties, foreign_key_field):
             A list of GIS data property names
     """
 
-    property_model_map = {p: _gis_property_to_model(instance, p) for p in properties}
+    property_model_map = {
+        p.lower(): _gis_property_to_model(instance, p.lower()) for p in properties
+    }
 
     return {
-        p: []
-        if property_model_map[p] is None
-        else list(
-            property_model_map[p]
-            .objects.filter(**{foreign_key_field: instance})
-            .distinct()
-            .values_list("id", flat=True)
+        p: (
+            []
+            if property_model_map[p] is None
+            else list(
+                property_model_map[p]
+                .objects.filter(**{foreign_key_field: instance})
+                .distinct()
+                .values_list("id", flat=True)
+            )
         )
         for p in property_model_map
     }
