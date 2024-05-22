@@ -9,11 +9,9 @@ import { Control } from 'ol/control';
 import { utils } from '@/utils/hooks';
 
 // Tile server url
-// eslint-disable-next-line no-undef
-var url = `${env['kmi_server_url']}/geoserver/public/wms/?SERVICE=WMS&VERSION=1.0.0&REQUEST=GetCapabilities`;
-// var url = `${env['gis_server_url']}/geoserver/ows/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities`; // KB
+var url = `${env['gis_server_url']}/geoserver/ows/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities`; // KB
 // Layer to use as map base layer
-export var baselayer_name = 'mapbox-emerald';
+export var baselayer_name = 'mapbox-emerald'; // KMI
 // export var baselayer_name = 'mapbox-dark'
 
 /**
@@ -54,22 +52,24 @@ export async function addOptionalLayers(map_component) {
         .then(function (text) {
             let result = parser.read(text);
             let layers = result.Capability.Layer.Layer.filter((layer) => {
-                return layer['Name'] === 'dbca_legislated_lands_and_waters';
+                return (
+                    layer['Name'] ===
+                    'kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE'
+                );
             });
 
             for (let j in layers) {
                 let layer = layers[j];
 
                 let l = new TileWMS({
-                    // url: `${env['gis_server_url']}/geoserver/ows`, // KB
-                    url: `${env['kmi_server_url']}/geoserver/public/wms`,
+                    url: `${env['gis_server_url']}/geoserver/ows`, // KB
                     crossOrigin: 'anonymous', // Data for a image tiles can only be retrieved if the source's crossOrigin property is set (https://openlayers.org/en/latest/apidoc/module-ol_layer_Tile-TileLayer.html#getData)
                     params: {
                         FORMAT: 'image/png',
                         VERSION: '1.1.1',
                         tiled: true,
                         STYLES: '',
-                        LAYERS: `public:${layer.Name}`,
+                        LAYERS: `${layer.Name}`,
                     },
                 });
 
@@ -80,6 +80,7 @@ export async function addOptionalLayers(map_component) {
                     visible: false,
                     extent: layer.BoundingBox[0].extent,
                     source: l,
+                    invert_xy: true, // Invert the x and y coordinates
                 });
 
                 let legend_url = null;
@@ -124,8 +125,14 @@ export async function addOptionalLayers(map_component) {
                     }
                     let coordinate = evt.coordinate;
                     layerAtEventPixel(map_component, evt).forEach((lyr) => {
-                        if (lyr.values_.name === tileLayer.values_.name) {
-                            let point = `POINT (${coordinate.join(' ')})`;
+                        if (
+                            lyr.values_.name === tileLayer.getProperties().name
+                        ) {
+                            let c = coordinate;
+                            if (tileLayer.getProperties().invert_xy) {
+                                c = [coordinate[1], coordinate[0]];
+                            }
+                            let point = `POINT (${c.join(' ')})`;
                             let query_str = _helper.geoserverQuery.bind(this)(
                                 point,
                                 map_component
@@ -136,7 +143,8 @@ export async function addOptionalLayers(map_component) {
                                 .then(async (features) => {
                                     if (features.length === 0) {
                                         console.warn(
-                                            'No features found at this location.'
+                                            'No features found at this location.',
+                                            features
                                         );
                                         map_component.overlay(undefined);
                                     } else {
@@ -153,7 +161,10 @@ export async function addOptionalLayers(map_component) {
             }
         })
         .catch((error) => {
-            console.error('There was an error fetching addional layers', error);
+            console.error(
+                'There was an error fetching additional layers',
+                error
+            );
         });
 }
 
@@ -281,13 +292,13 @@ export function validateFeature(feature, component_map) {
 }
 
 export let owsQuery = {
-    version: '1.0.0', // Note: Version 1.1.0 or 2.0.0 not supported by the geoserver
+    version: '1.3.0',
     landwater: {
-        typeName: 'public:dbca_legislated_lands_and_waters',
-        srsName: 'EPSG:4326',
+        typeName: 'kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE',
+        srsName: 'urn:x-ogc:def:crs:EPSG:4326',
         propertyName:
-            'objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting,shape_area,leg_poly_area',
-        geometry: 'wkb_geometry',
+            'LEG_PIN,LEG_POLY_AREA,LEG_CLASS,LEG_IDENTIFIER,LEG_PURPOSE,LEG_VESTING,LEG_NAME,LEG_NAME_STATUS,LEG_IUCN,LEG_TENURE,LEG_ACT,LEG_CATEGORY,LEG_NOTES,LEG_AGREEMENT_PARTY,LEG_CLASSIFICATION,LEG_REGNO,SHAPE_Length,SHAPE_Area',
+        geometry: 'SHAPE',
     },
 };
 
@@ -347,16 +358,37 @@ const _helper = {
             this.drawForModel.setActive(drawForModel);
         }
     },
+    isInvertXy: function (layerName) {
+        const typeName =
+            this.$refs.component_map.queryParamsDict(layerName).typeName;
+        const invert_xy = this.$refs.component_map.optionalLayers.map(
+            (layer) => {
+                if (layer.get('name') === typeName) {
+                    return layer.getProperties().invert_xy;
+                }
+            }
+        )[0];
+
+        return invert_xy;
+    },
     /**
      * Returns a Well-known-text (WKT) representation of a feature
      * @param {Feature} feature A feature to validate
      */
     featureToWKT: function (feature) {
         let vm = this;
+        const invert_xy = _helper.isInvertXy.bind(this)('landwater');
 
         if (feature === undefined) {
             // If no feature is provided, create a feature from the current sketch
-            let coordinates = vm.$refs.component_map.sketchCoordinates.slice();
+            const sketchCoordinates =
+                vm.$refs.component_map.sketchCoordinates.slice();
+            const coordinates = [];
+            if (invert_xy) {
+                sketchCoordinates.map((coord) => {
+                    coordinates.push(coord.toReversed());
+                });
+            }
             coordinates.push(coordinates[0]);
             feature = new Feature({
                 id: -1,
@@ -402,7 +434,7 @@ const _helper = {
         }
         // The geoserver url
         // eslint-disable-next-line no-undef
-        let owsUrl = `${env['kmi_server_url']}/geoserver/public/ows/?`;
+        let owsUrl = `${env['gis_server_url']}/geoserver/ows/?`;
         // Create a params dict for the WFS request to the land-water layer
         let paramsDict = map_component.queryParamsDict('landwater');
         let geometry_name = map_component.owsQuery.landwater.geometry;
