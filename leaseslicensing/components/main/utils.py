@@ -93,6 +93,16 @@ def get_dbca_lands_and_waters_geos():
     return geoms
 
 
+def invert_xy_coordinates(polygons):
+    from shapely import wkt
+    from shapely.ops import transform
+
+    polygons = [transform(lambda x, y: (y, x), wkt.loads(p.wkt)) for p in polygons]
+    polygons = [Polygon.from_ewkt(p.wkt) for p in polygons]
+
+    return polygons
+
+
 def get_features_by_multipolygon(
     multipolygon,
     server_url,
@@ -203,11 +213,7 @@ def get_gis_data_for_geometries(
 
     if invert_xy:
         # Transform lon/lat (x/y) points to lat/lon (y/x) points
-        from shapely import wkt
-        from shapely.ops import transform
-
-        polygons = [transform(lambda x, y: (y, x), wkt.loads(p.wkt)) for p in polygons]
-        polygons = [Polygon.from_ewkt(p.wkt) for p in polygons]
+        polygons = invert_xy_coordinates(polygons)
 
     multipolygon = MultiPolygon(polygons)
     if not multipolygon.valid:
@@ -259,16 +265,27 @@ def get_gis_data_for_geometries(
     return data
 
 
-def polygon_intersects_with_layer(polygon, server_url, layer_name):
+def polygon_intersects_with_layer(
+    polygon, server_url, layer_name, properties, version, the_geom
+):
     """Checks if a polygon intersects with a layer"""
-    return polygons_intersect_with_layer([polygon], server_url, layer_name)
+    return polygons_intersect_with_layer(
+        [polygon], server_url, layer_name, properties, version, the_geom
+    )
 
 
-def polygons_intersect_with_layer(polygons, server_url, layer_name):
+def polygons_intersect_with_layer(
+    polygons, server_url, layer_name, properties, version, the_geom
+):
     """Checks if a polygon intersects with a layer"""
     multipolygon = MultiPolygon(polygons)
     features = get_features_by_multipolygon(
-        multipolygon, server_url, layer_name=layer_name, properties="objectid"
+        multipolygon,
+        server_url,
+        layer_name=layer_name,
+        properties=properties,
+        version=version,
+        the_geom=the_geom,
     )
     if 0 == features["totalFeatures"]:
         return False
@@ -333,9 +350,16 @@ def save_geometry(
         # Create a Polygon object from the open layers feature
         polygon = Polygon(feature.get("geometry").get("coordinates")[0])
 
-        # check if it intersects with any of the lands geos
+        test_polygon = invert_xy_coordinates([polygon])[0]
+
+        # polygon, settings.KMI_SERVER_URL, "public:dbca_legislated_lands_and_waters"
         if not polygon_intersects_with_layer(
-            polygon, settings.KMI_SERVER_URL, "public:dbca_legislated_lands_and_waters"
+            test_polygon,
+            settings.GIS_SERVER_URL,
+            "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
+            "LEG_IDENTIFIER",
+            "2.0.0",
+            "SHAPE",
         ):
             # if it doesn't, raise a validation error (this should be prevented in the front end
             # and is here just in case
@@ -438,22 +462,22 @@ def populate_gis_data_lands_and_waters(
         "leg_name",
         "leg_tenure",
         "leg_act",
-        "category",
+        # "category",
+        "leg_category",
     ]
     # Start with storing the ids of existing identifiers, names, acts, tenures and categories of this instance
-    # Remove any GIS data thtat is returned from querying the geoserver.
+    # Remove any GIS data that is returned from querying the geoserver.
     # Whatever remains in this list is no longer part of this instance and will be deleted.
     object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
     gis_data_lands_and_waters = get_gis_data_for_geometries(
         instance,
         geometries_attribute,
-        settings.KMI_SERVER_URL,
-        "public:dbca_legislated_lands_and_waters",
-        # "cpt_dbca_legislated_tenure",
-        properties,
-        # version="2.0.0",
-        # the_geom="SHAPE",
-        # invert_xy=True
+        settings.GIS_SERVER_URL,
+        "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
+        [p.upper() for p in properties],
+        version="2.0.0",
+        the_geom="SHAPE",
+        invert_xy=True,
     )
     if gis_data_lands_and_waters is None:
         logger.warn(
