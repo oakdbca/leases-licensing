@@ -178,7 +178,7 @@ def get_gis_data_for_geometries(
     geometries_attribute,
     server_url,
     layer_name,
-    properties,
+    feature_properties,
     version="1.0.0",
     the_geom="wkb_geometry",
     invert_xy=False,
@@ -191,7 +191,8 @@ def get_gis_data_for_geometries(
         geometries_attribute (str): The name of the related geometries attribute
         server_url (str): The URL of the geoserver
         layer_name (str): The name of the layer to query
-        properties (list): A list of property names to get unique values for
+        feature_properties (list): A list of property names to get unique values for,
+            or a list of lists of model name and gis property name when they differ too much
         version (str): The WFS version to use
         the_geom (str): The name of the geometry column in the layer
         invert_xy (bool): Whether to first transform geometries in lon/lat to lat/lon
@@ -202,6 +203,7 @@ def get_gis_data_for_geometries(
         )
 
     geometries = getattr(instance, geometries_attribute)
+    properties = [(p[1] if isinstance(p, list) else p) for p in feature_properties]
 
     if not geometries.exists():
         logger.warn(
@@ -462,7 +464,6 @@ def populate_gis_data_lands_and_waters(
         "leg_name",
         "leg_tenure",
         "leg_act",
-        # "category",
         "leg_category",
     ]
     # Start with storing the ids of existing identifiers, names, acts, tenures and categories of this instance
@@ -474,7 +475,7 @@ def populate_gis_data_lands_and_waters(
         geometries_attribute,
         settings.GIS_SERVER_URL,
         "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
-        [p.upper() for p in properties], # A bit ugly but works
+        [p.upper() for p in properties],  # A bit ugly but works
         version="2.0.0",
         the_geom="SHAPE",
         invert_xy=True,
@@ -637,19 +638,18 @@ def populate_gis_data_regions(instance, geometries_attribute, foreign_key_field)
 
 
 def populate_gis_data_districts(instance, geometries_attribute, foreign_key_field):
-    properties = [
-        "district",  # KMI
-        # "DDT_DISTRICT_NAME", # KB
-    ]
-    # TODO: Property name changed completely in kb, no easy fix view cast to lower possible
+    properties = [["district", "ADMIN_ZONE"]]
+
     object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
-    # instance, geometries_attribute, settings.GIS_SERVER_URL, "kaartdijin-boodja-public:CPT_DBCA_DISTRICTS", properties, version="2.0.0", the_geom="SHAPE", invert_xy=True
     gis_data_districts = get_gis_data_for_geometries(
         instance,
         geometries_attribute,
-        settings.KMI_SERVER_URL,
-        "public:dbca_districts_public",
+        settings.GIS_SERVER_URL,
+        "kaartdijin-boodja-public:CPT_DBCA_DISTRICTS",
         properties,
+        version="2.0.0",
+        the_geom="SHAPE",
+        invert_xy=True,
     )
     if gis_data_districts is None:
         logger.warn(
@@ -658,11 +658,14 @@ def populate_gis_data_districts(instance, geometries_attribute, foreign_key_fiel
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
         return
 
-    if gis_data_districts[properties[0]]:
-        for district_name in gis_data_districts[properties[0]]:
+    gis_data_properties = [(p[1] if isinstance(p, list) else p) for p in properties]
+    object_properties = [(p[0] if isinstance(p, list) else p) for p in properties]
+
+    if gis_data_districts[gis_data_properties[0].lower()]:
+        for district_name in gis_data_districts[gis_data_properties[0].lower()]:
             district, created = District.objects.get_or_create(name=district_name)
             if created:
-                logger.info(f"New Region created from GIS Data: {district}")
+                logger.info(f"New District created from GIS Data: {district}")
             InstanceDistrict = apps.get_model(
                 "leaseslicensing", f"{instance.__class__.__name__}District"
             )
@@ -670,7 +673,7 @@ def populate_gis_data_districts(instance, geometries_attribute, foreign_key_fiel
                 **{foreign_key_field: instance}, district=district
             )
             if not created:
-                object_ids[properties[0]].remove(obj.id)
+                object_ids[object_properties[0].lower()].remove(obj.id)
 
     delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
 
@@ -685,7 +688,7 @@ def populate_gis_data_lgas(instance, geometries_attribute, foreign_key_field):
         geometries_attribute,
         settings.GIS_SERVER_URL,
         "kaartdijin-boodja-public:CPT_LOCAL_GOVT_AREAS",
-        [p.upper() for p in properties], # A bit ugly but works
+        [p.upper() for p in properties],  # A bit ugly but works
         version="2.0.0",
         the_geom="SHAPE",
         invert_xy=True,
@@ -759,11 +762,16 @@ def gis_property_to_model_ids(instance, properties, foreign_key_field):
         instance (object):
             A Proposal or CompetitiveProcess object
         properties (list)):
-            A list of GIS data property names
+            A list of GIS data property names, or a list of lists of model and GIS data property names
     """
 
     property_model_map = {
-        p.lower(): _gis_property_to_model(instance, p.lower()) for p in properties
+        (p[0].lower() if isinstance(p, list) else p.lower()): (
+            _gis_property_to_model(instance, p[0].lower())
+            if isinstance(p, list)
+            else _gis_property_to_model(instance, p.lower())
+        )
+        for p in properties
     }
 
     return {
