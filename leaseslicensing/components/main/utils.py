@@ -148,6 +148,7 @@ def get_features_by_multipolygon(
     if "public" not in namespace:
         logger.debug("Using Basic HTTP Auth to access namespace: %s", namespace)
         url = f"{server_url}{server_path}"
+        # Not sure we land here anymore with kb being the geoserver, but if we do, the authentication needs to be adjusted
         response = requests.post(
             url,
             data=params,
@@ -354,7 +355,6 @@ def save_geometry(
 
         test_polygon = invert_xy_coordinates([polygon])[0]
 
-        # polygon, settings.KMI_SERVER_URL, "public:dbca_legislated_lands_and_waters"
         if not polygon_intersects_with_layer(
             test_polygon,
             settings.GIS_SERVER_URL,
