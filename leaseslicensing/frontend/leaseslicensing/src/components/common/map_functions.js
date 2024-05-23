@@ -11,6 +11,7 @@ import { utils } from '@/utils/hooks';
 // Tile server url
 var url = `${env['gis_server_url']}/geoserver/ows/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities`; // KB
 // Layer to use as map base layer
+// TODO: Update to kb once baselayers are available
 export var baselayer_name = 'mapbox-emerald'; // KMI
 // export var baselayer_name = 'mapbox-dark'
 

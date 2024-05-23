@@ -1558,6 +1558,7 @@ export default {
         initialiseMap: function () {
             let vm = this;
 
+            // TODO: Update to kb once baselayers are available
             let satelliteTileWms = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
@@ -1569,6 +1570,7 @@ export default {
                 },
             });
 
+            // TODO: Update to kb once baselayers are available
             let streetsTileWMS = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
