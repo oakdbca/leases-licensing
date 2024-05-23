@@ -93,6 +93,19 @@ def get_dbca_lands_and_waters_geos():
     return geoms
 
 
+def tenure_layer_specification():
+    # Here be layer defs from a model
+
+    return {
+        "server_url": settings.GIS_SERVER_URL,
+        "layer_name": "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
+        "properties": "LEG_IDENTIFIER",
+        "version": "2.0.0",
+        "the_geom": "SHAPE",
+        "invert_xy": settings.GIS_INVERT_XY,
+    }
+
+
 def invert_xy_coordinates(polygons):
     from shapely import wkt
     from shapely.ops import transform
@@ -353,15 +366,18 @@ def save_geometry(
         # Create a Polygon object from the open layers feature
         polygon = Polygon(feature.get("geometry").get("coordinates")[0])
 
-        test_polygon = invert_xy_coordinates([polygon])[0]
+        specs = tenure_layer_specification()
+        test_polygon = (
+            invert_xy_coordinates([polygon])[0] if specs["invert_xy"] else polygon
+        )
 
         if not polygon_intersects_with_layer(
             test_polygon,
-            settings.GIS_SERVER_URL,
-            "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
-            "LEG_IDENTIFIER",
-            "2.0.0",
-            "SHAPE",
+            specs["server_url"],
+            specs["layer_name"],
+            specs["properties"],
+            specs["version"],
+            specs["the_geom"],
         ):
             # if it doesn't, raise a validation error (this should be prevented in the front end
             # and is here just in case
@@ -972,16 +988,20 @@ def validate_map_files(request, instance, foreign_key_field=None):
             if "source_" not in gdf_transform:
                 gdf_transform["source_"] = shp_file_obj.name
 
-            test_polygon = invert_xy_coordinates([polygon])[0]
+            specs = tenure_layer_specification()
+
+            test_polygon = (
+                invert_xy_coordinates([polygon])[0] if specs["invert_xy"] else polygon
+            )
 
             # Imported geometry is valid if it intersects with any one of the DBCA geometries
             if not polygon_intersects_with_layer(
                 test_polygon,
-                settings.GIS_SERVER_URL,
-                "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
-                "LEG_IDENTIFIER",
-                "2.0.0",
-                "SHAPE",
+                specs["server_url"],
+                specs["layer_name"],
+                specs["properties"],
+                specs["version"],
+                specs["the_geom"],
             ):
                 raise ValidationError(
                     "One or more polygons does not intersect with a relevant layer"

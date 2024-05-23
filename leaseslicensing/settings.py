@@ -423,6 +423,7 @@ APPLICATION_TYPES = [
 ]
 KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
 GIS_SERVER_URL = env("GIS_SERVER_URL", "https://kaartdijin-boodja-geoserver.dbca.wa.gov.au")
+GIS_INVERT_XY = env("GIS_INVERT_XY", True)
 
 ABS_API_URL = env("ABS_API_URL", "https://api.data.abs.gov.au")
 ABS_API_CPI_SUBDIRECTORY = env("ABD_API_CPI_PATH", "/data/CPI/")
