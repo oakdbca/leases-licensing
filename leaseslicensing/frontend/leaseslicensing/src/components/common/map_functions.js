@@ -271,7 +271,7 @@ export function validateFeature(feature, component_map) {
         feature_wkt = _helper.featureToWKT.bind(vm)();
     } else {
         // Get the WKT representation of the provided feature
-        feature_wkt = _helper.featureToWKT(feature);
+        feature_wkt = _helper.featureToWKT.bind(component_map)(feature);
     }
 
     if (component_map === undefined) {
@@ -360,15 +360,18 @@ const _helper = {
         }
     },
     isInvertXy: function (layerName) {
-        const typeName =
-            this.$refs.component_map.queryParamsDict(layerName).typeName;
-        const invert_xy = this.$refs.component_map.optionalLayers.map(
-            (layer) => {
-                if (layer.get('name') === typeName) {
-                    return layer.getProperties().invert_xy;
-                }
+        let map_obj = null;
+        if (this.$options.name === 'MapComponentWithFiltersV2') {
+            map_obj = this;
+        } else {
+            map_obj = this.$refs.component_map;
+        }
+        const typeName = map_obj.queryParamsDict(layerName).typeName;
+        const invert_xy = map_obj.optionalLayers.map((layer) => {
+            if (layer.get('name') === typeName) {
+                return layer.getProperties().invert_xy;
             }
-        )[0];
+        })[0];
 
         return invert_xy;
     },
