@@ -474,7 +474,7 @@ def populate_gis_data_lands_and_waters(
         geometries_attribute,
         settings.GIS_SERVER_URL,
         "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
-        [p.upper() for p in properties],
+        [p.upper() for p in properties], # A bit ugly but works
         version="2.0.0",
         the_geom="SHAPE",
         invert_xy=True,
@@ -680,14 +680,15 @@ def populate_gis_data_lgas(instance, geometries_attribute, foreign_key_field):
         "lga_label",
     ]
     object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
-    # TODO: Implement query to -private kb url, requires auth
-    # instance, geometries_attribute, settings.GIS_SERVER_URL, "kaartdijin-boodja-private:CPT_LOCAL_GOVT_AREAS", properties, version="2.0.0", the_geom="SHAPE", invert_xy=True
     gis_data_lgas = get_gis_data_for_geometries(
         instance,
         geometries_attribute,
-        settings.KMI_SERVER_URL,
-        "cddp:local_gov_authority",
-        properties,
+        settings.GIS_SERVER_URL,
+        "kaartdijin-boodja-public:CPT_LOCAL_GOVT_AREAS",
+        [p.upper() for p in properties], # A bit ugly but works
+        version="2.0.0",
+        the_geom="SHAPE",
+        invert_xy=True,
     )
     if gis_data_lgas is None:
         logger.warn("No GIS LGA data found for instance %s", instance.lodgement_number)

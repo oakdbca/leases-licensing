@@ -293,7 +293,7 @@ export function validateFeature(feature, component_map) {
 }
 
 export let owsQuery = {
-    version: '1.3.0',
+    version: '2.0.0',
     landwater: {
         typeName: 'kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE',
         srsName: 'urn:x-ogc:def:crs:EPSG:4326',
