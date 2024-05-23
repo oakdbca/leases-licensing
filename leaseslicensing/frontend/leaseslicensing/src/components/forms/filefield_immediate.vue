@@ -47,6 +47,7 @@
                 :id="name"
                 :key="name"
                 :name="name"
+                :multiple="multiple"
                 type="file"
                 :accept="fileTypes"
                 class=""
@@ -136,6 +137,11 @@ export default {
             type: Number,
             required: false,
         },
+        /** Whether to allow for multiple selection from file input field */
+        multiple: {
+            type: Boolean,
+            default: false,
+        },
     },
     emits: ['update-parent', 'update-temp-doc-coll-id'],
     data: function () {
@@ -199,7 +205,7 @@ export default {
         },
     },
     mounted: async function () {
-        await this.$nextTick(async () => {
+        this.$nextTick(async () => {
             if (
                 this.documentActionUrl === 'temporary_document' &&
                 !this.temporary_document_collection_id
@@ -221,30 +227,46 @@ export default {
             }
         },
         handleChange: async function (e) {
+            console.log('Change', e.target.files);
             if (e.target.files.length > 0) {
                 await this.save_document(e);
             }
         },
         get_documents: async function () {
             var formData = new FormData();
-            this.show_spinner = true;
 
             if (this.document_action_url) {
+                this.show_spinner = true;
+
                 formData.append('action', 'list');
                 if (this.commsLogId) {
                     formData.append('comms_log_id', this.commsLogId);
                 }
                 formData.append('input_name', this.name);
                 formData.append('csrfmiddlewaretoken', this.csrf_token);
-                const res = await fetch(this.document_action_url, {
+                await fetch(this.document_action_url, {
                     body: formData,
                     method: 'POST',
-                });
-                const resData = await res.json();
-                this.documents = resData.filedata;
-                this.commsLogId = resData.comms_instance_id;
+                })
+                    .then(async (response) => {
+                        const resData = await response.json();
+                        if (!response.ok) {
+                            throw new Error(resData);
+                        }
+                        this.documents = resData.filedata;
+                        this.commsLogId = resData.comms_instance_id;
+                    })
+                    .catch((error) => {
+                        swal.fire({
+                            title: 'File Error',
+                            text: error,
+                            icon: 'error',
+                        });
+                    })
+                    .finally(() => {
+                        this.show_spinner = false;
+                    });
             }
-            this.show_spinner = false;
         },
         delete_all_documents: function () {
             for (let item of this.documents) {
@@ -291,16 +313,17 @@ export default {
             }
             this.show_spinner = false;
         },
-        uploadFile(e) {
+        uploadFile(file) {
             let _file = null;
 
-            if (e.target.files && e.target.files[0]) {
+            // if (e.target.files && e.target.files[0]) {
+            if (file) {
                 let reader = new FileReader();
-                reader.readAsDataURL(e.target.files[0]);
+                reader.readAsDataURL(file);
                 reader.onload = function (e) {
                     _file = e.target.result;
                 };
-                _file = e.target.files[0];
+                _file = file;
             }
             return _file;
         },
@@ -329,7 +352,12 @@ export default {
 
         save_document: async function (e) {
             var formData = new FormData();
-            if (this.document_action_url) {
+            if (!this.document_action_url) {
+                console.error('No document_action_url provided');
+                return;
+            }
+
+            for (let file of e.target.files) {
                 formData.append('action', 'save');
                 if (this.commsLogId) {
                     formData.append('comms_log_id', this.commsLogId);
@@ -346,8 +374,8 @@ export default {
                     'approval_type_document_type',
                     this.approval_type_document_type
                 );
-                formData.append('filename', e.target.files[0].name);
-                formData.append('_file', this.uploadFile(e));
+                formData.append('filename', file.name);
+                formData.append('_file', this.uploadFile(file));
                 formData.append('csrfmiddlewaretoken', this.csrf_token);
 
                 await fetch(this.document_action_url, {
