@@ -382,13 +382,16 @@ const _helper = {
     featureToWKT: function (feature) {
         let vm = this;
         const invert_xy = _helper.isInvertXy.bind(this)('landwater');
+        let flatCoordinates = [];
 
+        // Prepare a WFS feature intersection request
         if (feature === undefined) {
             // If no feature is provided, create a feature from the current sketch
             const sketchCoordinates =
                 vm.$refs.component_map.sketchCoordinates.slice();
             const coordinates = [];
             if (invert_xy) {
+                // Invert the x and y coordinates
                 sketchCoordinates.map((coord) => {
                     coordinates.push(coord.toReversed());
                 });
@@ -401,10 +404,21 @@ const _helper = {
                 color: vm.defaultColor,
                 polygon_source: 'validation',
             });
-        }
 
-        // Prepare a WFS feature intersection request
-        let flatCoordinates = feature.values_.geometry.flatCoordinates;
+            flatCoordinates = feature.getGeometry().flatCoordinates;
+        } else {
+            feature
+                .getGeometry()
+                .getCoordinates()[0]
+                .map((coord) => {
+                    if (invert_xy) {
+                        // Invert the x and y coordinates
+                        flatCoordinates.push(coord[1], coord[0]);
+                    } else {
+                        flatCoordinates.push(coord[0], coord[1]);
+                    }
+                });
+        }
 
         // Transform list of flat coordinates into a list of coordinate pairs,
         // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
