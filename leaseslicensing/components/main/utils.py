@@ -972,9 +972,16 @@ def validate_map_files(request, instance, foreign_key_field=None):
             if "source_" not in gdf_transform:
                 gdf_transform["source_"] = shp_file_obj.name
 
+            test_polygon = invert_xy_coordinates([polygon])[0]
+
             # Imported geometry is valid if it intersects with any one of the DBCA geometries
             if not polygon_intersects_with_layer(
-                polygon, "public:dbca_legislated_lands_and_waters"
+                test_polygon,
+                settings.GIS_SERVER_URL,
+                "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
+                "LEG_IDENTIFIER",
+                "2.0.0",
+                "SHAPE",
             ):
                 raise ValidationError(
                     "One or more polygons does not intersect with a relevant layer"
