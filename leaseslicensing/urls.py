@@ -1,7 +1,7 @@
 from django.conf import settings
-from django.conf.urls import include, url
+from django.conf.urls import include
 from django.conf.urls.static import static
-from django.urls import path
+from django.urls import path, re_path
 from django_media_serv.urls import urlpatterns as media_serv_patterns
 from ledger_api_client.urls import urlpatterns as ledger_patterns
 from rest_framework import routers
@@ -115,75 +115,75 @@ router.register(r"detailstext", textbody_api.DetailsTextViewSet)
 router.registry.sort(key=lambda x: x[0])
 
 api_patterns = [
-    url(
+    re_path(
         r"^api/account/$",
         users_api.GetLedgerAccount.as_view(),
         name="get-ledger-account",
     ),
-    url(
+    re_path(
         r"^api/request_user_id/$",
         users_api.GetRequestUserID.as_view(),
         name="get-request-user-id",
     ),
-    url(r"^api/profile$", users_api.GetProfile.as_view(), name="get-profile"),
-    url(
+    re_path(r"^api/profile$", users_api.GetProfile.as_view(), name="get-profile"),
+    re_path(
         r"^api/profile/(?P<proposal_pk>\d+)$",
         users_api.GetProposalApplicant.as_view(),
         name="get-proposal-applicant",
     ),
-    url(r"^api/countries$", users_api.GetCountries.as_view(), name="get-countries"),
-    url(
+    re_path(r"^api/countries$", users_api.GetCountries.as_view(), name="get-countries"),
+    re_path(
         r"^api/charge_methods/$",
         users_api.GetChargeMethods.as_view(),
         name="get-charge-methods",
     ),
-    url(
+    re_path(
         r"^api/repetition_types/$",
         users_api.GetRepetitionTypes.as_view(),
         name="get-repetition-types",
     ),
-    url(
+    re_path(
         r"^api/proposal_type$",
         proposal_api.GetProposalType.as_view(),
         name="get-proposal-type",
     ),
-    url(
+    re_path(
         r"^api/create_organisation/$",
         org_api.CreateOrganisationView.as_view(),
         name="create-organisation",
     ),
-    url(
+    re_path(
         r"^api/organisation_access_group_members",
         org_api.OrganisationAccessGroupMembers.as_view(),
         name="organisation-access-group-members",
     ),
-    url(r"^api/", include(router.urls)),
-    url(
+    re_path(r"^api/", include(router.urls)),
+    re_path(
         r"^api/amendment_request_reason_choices",
         proposal_api.AmendmentRequestReasonChoicesView.as_view(),
         name="amendment_request_reason_choices",
     ),
-    url(
+    re_path(
         r"^api/compliance_amendment_reason_choices",
         compliances_api.ComplianceAmendmentReasonChoicesView.as_view(),
         name="amendment_request_reason_choices",
     ),
-    url(
+    re_path(
         r"^api/search_reference",
         proposal_api.SearchReferenceView.as_view(),
         name="search_reference",
     ),
-    url(
+    re_path(
         r"^api/main/secure_file/(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<file_field_name>\w+)/$",
         main_api.SecureFileAPIView.as_view(),
         name="secure_file",
     ),
-    url(
+    re_path(
         r"^api/main/secure_file/(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<file_field_name>\w+)/(?P<revision_id>\d+)/$",
         main_api.SecureFileAPIView.as_view(),
         name="secure_history_file",
     ),
-    url(
+    re_path(
         (
             r"^api/main/secure_document/"
             r"(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<related_name>[\w-]+)/(?P<document_id>\d+)/$"
@@ -191,12 +191,12 @@ api_patterns = [
         main_api.SecureDocumentAPIView.as_view(),
         name="secure_document",
     ),
-    url(
+    re_path(
         r"^api/main/secure_document/(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<document_id>\d+)/$",
         main_api.SecureDocumentAPIView.as_view(),
         name="secure_document",
     ),
-    url(
+    re_path(
         r"^api/main/secure_documents/(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<related_name>[\w-]+)/$",
         main_api.SecureDocumentsAPIView.as_view(),
         name="secure_documents",
@@ -207,147 +207,147 @@ api_patterns = [
 urlpatterns = (
     [
         path(r"admin/", admin.site.urls),
-        url(r"", include(api_patterns)),
-        url(r"^$", views.LeasesLicensingRoutingView.as_view(), name="home"),
-        url(
+        re_path(r"", include(api_patterns)),
+        re_path(r"^$", views.LeasesLicensingRoutingView.as_view(), name="home"),
+        re_path(
             r"^contact/", views.LeasesLicensingContactView.as_view(), name="ds_contact"
         ),
-        url(
+        re_path(
             r"^further_info/",
             views.LeasesLicensingFurtherInformationView.as_view(),
             name="ds_further_info",
         ),
-        url(r"^internal/", views.InternalView.as_view(), name="internal"),
-        url(
+        re_path(r"^internal/", views.InternalView.as_view(), name="internal"),
+        re_path(
             r"^internal/proposal/(?P<proposal_pk>\d+)/referral/(?P<referral_pk>\d+)/$",
             views.ReferralView.as_view(),
             name="internal-referral-detail",
         ),
-        url(
+        re_path(
             r"^internal/approvals/$",
             views.InternalView.as_view(),
             name="internal-approvals",
         ),
-        url(
+        re_path(
             r"^external/invoices/$",
             views.ExternalView.as_view(),
             name="external-invoices",
         ),
-        url(
+        re_path(
             r"^internal/invoices/$",
             views.InternalView.as_view(),
             name="internal-invoices",
         ),
-        url(
+        re_path(
             r"^external/approval/(?P<approval_pk>\d+)/$",
             views.ExternalView.as_view(),
             name="external-approval-detail",
         ),
-        url(r"^external/", views.ExternalView.as_view(), name="external"),
-        url(r"^firsttime/$", views.first_time, name="first_time"),
-        url(r"^account/", views.AccountView.as_view(), name="manage-account"),
-        url(r"^profiles/", views.ExternalView.as_view(), name="manage-profiles"),
-        url(
+        re_path(r"^external/", views.ExternalView.as_view(), name="external"),
+        re_path(r"^firsttime/$", views.first_time, name="first_time"),
+        re_path(r"^account/", views.AccountView.as_view(), name="manage-account"),
+        re_path(r"^profiles/", views.ExternalView.as_view(), name="manage-profiles"),
+        re_path(
             r"^help/(?P<application_type>[^/]+)/(?P<help_type>[^/]+)/$",
             views.HelpView.as_view(),
             name="help",
         ),
-        url(
+        re_path(
             r"^mgt-commands/$",
             views.ManagementCommandsView.as_view(),
             name="mgt-commands",
         ),
-        url(
+        re_path(
             r"^api/application_types$",
             proposal_api.GetApplicationTypeDescriptions.as_view(),
             name="get-application-type-descriptions",
         ),
-        url(
+        re_path(
             r"^api/application_types_dict$",
             proposal_api.GetApplicationTypeDict.as_view(),
             name="get-application-type-dict",
         ),
-        url(
+        re_path(
             r"^api/additional_document_types_dict$",
             proposal_api.GetAdditionalDocumentTypeDict.as_view(),
             name="get-additional-document-types-dict",
         ),
-        url(
+        re_path(
             r"^api/application_statuses_dict$",
             proposal_api.GetApplicationStatusesDict.as_view(),
             name="get-application-statuses-dict",
         ),
-        url(
+        re_path(
             r"^api/competitive_process_statuses_dict$",
             competitive_process_api.GetCompetitiveProcessStatusesDict.as_view(),
             name="get-competitive-process-statuses-dict",
         ),
-        url(
+        re_path(
             r"^api/approval_statuses_dict$",
             approval_api.GetApprovalStatusesDict.as_view(),
             name="get-approval-statuses-dict",
         ),
-        url(
+        re_path(
             r"^api/approval_types_dict$",
             approval_api.GetApprovalTypesDict.as_view(),
             name="get-approval-types-dict",
         ),
-        url(
+        re_path(
             r"^api/compliance_statuses_dict$",
             compliances_api.GetComplianceStatusesDict.as_view(),
             name="get-compliance-statuses-dict",
         ),
-        url(
+        re_path(
             r"^internal/proposal/(?P<pk>\d+)/$",
             views.InternalProposalView.as_view(),
             name="internal-proposal-detail",
         ),
-        url(
+        re_path(
             r"^internal/approval/(?P<pk>\d+)/$",
             views.InternalApprovalView.as_view(),
             name="internal-approval-detail",
         ),
-        url(
+        re_path(
             r"^external/proposal/(?P<proposal_pk>\d+)/$",
             views.ExternalProposalView.as_view(),
             name="external-proposal-detail",
         ),
-        url(
+        re_path(
             r"^external/compliance/(?P<compliance_pk>\d+)/$",
             views.ExternalComplianceView.as_view(),
             name="external-compliance-detail",
         ),
-        url(
+        re_path(
             r"^internal/compliance/(?P<pk>\d+)/$",
             views.InternalComplianceView.as_view(),
             name="internal-compliance-detail",
         ),
-        url(
+        re_path(
             r"^internal/competitive_process/(?P<pk>\d+)/$",
             views.InternalCompetitiveProcessView.as_view(),
             name="internal-competitiveprocess-detail",
         ),
-        url(
+        re_path(
             r"^api/invoices/(?P<pk>\d+)/pay_invoice/$",
             invoicing_api.InvoiceViewSet.as_view(actions={"get": "pay_invoice"}),
             name="external-pay-invoice",
         ),
-        url(
+        re_path(
             r"^api/invoicing/ledger-api-invoice-success-callback/(?P<uuid>.+)$",
             invoicing_api.PayInvoiceSuccessCallbackView.as_view(),
             name="ledger-api-invoice-success-callback",
         ),
-        url(
+        re_path(
             r"^external/invoice/(?P<id>.+)/payment-success$",
             views.ExternalView.as_view(),
             name="external-pay-invoice-success",
         ),
-        url(
+        re_path(
             r"^external/invoice/(?P<id>.+)/payment-failure$",
             views.ExternalView.as_view(),
             name="external-pay-invoice-failure",
         ),
-        url("sentry-debug/", trigger_error),
+        re_path("sentry-debug/", trigger_error),
     ]
     + ledger_patterns
     + media_serv_patterns
