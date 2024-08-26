@@ -53,6 +53,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     libspatialindex-dev \
     mtr \
     patch \
+    pipx \
     postgresql-client \
     python3-dev \
     python3-gdal \
@@ -105,12 +106,10 @@ FROM configure_leaseslicensing as python_dependencies_leaseslicensing
 
 WORKDIR /app
 USER oim
-ENV POETRY_HOME=/app/poetry
-RUN python3 -m venv $POETRY_HOME
-RUN $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
-RUN poetry completions bash >> ~/.bash_completion
-
+RUN pipx install poetry==$POETRY_VERSION
+RUN poetry completions bash > ~/.bash_completion
 COPY --chown=oim:oim pyproject.toml poetry.lock ./
+RUN poetry run pip install --upgrade pip
 RUN --mount=type=cache,target=~/.cache/pypoetry/cache poetry install --only main --no-interaction --no-ansi
 
 FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing

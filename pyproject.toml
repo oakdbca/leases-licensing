@@ -4,6 +4,7 @@ version = "1.0.0"
 description = "Leases Licensing"
 authors = ["DBCA OIM <asi@dbca.wa.gov.au>"]
 license = "Apache-2.0"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -45,20 +46,20 @@ django_media_serv = {git = "https://github.com/dbca-wa/django-media-serv.git", r
 pandas = "1.5.2"
 geopandas = "^0.12"
 python-docx = "^0.8"
-gunicorn = "^19.10"
+gunicorn = "^22.0"
 drf-standardized-errors = "^0.12"
 pre-commit = "^3.4.0"
 python-decouple = "^3.8"
 appmonitor_client = {git = "https://github.com/dbca-wa/appmonitor_client.git", rev="main"}
 ipython = "^8.15"
-django-cron = "^0.6.0"
+django-cron = {git = "https://github.com/jorenham/django-cron.git", rev="master"}
 tomli = "^2.0.1"
 sentry-sdk = "^1.44.1"
 django5_six = {git = "https://github.com/dbca-wa/django5-utils-six.git", rev="master"}
 numpy = "1.26.4"
 
 [tool.poetry.dev-dependencies]
-django-debug-toolbar = "^3.4"
+django-debug-toolbar = "^4.4"
 ipdb = "^0.13"
 pylint = "^2.13"
 flake8 = "^6.1"
