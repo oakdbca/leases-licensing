@@ -538,32 +538,34 @@
                                         <th scope="row">Identifier</th>
                                         <td>
                                             {{
-                                                overlayFeatureInfo.leg_identifier
+                                                overlayFeatureInfo.LEG_IDENTIFIER
                                             }}
                                         </td>
                                     </tr>
                                     <tr>
                                         <th scope="row">Vesting</th>
                                         <td>
-                                            {{ overlayFeatureInfo.leg_vesting }}
+                                            {{ overlayFeatureInfo.LEG_VESTING }}
                                         </td>
                                     </tr>
                                     <tr>
                                         <th scope="row">Legal Act</th>
                                         <td>
-                                            {{ overlayFeatureInfo.leg_act }}
+                                            {{ overlayFeatureInfo.LEG_ACT }}
                                         </td>
                                     </tr>
                                     <tr>
                                         <th scope="row">Tenure</th>
                                         <td>
-                                            {{ overlayFeatureInfo.leg_tenure }}
+                                            {{ overlayFeatureInfo.LEG_TENURE }}
                                         </td>
                                     </tr>
                                     <tr>
                                         <th scope="row">Category</th>
                                         <td>
-                                            {{ overlayFeatureInfo.category }}
+                                            {{
+                                                overlayFeatureInfo.LEG_CATEGORY
+                                            }}
                                         </td>
                                     </tr>
                                     <tr>
@@ -571,7 +573,7 @@
                                         <td>
                                             {{
                                                 (
-                                                    overlayFeatureInfo.leg_poly_area +
+                                                    overlayFeatureInfo.LEG_POLY_AREA +
                                                     Number.EPSILON
                                                 ).toFixed(1)
                                             }}
@@ -626,6 +628,7 @@
                             ref="shapefile_document"
                             :readonly="false"
                             name="shapefile_document"
+                            :multiple="true"
                             :is-repeatable="true"
                             :document-action-url="shapefileDocumentUrl"
                             :replace_button_by_text="true"
@@ -1556,6 +1559,7 @@ export default {
         initialiseMap: function () {
             let vm = this;
 
+            // TODO: Update to kb once baselayers are available
             let satelliteTileWms = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
@@ -1567,6 +1571,7 @@ export default {
                 },
             });
 
+            // TODO: Update to kb once baselayers are available
             let streetsTileWMS = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
@@ -2613,15 +2618,16 @@ export default {
 
             return {
                 service: vm.owsQuery.service || 'WFS',
-                version: vm.owsQuery.version || '1.0.0',
+                version: vm.owsQuery.version || '1.3.0',
                 request: vm.owsQuery[layerStr].request || 'GetFeature',
                 typeName: vm.owsQuery[layerStr].typeName,
                 maxFeatures: vm.owsQuery[layerStr].maxFeatures || '5000',
-                srsName: vm.owsQuery[layerStr].srsName || 'EPSG:4326',
+                srsName:
+                    vm.owsQuery[layerStr].srsName ||
+                    'urn:x-ogc:def:crs:EPSG:4326',
                 outputFormat:
                     vm.owsQuery[layerStr].outputFormat || 'application/json',
-                propertyName:
-                    vm.owsQuery[layerStr].propertyName || 'wkb_geometry',
+                propertyName: vm.owsQuery[layerStr].propertyName || 'SHAPE',
             };
         },
         finishDrawing: function () {

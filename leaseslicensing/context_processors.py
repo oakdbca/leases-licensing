@@ -15,6 +15,7 @@ def leaseslicensing_url(request):
     )
     ledger_totals = ledger_api_utils.get_ledger_totals()
     return {
+        "KMI_SERVER_URL": settings.KMI_SERVER_URL,
         "GIS_SERVER_URL": settings.GIS_SERVER_URL,
         "template_group": template_group,
         "template_header_logo": template_header_logo,
