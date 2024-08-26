@@ -1,11 +1,11 @@
 from typing import Any
 
-from django.conf.urls import url
 from django.contrib import admin
 from django.db.models import TextField
 from django.forms import Textarea
 from django.http import HttpResponseRedirect
 from django.http.request import HttpRequest
+from django.urls import re_path
 
 from leaseslicensing import helpers
 from leaseslicensing.components.main.models import ApplicationType, SystemMaintenance
@@ -103,11 +103,11 @@ class HelpPageAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
-            url(
+            re_path(
                 "create_leaseslicensing_help/",
                 self.admin_site.admin_view(self.create_leaseslicensing_help),
             ),
-            url(
+            re_path(
                 "create_leaseslicensing_help_assessor/",
                 self.admin_site.admin_view(self.create_leaseslicensing_help_assessor),
             ),

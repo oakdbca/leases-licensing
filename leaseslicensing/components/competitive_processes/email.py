@@ -4,7 +4,7 @@ import re
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.urls import reverse
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 from ledger_api_client.managed_models import SystemGroup
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
@@ -100,12 +100,12 @@ def _log_competitive_process_email(email_message, competitive_process, sender=No
         # Note: This will log the plain text body (not the html body)
         text = email_message.body
         subject = email_message.subject
-        fromm = smart_text(sender) if sender else smart_text(email_message.from_email)
+        fromm = smart_str(sender) if sender else smart_str(email_message.from_email)
         # the to email is normally a list
         if isinstance(email_message.to, list):
             to = ",".join(email_message.to)
         else:
-            to = smart_text(email_message.to)
+            to = smart_str(email_message.to)
         # we log the cc and bcc in the same cc field of the log entry as a ',' comma separated string
         all_ccs = []
         if email_message.cc:
@@ -115,7 +115,7 @@ def _log_competitive_process_email(email_message, competitive_process, sender=No
         all_ccs = ",".join(all_ccs)
 
     else:
-        text = smart_text(email_message)
+        text = smart_str(email_message)
         subject = ""
         if hasattr(competitive_process, "originating_proposal"):
             to = retrieve_email_user(
@@ -124,7 +124,7 @@ def _log_competitive_process_email(email_message, competitive_process, sender=No
         else:
             to = ""
         fromm = (
-            smart_text(sender)
+            smart_str(sender)
             if sender
             else f"{settings.SYSTEM_NAME} (Automated Message)"
         )

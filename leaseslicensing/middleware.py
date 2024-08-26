@@ -1,7 +1,8 @@
+from urllib.parse import quote_plus
+
 from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.http import urlquote_plus
 
 from leaseslicensing.helpers import is_internal
 
@@ -39,7 +40,7 @@ class FirstTimeNagScreenMiddleware:
         if request.path in ("/sso/setting", path_ft, reverse("logout")):
             return self.get_response(request)
 
-        return redirect(path_ft + "?next=" + urlquote_plus(request.get_full_path()))
+        return redirect(path_ft + "?next=" + quote_plus(request.get_full_path()))
 
     def postal_address_fully_filled(self, user):
         return (

@@ -4,6 +4,7 @@ import sys
 
 import confy
 import tomli
+from confy import env
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -253,9 +254,9 @@ PAYMENT_SYSTEM_ID = env("PAYMENT_SYSTEM_ID", "S675")
 PAYMENT_SYSTEM_PREFIX = env(
     "PAYMENT_SYSTEM_PREFIX", PAYMENT_SYSTEM_ID.replace("S", "0")
 )  # '0675'
-os.environ[
-    "LEDGER_PRODUCT_CUSTOM_FIELDS"
-] = "('ledger_description','quantity','price_incl_tax','price_excl_tax','oracle_code')"
+os.environ["LEDGER_PRODUCT_CUSTOM_FIELDS"] = (
+    "('ledger_description','quantity','price_incl_tax','price_excl_tax','oracle_code')"
+)
 
 LEDGER_DEFAULT_LINE_STATUS = 1
 
@@ -422,7 +423,9 @@ APPLICATION_TYPES = [
     (APPLICATION_TYPE_LEASE_LICENCE, "Lease Licence"),
 ]
 KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
-GIS_SERVER_URL = env("GIS_SERVER_URL", "https://kaartdijin-boodja-geoserver.dbca.wa.gov.au")
+GIS_SERVER_URL = env(
+    "GIS_SERVER_URL", "https://kaartdijin-boodja-geoserver.dbca.wa.gov.au"
+)
 GIS_INVERT_XY = env("GIS_INVERT_XY", True)
 
 ABS_API_URL = env("ABS_API_URL", "https://api.data.abs.gov.au")

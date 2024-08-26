@@ -1,9 +1,10 @@
 # syntax = docker/dockerfile:1.2
 
 # Prepare the base environment.
-FROM ubuntu:22.04 as builder_base_oim_leaseslicensing
+FROM ubuntu:24.04 as builder_base_oim_leaseslicensing
 
 LABEL maintainer="asi@dbca.wa.gov.au"
+LABEL org.opencontainers.image.source="https://github.com/dbca-wa/leases-licensing"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Australia/Perth \
@@ -18,8 +19,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SITE_DOMAIN='dbca.wa.gov.au' \
     OSCAR_SHOP_NAME='Parks & Wildlife' \
     BPAY_ALLOWED=False \
-    POETRY_VERSION=1.6.1 \
+    POETRY_VERSION=1.8.3 \
     NODE_MAJOR=20
+
+FROM builder_base_oim_leaseslicensing as apt_packages_leaseslicensing
 
 # Use Australian Mirrors
 RUN sed 's/archive.ubuntu.com/au.archive.ubuntu.com/g' /etc/apt/sources.list > /etc/apt/sourcesau.list && \
@@ -33,12 +36,16 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     ca-certificates \
     cron \
     curl \
+    libfreetype-dev \
     gdal-bin \
     gnupg \
+    g++ \
     gcc \
     git \
     gunicorn \
     htop \
+    ipython3 \
+    libgdal-dev \
     libmagic-dev \
     libproj-dev \
     libpq-dev \
@@ -48,8 +55,12 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     patch \
     postgresql-client \
     python3-dev \
+    python3-gdal \
+    python3-pil \
     python3-pip \
+    python3-poetry \
     python3-setuptools \
+    python3-venv \
     ipython3 \
     rsyslog \
     sqlite3 \
@@ -61,52 +72,52 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     update-ca-certificates
 
+FROM apt_packages_leaseslicensing as node_leaseslicensing
+
 # install node 20
 RUN mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
     | tee /etc/apt/sources.list.d/nodesource.list && \
     apt-get update && \
-    apt-get install -y nodejs && \
-    ln -s /usr/bin/python3 /usr/bin/python && \
-    pip install --upgrade pip
+    apt-get install -y nodejs
 
-COPY cron /etc/cron.d/dockercron
-COPY startup.sh pre_startup.sh /
+FROM node_leaseslicensing as configure_leaseslicensing
+
+COPY startup.sh  /
+
 COPY ./timezone /etc/timezone
-RUN chmod 0644 /etc/cron.d/dockercron && \
-    crontab /etc/cron.d/dockercron && \
-    touch /var/log/cron.log && \
-    service cron start && \
-    chmod 755 /startup.sh && \
+RUN chmod 755 /startup.sh && \
     chmod +s /startup.sh && \
-    chmod 755 /pre_startup.sh && \
-    chmod +s /pre_startup.sh && \
     groupadd -g 5000 oim && \
     useradd -g 5000 -u 5000 oim -s /bin/bash -d /app && \
     usermod -a -G sudo oim && \
     echo "oim  ALL=(ALL)  NOPASSWD: /startup.sh" > /etc/sudoers.d/oim && \
     mkdir /app && \
     chown -R oim.oim /app && \
-    mkdir /container-config/ && \
-    chown -R oim.oim /container-config/ && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    touch /app/rand_hash && \
-    wget https://raw.githubusercontent.com/dbca-wa/wagov_utils/main/wagov_utils/bin/health_check.sh -O /bin/health_check.sh && \
-    chmod 755 /bin/health_check.sh
+    wget https://raw.githubusercontent.com/dbca-wa/wagov_utils/main/wagov_utils/bin/default_script_installer.sh -O /tmp/default_script_installer.sh && \
+    chmod 755 /tmp/default_script_installer.sh && \
+    /tmp/default_script_installer.sh && \
+    rm -rf /tmp/*
 
-FROM builder_base_oim_leaseslicensing as python_dependencies_leaseslicensing
+FROM configure_leaseslicensing as python_dependencies_leaseslicensing
+
 WORKDIR /app
 USER oim
-ENV PATH=/app/.local/bin:$PATH
-COPY --chown=oim:oim gunicorn.ini manage.py manage.sh startup.sh pyproject.toml poetry.lock ./
-RUN pip install "poetry==$POETRY_VERSION"
+ENV POETRY_HOME=/app/poetry
+RUN python3 -m venv $POETRY_HOME
+RUN $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
+RUN poetry completions bash >> ~/.bash_completion
+
+COPY --chown=oim:oim pyproject.toml poetry.lock ./
 RUN --mount=type=cache,target=~/.cache/pypoetry/cache poetry install --only main --no-interaction --no-ansi
 
+FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
+
+COPY --chown=oim:oim gunicorn.ini.py manage.py manage.sh ./
 COPY --chown=oim:oim leaseslicensing ./leaseslicensing
 COPY --chown=oim:oim .git ./.git
-
-FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
 
 RUN touch /app/.env && \
     poetry run python manage.py collectstatic --no-input
@@ -143,4 +154,4 @@ RUN touch /app/.env && \
 
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
-CMD ["/pre_startup.sh"]
+CMD ["/startup.sh"]

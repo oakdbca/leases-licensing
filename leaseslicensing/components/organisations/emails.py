@@ -3,7 +3,7 @@ import logging
 # from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.helpers import convert_external_url_to_internal_url
@@ -450,12 +450,12 @@ def _log_org_request_email(email_message, organisation_request, sender=None):
         # Note: This will log the plain text body (not the html body)
         text = email_message.body
         subject = email_message.subject
-        fromm = smart_text(sender) if sender else smart_text(email_message.from_email)
+        fromm = smart_str(sender) if sender else smart_str(email_message.from_email)
         # the to email is normally a list
         if isinstance(email_message.to, list):
             to = ",".join(email_message.to)
         else:
-            to = smart_text(email_message.to)
+            to = smart_str(email_message.to)
         # we log the cc and bcc in the same cc field of the log entry as a ',' comma separated string
         all_ccs = []
         if email_message.cc:
@@ -466,10 +466,10 @@ def _log_org_request_email(email_message, organisation_request, sender=None):
 
     else:
         requester_email_user = retrieve_email_user(organisation_request.requester)
-        text = smart_text(email_message)
+        text = smart_str(email_message)
         subject = ""
         to = requester_email_user.email
-        fromm = smart_text(sender) if sender else SYSTEM_NAME
+        fromm = smart_str(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
     customer = organisation_request.requester
@@ -505,12 +505,12 @@ def _log_org_email(email_message, organisation, customer, sender=None):
         # Note: This will log the plain text body (not the html body)
         text = email_message.body
         subject = email_message.subject
-        fromm = smart_text(sender) if sender else smart_text(email_message.from_email)
+        fromm = smart_str(sender) if sender else smart_str(email_message.from_email)
         # the to email is normally a list
         if isinstance(email_message.to, list):
             to = ",".join(email_message.to)
         else:
-            to = smart_text(email_message.to)
+            to = smart_str(email_message.to)
         # we log the cc and bcc in the same cc field of the log entry as a ',' comma separated string
         all_ccs = []
         if email_message.cc:
@@ -521,10 +521,10 @@ def _log_org_email(email_message, organisation, customer, sender=None):
 
     else:
         email_user = retrieve_email_user(customer)
-        text = smart_text(email_message)
+        text = smart_str(email_message)
         subject = ""
         to = email_user.email
-        fromm = smart_text(sender) if sender else SYSTEM_NAME
+        fromm = smart_str(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
     staff = sender.id
