@@ -111,7 +111,7 @@ RUN $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
 RUN poetry completions bash >> ~/.bash_completion
 
 COPY --chown=oim:oim pyproject.toml poetry.lock ./
-RUN --mount=type=cache,target=~/.cache/pypoetry/cache poetry install --only main --no-interaction --no-ansi
+RUN --mount=type=cache,target=~/.cache/pypoetry/cache poetry install --no-root --only main --no-interaction --no-ansi
 
 FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
 
