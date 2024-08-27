@@ -59,7 +59,6 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     python3-gdal \
     python3-pil \
     python3-pip \
-    python3-poetry \
     python3-setuptools \
     python3-venv \
     ipython3 \
@@ -106,10 +105,14 @@ FROM configure_leaseslicensing as python_dependencies_leaseslicensing
 
 WORKDIR /app
 USER oim
-RUN pipx install poetry==$POETRY_VERSION
-RUN poetry completions bash > ~/.bash_completion
+
+ENV POETRY_HOME=/app/poetry
+ENV PATH=$POETRY_HOME/bin:$PATH
 COPY --chown=oim:oim pyproject.toml poetry.lock ./
-RUN poetry run pip install --upgrade pip
+RUN python3 -m venv $POETRY_HOME
+RUN $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
+RUN poetry completions bash > ~/.bash_completion && \
+    poetry run pip install --upgrade pip
 RUN --mount=type=cache,target=~/.cache/pypoetry/cache poetry install --only main --no-interaction --no-ansi
 
 FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
