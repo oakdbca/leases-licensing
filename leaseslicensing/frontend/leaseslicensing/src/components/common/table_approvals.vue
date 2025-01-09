@@ -748,11 +748,11 @@ export default {
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
-                    vm.columnAction,
                     vm.columnOriginalLeaseLicenseNumber,
                     vm.columnSite,
                     vm.columnGroups,
                     vm.columnCategories,
+                    vm.columnAction,
                 ];
             } else if (vm.is_internal) {
                 selectedColumns = [
@@ -764,11 +764,11 @@ export default {
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
-                    vm.columnAction,
                     vm.columnOriginalLeaseLicenseNumber,
                     vm.columnSite,
                     vm.columnGroups,
                     vm.columnCategories,
+                    vm.columnAction,
                 ];
             }
             let buttons = [];
@@ -779,7 +779,7 @@ export default {
                     text: '<i class="fa-solid fa-download"></i> Excel',
                     className: 'btn btn-primary rounded me-2',
                     exportOptions: {
-                        columns: ':visible',
+                        columns: ':not(.no-export)',
                     },
                 },
                 {
@@ -787,7 +787,7 @@ export default {
                     text: '<i class="fa-solid fa-download"></i> CSV',
                     className: 'btn btn-primary rounded',
                     exportOptions: {
-                        columns: ':visible',
+                        columns: ':not(.no-export)',
                     },
                 },
             ];
@@ -803,8 +803,15 @@ export default {
                 },
                 responsive: true,
                 serverSide: true,
-                //searching: false,
                 searching: true,
+                columnDefs: [
+                    { responsivePriority: 1, targets: 0 },
+                    {
+                        responsivePriority: 2,
+                        targets: -1,
+                        className: 'no-export',
+                    },
+                ],
                 ajax: {
                     url:
                         api_endpoints.approvals_paginated_list +

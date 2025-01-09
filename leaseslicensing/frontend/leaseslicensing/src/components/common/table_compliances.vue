@@ -486,7 +486,7 @@ export default {
                     text: '<i class="fa-solid fa-download"></i> Excel',
                     className: 'btn btn-primary rounded me-2',
                     exportOptions: {
-                        columns: ':visible',
+                        columns: ':not(.no-export)',
                     },
                 },
                 {
@@ -494,7 +494,7 @@ export default {
                     text: '<i class="fa-solid fa-download"></i> CSV',
                     className: 'btn btn-primary rounded',
                     exportOptions: {
-                        columns: ':visible',
+                        columns: ':not(.no-export)',
                     },
                 },
             ];
@@ -507,7 +507,14 @@ export default {
                 responsive: true,
                 serverSide: true,
                 searching: true,
-
+                columnDefs: [
+                    { responsivePriority: 1, targets: 0 },
+                    {
+                        responsivePriority: 2,
+                        targets: -1,
+                        className: 'no-export',
+                    },
+                ],
                 ajax: {
                     url: vm.ajaxUrl,
                     dataSrc: 'data',
