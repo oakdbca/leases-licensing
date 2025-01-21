@@ -1,18 +1,4 @@
-<template lang="html">
-    <ckeditor
-        :id="id"
-        v-model="detailsText"
-        :editor="ClassicEditor"
-        :config="config"
-        :name="name"
-        :required="isRequired"
-        :disabled="readonly"
-        :read-only="readonly"
-    />
-</template>
-
 <script setup>
-// import Editor from './ckeditor.js';
 import { ref, computed, nextTick, watch } from 'vue';
 import { ClassicEditor, Essentials, Paragraph, Bold, Italic } from 'ckeditor5';
 import { Ckeditor } from '@ckeditor/ckeditor5-vue';
@@ -36,7 +22,7 @@ const detailsText = ref('');
 
 watch(detailsText, () => {
     // Parent component can subscribe this event in order to update text
-    if (detailsText.value == detailsText.value) {
+    if (props.proposalData == detailsText.value) {
         // Only emit if the text was changed through input, not through the parent component
         return;
     }
@@ -61,5 +47,20 @@ function focus() {
 if (props.proposalData) {
     detailsText.value = props.proposalData;
 }
-// this.editor.defaultConfig['placeholder'] = this.placeholder_text;
+
+if (props.placeholder_text) {
+    config.value.placeholder = props.placeholder_text;
+}
 </script>
+<template lang="html">
+    <ckeditor
+        :id="id"
+        v-model="detailsText"
+        :editor="ClassicEditor"
+        :config="config"
+        :name="name"
+        :required="isRequired"
+        :disabled="readonly"
+        :read-only="readonly"
+    />
+</template>
