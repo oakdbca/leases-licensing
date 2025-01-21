@@ -48,12 +48,15 @@ const config = computed(() => {
     };
 });
 
-// eslint-disable-next-line no-unused-vars
 function focus() {
     nextTick(() => {
         $('.ck-editor__editable').focus();
     });
 }
+
+defineExpose({
+    focus,
+});
 
 if (props.proposalData) {
     detailsText.value = props.proposalData;
