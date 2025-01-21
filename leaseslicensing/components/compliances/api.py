@@ -601,7 +601,7 @@ class ComplianceViewSet(UserActionLoggingViewset):
             serializer = ComplianceSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @logging_action(
+    @list_route(
         methods=[
             "GET",
         ],
