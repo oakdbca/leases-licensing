@@ -126,7 +126,7 @@
                                         :key="uuid"
                                         v-model="proposedDecisionDetails"
                                         :proposal-data="proposedDecisionDetails"
-                                        placeholder_text="Add some details here"
+                                        placeholder-text="Add some details here"
                                         :can_view_richtext_src="true"
                                         :readonly="readonly"
                                         @text-changed="
@@ -402,7 +402,7 @@
                                         v-model="approval.details"
                                         :proposal-data="proposedDecisionDetails"
                                         :can_view_richtext_src="true"
-                                        :placeholder_text="
+                                        :placeholder-text="
                                             selectedApprovalTypeDetailsPlaceholder
                                         "
                                         :readonly="readonly"
