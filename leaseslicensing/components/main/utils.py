@@ -140,15 +140,18 @@ def get_features_by_multipolygon(
 
     namespace = ""
     server_path = ""
+    layer_title = layer_name
     if ":" in layer_name:
         namespace = layer_name.split(":")[0]
+        layer_title = layer_name.split(":")[1]
         server_path = f"/geoserver/{namespace}/ows"
 
+    logger.debug(f"Namespace: {namespace}, Layer Title: {layer_title}")
     params = {
         "service": "WFS",
         "version": version,
         "request": "GetFeature",
-        "typeName": layer_name,
+        "typeName": layer_title,
         "maxFeatures": "5000",
         "srsName": srsName,  # using the default projection for open layers and geodjango
         "outputFormat": "application/json",
@@ -251,6 +254,7 @@ def get_gis_data_for_geometries(
         properties_comma_list = ",".join(properties)
     else:
         properties_comma_list = properties[0]
+    logger.debug(f"layer_name: {layer_name}")
     features = get_features_by_multipolygon(
         multipolygon, server_url, layer_name, properties_comma_list, version, the_geom
     )
@@ -491,7 +495,7 @@ def populate_gis_data_lands_and_waters(
         instance,
         geometries_attribute,
         settings.GIS_SERVER_URL,
-        "kaartdijin-boodja-public:CPT_DBCA_LEGISLATED_TENURE",
+        settings.GIS_LANDS_AND_WATERS_LAYER_NAME,
         [p.upper() for p in properties],  # A bit ugly but works
         version="2.0.0",
         the_geom="SHAPE",
