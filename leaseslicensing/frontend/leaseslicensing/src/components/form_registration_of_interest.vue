@@ -94,6 +94,7 @@
                 </div>
                 <div class="col-12">
                     <RichText
+                        id="exclusive_use_text"
                         ref="exclusive_use_text"
                         :key="proposal.id"
                         :proposal-data="proposal.exclusive_use_text"
