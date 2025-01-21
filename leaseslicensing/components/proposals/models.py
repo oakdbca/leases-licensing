@@ -1670,7 +1670,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             try:
                 referral = Referral.objects.get(proposal=self, referral=user.id)
             except Referral.DoesNotExist:
-                logger.warn(
+                logger.warning(
                     f"Referral with Proposal: {self} and referral user id: {user.id} does not exist"
                 )
                 return False
@@ -3788,7 +3788,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         for document in self.lease_licence_approval_documents.all():
             if document.approval_type_id != approval_type.id:
-                logger.warn(
+                logger.warning(
                     f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} "
                     f"document `{document}` for Approval of type `{approval_type}`."
                 )
@@ -4115,14 +4115,14 @@ class ProposalGeometry(models.Model):
     @property
     def area_sqm(self):
         if not hasattr(self, "area") or not self.area:
-            logger.warn(f"ProposalGeometry: {self.id} has no area")
+            logger.warning(f"ProposalGeometry: {self.id} has no area")
             return None
         return self.area.sq_m
 
     @property
     def area_sqhm(self):
         if not hasattr(self, "area") or not self.area:
-            logger.warn(f"ProposalGeometry: {self.id} has no area")
+            logger.warning(f"ProposalGeometry: {self.id} has no area")
             return None
         return self.area.sq_m / 10000
 

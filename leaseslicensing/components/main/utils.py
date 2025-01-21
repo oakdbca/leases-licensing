@@ -161,7 +161,8 @@ def get_features_by_multipolygon(
     if "public" not in namespace:
         logger.debug("Using Basic HTTP Auth to access namespace: %s", namespace)
         url = f"{server_url}{server_path}"
-        # Not sure we land here anymore with kb being the geoserver, but if we do, the authentication needs to be adjusted
+        # Not sure we land here anymore with kb being the geoserver,
+        # but if we do, the authentication needs to be adjusted
         response = requests.post(
             url,
             data=params,
@@ -180,7 +181,7 @@ def get_features_by_multipolygon(
     try:
         # Handle geoserver returning 200 while also returning an exception text message
         return response.json()
-    except:
+    except Exception:
         logger.error(f"Error parsing response from {server_url} : {response.text}")
         raise serializers.ValidationError(
             f"Error parsing geoserver response for layer: {layer_name}"
@@ -220,7 +221,7 @@ def get_gis_data_for_geometries(
     properties = [(p[1] if isinstance(p, list) else p) for p in feature_properties]
 
     if not geometries.exists():
-        logger.warn(
+        logger.warning(
             f"No Geometries found for {instance._meta.model.__name__} {instance.lodgement_number}"
         )
         return None
@@ -236,13 +237,13 @@ def get_gis_data_for_geometries(
         from shapely import wkt
         from shapely.validation import explain_validity, make_valid
 
-        logger.warn(
+        logger.warning(
             "Invalid multipolygon for"
             f"{instance._meta.model.__name__} {instance.lodgement_number}: {multipolygon.valid_reason}"
         )
 
         multipolygon = make_valid(wkt.loads(multipolygon.wkt))
-        logger.warn(
+        logger.warning(
             f"Running MakeValid. New validity: {explain_validity(multipolygon)}"
         )
 
@@ -254,7 +255,7 @@ def get_gis_data_for_geometries(
         multipolygon, server_url, layer_name, properties_comma_list, version, the_geom
     )
     if 0 == features["totalFeatures"]:
-        logger.warn(
+        logger.warning(
             f"No GIS data found for {instance._meta.model.__name__} {instance.lodgement_number}"
         )
         return None
@@ -332,7 +333,7 @@ def save_geometry(
     logger.info(f"\n\n\nSaving {instance_name} geometry")
 
     if not geometry_data:
-        logger.warn(f"No {instance_name} geometry to save")
+        logger.warning(f"No {instance_name} geometry to save")
         return
 
     if not foreign_key_field:
@@ -349,7 +350,7 @@ def save_geometry(
         == InstanceGeometry.objects.filter(**{foreign_key_field: instance}).count()
     ):
         # No feature to save and no feature to delete
-        logger.warn(f"{instance_name} geometry has no features to save or delete")
+        logger.warning(f"{instance_name} geometry has no features to save or delete")
         return
 
     action = request.data.get("action", None)
@@ -358,7 +359,7 @@ def save_geometry(
     for feature in geometry.get("features"):
         # check if feature is a polygon, continue if not
         if feature.get("geometry").get("type") != "Polygon":
-            logger.warn(
+            logger.warning(
                 f"{instance_name}: {instance} contains a feature that is not a polygon: {feature}"
             )
             continue
@@ -403,7 +404,7 @@ def save_geometry(
             try:
                 geometry = InstanceGeometry.objects.get(id=feature.get("id"))
             except InstanceGeometry.DoesNotExist:
-                logger.warn(
+                logger.warning(
                     f"{instance_name} geometry does not exist: {feature.get('id')}"
                 )
                 continue
@@ -497,7 +498,7 @@ def populate_gis_data_lands_and_waters(
         invert_xy=True,
     )
     if gis_data_lands_and_waters is None:
-        logger.warn(
+        logger.warning(
             "No GIS Lands and waters data found for %s %s",
             instance._meta.model.__name__,
             instance.lodgement_number,
@@ -630,7 +631,7 @@ def populate_gis_data_regions(instance, geometries_attribute, foreign_key_field)
         invert_xy=True,
     )
     if gis_data_regions is None:
-        logger.warn(
+        logger.warning(
             "No GIS Region data found for instance %s", instance.lodgement_number
         )
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
@@ -668,7 +669,7 @@ def populate_gis_data_districts(instance, geometries_attribute, foreign_key_fiel
         invert_xy=True,
     )
     if gis_data_districts is None:
-        logger.warn(
+        logger.warning(
             "No GIS District data found for instance %s", instance.lodgement_number
         )
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
@@ -710,7 +711,9 @@ def populate_gis_data_lgas(instance, geometries_attribute, foreign_key_field):
         invert_xy=True,
     )
     if gis_data_lgas is None:
-        logger.warn("No GIS LGA data found for instance %s", instance.lodgement_number)
+        logger.warning(
+            "No GIS LGA data found for instance %s", instance.lodgement_number
+        )
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
         return
 

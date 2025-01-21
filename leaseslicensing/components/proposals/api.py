@@ -436,7 +436,7 @@ class ProposalViewSet(UserActionLoggingViewset):
                 return qs.distinct()
             return qs
 
-        logger.warn(
+        logger.warning(
             "User is neither customer nor internal user: {} <{}>".format(
                 user.get_full_name(), user.email
             )

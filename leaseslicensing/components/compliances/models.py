@@ -212,7 +212,7 @@ class Compliance(LicensingModelVersioned):
             return retrieve_email_user(self.submitter)
         if self.proposal.submitter:
             return retrieve_email_user(self.proposal.submitter)
-        logger.warn(
+        logger.warning(
             f"Submitter not found for Compliance: {self.lodgement_number} "
             f"and Proposal: {self.proposal.lodgement_number}"
         )
@@ -222,7 +222,7 @@ class Compliance(LicensingModelVersioned):
     def submitter_email(self):
         if self.submitter_emailuser:
             return self.submitter_emailuser.email
-        logger.warn(
+        logger.warning(
             f"Submitter not found for Compliance: {self.lodgement_number} "
             f"sand Proposal: {self.proposal.lodgement_number}"
         )
