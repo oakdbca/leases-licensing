@@ -24,6 +24,7 @@
                         label="Rich text in here"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.details_text = $event"
                     />
                 </div>
             </div>
@@ -98,6 +99,7 @@
                         :proposal-data="proposal.exclusive_use_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.exclusive_use_text = $event"
                     />
                 </div>
             </div>
@@ -172,6 +174,7 @@
                         :proposal-data="proposal.long_term_use_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.long_term_use_text = $event"
                     />
                 </div>
             </div>
@@ -257,6 +260,9 @@
                         :proposal-data="proposal.consistent_purpose_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="
+                            proposal.consistent_purpose_text = $event
+                        "
                     />
                 </div>
             </div>
@@ -342,6 +348,7 @@
                         :proposal-data="proposal.consistent_plan_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.consistent_plan_text = $event"
                     />
                 </div>
             </div>
@@ -434,7 +441,9 @@
                         :key="proposal.id"
                         :proposal-data="proposal.clearing_vegetation_text"
                         :readonly="readonly"
-                        :can_view_richtext_src="true"
+                        @text-changed="
+                            proposal.clearing_vegetation_text = $event
+                        "
                     />
                 </div>
             </div>
@@ -520,6 +529,9 @@
                         :proposal-data="proposal.ground_disturbing_works_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="
+                            proposal.ground_disturbing_works_text = $event
+                        "
                     />
                 </div>
             </div>
@@ -605,6 +617,7 @@
                         :proposal-data="proposal.heritage_site_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.heritage_site_text = $event"
                     />
                 </div>
             </div>
@@ -694,6 +707,9 @@
                         :proposal-data="proposal.environmentally_sensitive_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="
+                            proposal.environmentally_sensitive_text = $event
+                        "
                     />
                 </div>
             </div>
@@ -781,6 +797,7 @@
                         :proposal-data="proposal.wetlands_impact_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.wetlands_impact_text = $event"
                     />
                 </div>
             </div>
@@ -866,6 +883,7 @@
                         :proposal-data="proposal.building_required_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.building_required_text = $event"
                     />
                 </div>
             </div>
@@ -951,6 +969,9 @@
                         :proposal-data="proposal.significant_change_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="
+                            proposal.significant_change_text = $event
+                        "
                     />
                 </div>
             </div>
@@ -1038,6 +1059,7 @@
                         :proposal-data="proposal.aboriginal_site_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.aboriginal_site_text = $event"
                     />
                 </div>
             </div>
@@ -1126,7 +1148,9 @@
                         :key="proposal.id"
                         :proposal-data="proposal.native_title_consultation_text"
                         :readonly="readonly"
-                        :can_view_richtext_src="true"
+                        @text-changed="
+                            proposal.native_title_consultation_text = $event
+                        "
                     />
                 </div>
             </div>
@@ -1216,6 +1240,7 @@
                         :proposal-data="proposal.mining_tenement_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        @text-changed="proposal.mining_tenement_text = $event"
                     />
                 </div>
             </div>

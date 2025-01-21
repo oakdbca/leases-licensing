@@ -42,6 +42,7 @@
                                     :proposal-data="proposedDecisionDetails"
                                     placeholder_text="Add some details here"
                                     :can_view_richtext_src="true"
+                                    @text-changed="decline.reason = $event"
                                 />
                             </div>
                         </div>
