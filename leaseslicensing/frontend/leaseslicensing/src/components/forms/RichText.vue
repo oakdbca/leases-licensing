@@ -10,10 +10,6 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    name: {
-        type: String,
-        required: true,
-    },
     proposalData: {
         type: String,
         default: '',
@@ -72,7 +68,6 @@ config.value.readOnly = props.readonly;
 <template lang="html">
     <ckeditor
         :id="id"
-        :name="name"
         v-model="detailsText"
         :editor="ClassicEditor"
         :config="config"
