@@ -5,23 +5,34 @@ import { Ckeditor } from '@ckeditor/ckeditor5-vue';
 
 import 'ckeditor5/ckeditor5.css';
 
-const props = defineProps([
-    'id',
-    'name',
-    'proposalData',
-    'isRequired',
-    'label',
-    'readonly',
-    'can_view_richtext_src',
-    'placeholder_text',
-]);
+const props = defineProps({
+    id: {
+        type: String,
+        required: true,
+    },
+    proposalData: {
+        type: String,
+        default: '',
+    },
+    isRequired: {
+        type: Boolean,
+        default: false,
+    },
+    readonly: {
+        type: Boolean,
+        default: false,
+    },
+    placeholderText: {
+        type: String,
+        default: '',
+    },
+});
 
 const emit = defineEmits(['textChanged']);
 
 const detailsText = ref('');
 
 watch(detailsText, () => {
-    // Parent component can subscribe this event in order to update text
     if (props.proposalData == detailsText.value) {
         // Only emit if the text was changed through input, not through the parent component
         return;
@@ -48,9 +59,11 @@ if (props.proposalData) {
     detailsText.value = props.proposalData;
 }
 
-if (props.placeholder_text) {
-    config.value.placeholder = props.placeholder_text;
+if (props.placeholderText) {
+    config.value.placeholder = props.placeholderText;
 }
+
+config.value.readOnly = props.readonly;
 </script>
 <template lang="html">
     <ckeditor
@@ -58,7 +71,6 @@ if (props.placeholder_text) {
         v-model="detailsText"
         :editor="ClassicEditor"
         :config="config"
-        :name="name"
         :required="isRequired"
         :disabled="readonly"
         :read-only="readonly"
