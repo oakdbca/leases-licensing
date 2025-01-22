@@ -503,7 +503,7 @@
                                                 />
                                                 <button
                                                     class="btn btn-secondary btn-copy input-group-text"
-                                                    @click="
+                                                    @click.prevent="
                                                         copyToClipboard(
                                                             'admin-pin-1'
                                                         )
@@ -531,7 +531,7 @@
                                                 />
                                                 <button
                                                     class="btn btn-secondary btn-copy input-group-text"
-                                                    @click="
+                                                    @click.prevent="
                                                         copyToClipboard(
                                                             'admin-pin-2'
                                                         )
@@ -574,7 +574,7 @@
                                                 />
                                                 <button
                                                     class="btn btn-secondary btn-copy input-group-text"
-                                                    @click="
+                                                    @click.prevent="
                                                         copyToClipboard(
                                                             'user-pin-1'
                                                         )
@@ -602,7 +602,7 @@
                                                 />
                                                 <button
                                                     class="btn btn-secondary btn-copy input-group-text"
-                                                    @click="
+                                                    @click.prevent="
                                                         copyToClipboard(
                                                             'user-pin-2'
                                                         )
@@ -2024,7 +2024,7 @@ export default {
                     const textArea = document.createElement('textarea');
                     textArea.value = element.value;
                     document.body.appendChild(textArea);
-                    textArea.focus();
+                    textArea.focus({ preventScroll: true });
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
