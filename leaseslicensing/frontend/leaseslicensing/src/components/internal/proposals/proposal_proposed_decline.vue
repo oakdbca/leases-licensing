@@ -134,12 +134,14 @@ export default {
             detailsTexts: {},
         };
     },
-    isModalOpen: function (newVal) {
-        if (newVal) {
-            this.$nextTick(() => {
-                this.$refs.decline_reason.focus();
-            });
-        }
+    watch: {
+        isModalOpen: function (newVal) {
+            if (newVal) {
+                this.$nextTick(() => {
+                    this.$refs.decline_reason.focus();
+                });
+            }
+        },
     },
     computed: {
         proposedDeclineDocumentsUrl: function () {
