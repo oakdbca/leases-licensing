@@ -4309,7 +4309,7 @@ class AmendmentRequest(ProposalRequest):
                 )
 
                 # Mark any related documents that the assessor may have attached to the proposal as not delete-able
-                self.mark_documents_not_deleteable()
+                self.proposalmark_documents_not_deleteable()
 
             # Create a log entry for the proposal
             proposal.log_user_action(
