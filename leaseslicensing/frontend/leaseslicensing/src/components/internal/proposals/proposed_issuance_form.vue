@@ -483,7 +483,8 @@
                             v-if="
                                 (leaseLicence &&
                                     !withApprover &&
-                                    !proposalIsApproved) ||
+                                    !proposalIsApproved &&
+                                    !proposalDeclined) ||
                                 alwaysShowDocuments
                             "
                             class="form-group"
