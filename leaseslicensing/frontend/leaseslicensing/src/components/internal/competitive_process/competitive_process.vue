@@ -342,7 +342,6 @@
                                         "
                                         ref="details"
                                         :key="cp_id"
-                                        v-model="competitive_process.details"
                                         :proposal-data="outcomeDetails"
                                         placeholder-text="Add some details here"
                                         :readonly="elementDisabled"
