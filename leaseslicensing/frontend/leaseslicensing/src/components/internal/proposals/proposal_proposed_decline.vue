@@ -254,7 +254,6 @@ export default {
         },
         sendData: function () {
             this.errors = false;
-            this.decline.reason = this.$refs.decline_reason.detailsText;
             let decline = JSON.parse(JSON.stringify(this.decline));
             this.decliningProposal = true;
             this.$nextTick(async () => {
