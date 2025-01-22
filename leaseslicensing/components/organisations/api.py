@@ -1104,6 +1104,7 @@ class OrganisationContactPaginatedViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class OrganisationContactViewSet(LicensingViewSet):
+    http_method_names = ["head", "get", "post", "put", "patch", "delete"]
     serializer_class = OrganisationContactSerializer
     queryset = OrganisationContact.objects.all()
     permiission_classes = []
@@ -1119,15 +1120,12 @@ class OrganisationContactViewSet(LicensingViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """delete an Organisation contact"""
-        admin_user_count = (
-            self.get_object()
-            .organisation.contacts.filter(
-                user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
-                user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
-            )
-            .count()
-        )
-        org_contact = self.get_object().organisation.contacts.get(id=kwargs["pk"])
+        instance = self.get_object()
+        admin_user_count = instance.organisation.contacts.filter(
+            user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
+            user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
+        ).count()
+        org_contact = instance.organisation.contacts.get(id=kwargs["pk"])
         if (
             admin_user_count == 1
             and org_contact.user_role == OrganisationContact.USER_ROLE_CHOICE_ADMIN
@@ -1135,7 +1133,9 @@ class OrganisationContactViewSet(LicensingViewSet):
             raise serializers.ValidationError(
                 "Cannot delete the last Organisation Admin"
             )
-        return super().destroy(request, *args, **kwargs)
+
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
