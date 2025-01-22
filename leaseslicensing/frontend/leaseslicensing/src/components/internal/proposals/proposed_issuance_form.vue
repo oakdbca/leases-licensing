@@ -124,7 +124,6 @@
                                         id="registration-of-interest-details-approve"
                                         ref="registration_of_interest_details"
                                         :key="uuid"
-                                        v-model="proposedDecisionDetails"
                                         :proposal-data="proposedDecisionDetails"
                                         placeholder-text="Add some details here"
                                         :readonly="readonly"
@@ -400,7 +399,6 @@
                                         id="lease-licence-details-approve"
                                         ref="lease_licence_details"
                                         :key="uuid"
-                                        v-model="approval.details"
                                         :proposal-data="proposedDecisionDetails"
                                         :placeholder-text="
                                             selectedApprovalTypeDetailsPlaceholder
