@@ -1926,7 +1926,7 @@ export default {
                 }
             )
                 .then(async (response) => {
-                    await response.text();
+                    const response_text = await response.text();
                     if (response.ok) {
                         swal.fire(
                             'Contact Removed',
@@ -1935,14 +1935,14 @@ export default {
                         );
                         vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
                     } else {
-                        throw new Error(response.text());
+                        throw new Error(response_text);
                     }
                 })
                 .catch((error) => {
                     console.error(error);
                     swal.fire(
                         'Remove Contact Failed',
-                        'The contact could not be deleted because of the following error ' +
+                        'The contact could not be deleted because of the following ' +
                             error,
                         'error'
                     );
