@@ -425,13 +425,23 @@
                                 >
                                 <div class="col-sm-9">
                                     <FileField
-                                        id="proposed_approval_documents"
-                                        ref="proposed_approval_documents"
-                                        name="proposed_approval_documents"
-                                        :is-repeatable="true"
-                                        :document-action-url="
-                                            proposedApprovalDocumentsUrl
+                                        :id="
+                                            proposal.proposed_decline_status
+                                                ? 'proposed_decline_documents'
+                                                : 'proposed_approval_documents'
                                         "
+                                        :ref="
+                                            proposal.proposed_decline_status
+                                                ? 'proposed_decline_documents'
+                                                : 'proposed_approval_documents'
+                                        "
+                                        :name="
+                                            proposal.proposed_decline_status
+                                                ? 'proposed_decline_documents'
+                                                : 'proposed_approval_documents'
+                                        "
+                                        :is-repeatable="true"
+                                        :document-action-url="fileUrl"
                                         :replace_button_by_text="true"
                                         :readonly="readonly"
                                     />
@@ -678,6 +688,16 @@ export default {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_proposed_approval_document/'
+            );
+        },
+        fileUrl: function () {
+            let endPoint = '/process_lease_licence_approval_document/';
+            if (this.proposal.proposed_decline_status) {
+                endPoint = '/process_proposed_decline_document/';
+            }
+            return helpers.add_endpoint_join(
+                api_endpoints.proposal,
+                this.proposal.id + endPoint
             );
         },
         selectedApprovalDocumentTypes: function () {
