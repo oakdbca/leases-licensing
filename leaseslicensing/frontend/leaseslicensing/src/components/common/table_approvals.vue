@@ -374,11 +374,11 @@ export default {
                     'Status',
                     'Expiry Date',
                     'Document',
-                    'Action',
                     'Original Lease/License Number',
                     'Site Name',
                     'Groups',
                     'Categories',
+                    'Action',
                 ];
             } else if (this.is_internal) {
                 return [
@@ -390,11 +390,11 @@ export default {
                     'Status',
                     'Expiry Date',
                     'Document',
-                    'Action',
                     'Original Lease/License Number',
                     'Site Name',
                     'Groups',
                     'Categories',
+                    'Action',
                 ];
             } else {
                 console.error('Unknown datatable level: ' + this.level);
