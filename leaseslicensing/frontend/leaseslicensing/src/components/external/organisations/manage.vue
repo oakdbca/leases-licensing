@@ -1130,6 +1130,7 @@ export default {
                                 ' (' +
                                 email +
                                 ')?',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText: 'Accept Linking Request',
                             reverseButtons: true,
@@ -1207,6 +1208,7 @@ export default {
                                 ' (' +
                                 email +
                                 ')?',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText:
                                 'Accept Previously Declined Linking Request',
@@ -1283,6 +1285,7 @@ export default {
                                 ' (' +
                                 email +
                                 ')?',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText: 'Decline Linking Request',
                             reverseButtons: true,
@@ -1442,6 +1445,7 @@ export default {
                                 ' (' +
                                 email +
                                 ') to an organisation admin?',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText:
                                 'Promote User to Organisation Admin',
@@ -1517,6 +1521,7 @@ export default {
                                 ' (' +
                                 email +
                                 ') to an organisation user?',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText:
                                 'Demote User to Organisation User',
@@ -1601,6 +1606,7 @@ export default {
                                 ' (' +
                                 email +
                                 ')?',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText: 'Suspend User',
                             reverseButtons: true,
@@ -1681,6 +1687,7 @@ export default {
                                 ' (' +
                                 email +
                                 ')?',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText: 'Reinstate User',
                             reverseButtons: true,
@@ -1754,6 +1761,7 @@ export default {
                                 ' (' +
                                 email +
                                 ')?',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText: 'Relink User',
                             reverseButtons: true,

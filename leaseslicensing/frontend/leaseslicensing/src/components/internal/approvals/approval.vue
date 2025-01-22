@@ -976,7 +976,7 @@ export default {
             Swal.fire({
                 title: 'Cancel Editing Invoicing Details',
                 text: 'Are you sure you want to cancel editing invoicing details (any unsaved changes may be lost)?',
-                icon: 'warning',
+                icon: 'question',
                 showCancelButton: true,
                 reverseButtons: true,
                 confirmButtonText: 'Cancel Editing',

@@ -1291,7 +1291,7 @@ export default {
                 .fire({
                     title: 'Reissue Approval',
                     text: 'Are you sure you want to reissue this approval?',
-                    icon: 'warning',
+                    icon: 'question',
                     showCancelButton: true,
                     reverseButtons: true,
                     confirmButtonText: 'Reissue Approval',
@@ -1332,9 +1332,10 @@ export default {
             Swal.fire({
                 title: 'Reinstate Approval',
                 text: 'Are you sure you want to reinstate this approval?',
-                icon: 'warning',
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Reinstate approval',
+                reverseButtons: true,
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     let url = helpers.add_endpoint_json(
@@ -1462,7 +1463,7 @@ export default {
             Swal.fire({
                 title: 'Renew Approval',
                 text: 'Are you sure you want to renew this approval?',
-                icon: 'warning',
+                icon: 'question',
                 showCancelButton: true,
                 reverseButtons: true,
                 confirmButtonText: 'Renew approval',
@@ -1517,9 +1518,10 @@ export default {
             Swal.fire({
                 title: 'Amend Approval',
                 text: 'Are you sure you want to amend this approval?',
-                icon: 'warning',
+                icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Amend approval',
+                reverseButtons: true,
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     let url =

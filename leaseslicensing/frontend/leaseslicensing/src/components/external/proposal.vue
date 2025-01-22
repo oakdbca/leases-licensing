@@ -512,7 +512,7 @@ export default {
                         .fire({
                             title: 'Save Proposal',
                             text: warning_text,
-                            icon: 'warning',
+                            icon: 'question',
                             showCancelButton: true,
                             confirmButtonText: 'Continue',
                         })

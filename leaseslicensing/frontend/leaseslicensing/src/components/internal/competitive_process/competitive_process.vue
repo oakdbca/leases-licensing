@@ -897,7 +897,7 @@ export default {
                     .fire({
                         title: 'The outcome has changed',
                         html: `${info_text} Do you wish to continue?<br /><br />Please make sure Details and Documents are correct for the new outcome.<br />`,
-                        icon: 'warning',
+                        icon: 'question',
                         showCancelButton: true,
                         confirmButtonText: 'Continue',
                         confirmButtonColor: '#0d6efd',
@@ -994,7 +994,7 @@ export default {
                     html:
                         'Are you sure you want to complete this competitive process?<br />' +
                         description,
-                    icon: 'warning',
+                    icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Complete',
                     confirmButtonColor: '#0d6efd',
@@ -1045,7 +1045,7 @@ export default {
                 swal.fire({
                     title: 'Discard this competitive process',
                     text: 'Are you sure you want to discard this competitive process?',
-                    icon: 'warning',
+                    icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Discard',
                     confirmButtonColor: '#0d6efd',
