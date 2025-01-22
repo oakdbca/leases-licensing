@@ -41,7 +41,6 @@
                                     :key="uuid"
                                     :proposal-data="proposedDecisionDetails"
                                     placeholder-text="Add some details here"
-                                    :can_view_richtext_src="true"
                                     @text-changed="decline.reason = $event"
                                 />
                             </div>
@@ -135,6 +134,13 @@ export default {
             detailsTexts: {},
         };
     },
+    isModalOpen: function (newVal) {
+        if (newVal) {
+            this.$nextTick(() => {
+                this.$refs.decline_reason.focus();
+            });
+        }
+    },
     computed: {
         proposedDeclineDocumentsUrl: function () {
             return helpers.add_endpoint_join(
@@ -221,6 +227,11 @@ export default {
             }
         });
     },
+    mounted: function () {
+        this.$nextTick(() => {
+            this.$refs.decline_reason.focus();
+        });
+    },
     methods: {
         ok: function () {
             let vm = this;
@@ -234,7 +245,6 @@ export default {
             this.decline = {};
             this.errors = false;
         },
-
         check_status: function () {
             let vm = this;
             if (vm.processing_status == 'With Approver') return true;

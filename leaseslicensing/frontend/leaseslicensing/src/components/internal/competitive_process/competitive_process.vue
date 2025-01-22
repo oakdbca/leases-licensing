@@ -346,7 +346,6 @@
                                         :proposal-data="outcomeDetails"
                                         placeholder-text="Add some details here"
                                         :readonly="elementDisabled"
-                                        :can_view_richtext_src="true"
                                         @text-changed="detailsTextChanged"
                                     />
                                 </div>
