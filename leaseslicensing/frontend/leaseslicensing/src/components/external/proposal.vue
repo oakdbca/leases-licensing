@@ -514,6 +514,7 @@ export default {
                             text: warning_text,
                             icon: 'question',
                             showCancelButton: true,
+                            reverseButtons: true,
                             confirmButtonText: 'Continue',
                         })
                         .then(async (result) => {
