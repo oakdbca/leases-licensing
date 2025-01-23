@@ -137,7 +137,7 @@ export default {
             required: false,
             default: 0,
         },
-        target_organisation_id: {
+        targetOrganisationId: {
             type: Number,
             required: false,
             default: 0,
@@ -559,7 +559,7 @@ export default {
                         '&target_email_user_id=' +
                         vm.targetEmailUserId +
                         '&target_organisation_id=' +
-                        vm.target_organisation_id,
+                        vm.targetOrganisationId,
                     dataSrc: 'data',
 
                     // adding extra GET params for Custom filtering
