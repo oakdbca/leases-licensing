@@ -760,7 +760,7 @@ class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
             queryset = queryset.filter(status=filter_status)
 
         queryset = self.apply_request(
-            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+            request, queryset, view, ledger_lookup_fields=["requester"]
         )
 
         setattr(view, "_datatables_total_count", total_count)

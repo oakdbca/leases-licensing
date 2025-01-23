@@ -165,6 +165,7 @@ export default {
         OrganisationNameColumn: function () {
             return {
                 data: 'ledger_organisation_name',
+                name: 'organisation__ledger_organisation_name',
                 orderable: true,
                 searchable: true,
                 visible: true,
@@ -176,6 +177,7 @@ export default {
         applicantColumn: function () {
             return {
                 data: 'requester_name',
+                name: 'requester__first_name, requester__last_name',
                 orderable: true,
                 searchable: true,
                 visible: true,
@@ -220,6 +222,7 @@ export default {
         assignedToColumn: function () {
             return {
                 data: 'assigned_officer_name',
+                name: 'assigned_officer',
                 orderable: true,
                 searchable: true,
                 visible: true,
