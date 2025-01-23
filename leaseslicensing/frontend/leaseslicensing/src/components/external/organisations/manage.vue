@@ -1143,7 +1143,6 @@ export default {
                                             vm.org.id + '/accept_user'
                                         ),
                                         {
-                                            emulateJSON: true,
                                             method: 'POST',
                                             body: JSON.stringify(
                                                 vm.contact_user
