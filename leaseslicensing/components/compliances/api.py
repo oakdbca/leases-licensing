@@ -165,8 +165,10 @@ class CompliancePaginatedViewSet(viewsets.ReadOnlyModelViewSet):
             and int(target_organisation_id) > 0
         ):
             target_organisation_id = int(target_organisation_id)
-            queryset = queryset.exclude(approval__org_applicant__isnull=True).filter(
-                approval__org_applicant__id=target_organisation_id
+            queryset = queryset.exclude(
+                approval__current_proposal__org_applicant__isnull=True
+            ).filter(
+                approval__current_proposal__org_applicant__id=target_organisation_id
             )
 
         return queryset
