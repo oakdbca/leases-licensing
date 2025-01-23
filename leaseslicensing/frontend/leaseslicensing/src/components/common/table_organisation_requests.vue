@@ -64,6 +64,7 @@
 
 <script>
 import datatable from '@/utils/vue/datatable.vue';
+import { v4 as uuid } from 'uuid';
 import { api_endpoints, constants } from '@/utils/hooks';
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 
@@ -89,9 +90,8 @@ export default {
         },
     },
     data() {
-        let vm = this;
         return {
-            datatable_id: 'invoices-datatable-' + vm._uid,
+            datatable_id: 'organisation-requests-datatable-' + uuid(),
 
             // selected values for filtering
             filterOrganisation: sessionStorage.getItem('filterOrganisation')
@@ -288,7 +288,7 @@ export default {
             }
 
             return {
-                searching: false,
+                searching: true,
                 columnDefs: [
                     { responsivePriority: 1, targets: 0 },
                     {
