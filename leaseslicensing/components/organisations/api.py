@@ -1160,8 +1160,7 @@ class MyOrganisationsViewSet(viewsets.ReadOnlyModelViewSet):
         elif is_customer(self.request):
             return Organisation.objects.filter(
                 contacts__user=user.id,
-                contacts__user_status="active",
-                contacts__user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
+                contacts__user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
             )
         return Organisation.objects.none()
 
