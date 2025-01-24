@@ -540,16 +540,6 @@
                 </div>
             </form>
         </div>
-        <div v-if="can_preview">
-            <ul class="list-group mx-2">
-                <li class="list-group-item">
-                    <i class="fa-solid fa-envelope text-primary"></i> Click
-                    <a href="#" @click.prevent="preview">here</a> to preview the
-                    approval letter.
-                </li>
-            </ul>
-            <p v-if="can_preview"></p>
-        </div>
         <div v-if="issuingApproval" class="container">
             <div class="row">
                 <BootstrapSpinner class="text-primary" />
@@ -753,16 +743,6 @@ export default {
                 ? true
                 : false;
         },
-        can_preview: function () {
-            // Currently, all documents are uploaded by the assessor, thus no preview is required
-            return false;
-            // return this.processing_status == 'With Approver' ? true : false;
-        },
-        preview_licence_url: function () {
-            return this.proposal_id
-                ? `/preview/licence-pdf/${this.proposal_id}`
-                : '';
-        },
         registrationOfInterest: function () {
             if (
                 this.proposal &&
@@ -959,43 +939,6 @@ export default {
                 this.errorString = await helpers.parseFetchError(response);
             }
         },
-        preview: function () {
-            let vm = this;
-            let formData = new FormData(vm.form);
-            // convert formData to json
-            let jsonObject = {};
-            for (const [key, value] of formData.entries()) {
-                jsonObject[key] = value;
-            }
-            vm.post_and_redirect(vm.preview_licence_url, {
-                csrfmiddlewaretoken: vm.csrf_token,
-                formData: JSON.stringify(jsonObject),
-            });
-        },
-        post_and_redirect: function (url, postData) {
-            /* http.post and ajax do not allow redirect from Django View (post method),
-               this function allows redirect by mimicking a form submit.
-               usage:  vm.post_and_redirect(vm.application_fee_url, {'csrfmiddlewaretoken' : vm.csrf_token});
-            */
-            var postFormStr =
-                "<form method='POST' target='_blank' name='Preview Licence' action='" +
-                url +
-                "'>";
-            for (let key in postData) {
-                if (Object.hasOwn(postData, key)) {
-                    postFormStr +=
-                        "<input type='hidden' name='" +
-                        key +
-                        "' value='" +
-                        postData[key] +
-                        "'>";
-                }
-            }
-            postFormStr += '</form>';
-            let formElement = $(postFormStr);
-            $('body').append(formElement);
-            $(formElement).submit();
-        },
         validateForm: function () {
             let vm = this;
             var form = document.getElementById(
@@ -1041,12 +984,8 @@ export default {
 
             this.$nextTick(async () => {
                 if (this.registrationOfInterest) {
-                    this.approval.details =
-                        this.$refs.registration_of_interest_details.detailsText;
                     this.approval.decision = this.selectedDecision;
                 } else if (this.leaseLicence) {
-                    this.approval.details =
-                        this.$refs.lease_licence_details.detailsText;
                     this.approval.approval_type = this.selectedApprovalTypeId;
                     this.approval.selected_document_types =
                         this.$refs.proposed_issuance_documents.selectedDocumentTypes;
