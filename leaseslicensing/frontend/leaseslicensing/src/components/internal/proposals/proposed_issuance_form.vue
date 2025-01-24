@@ -417,7 +417,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row mb-3">
+                            <div v-if="selectedApprovalTypeId" class="row mb-3">
                                 <label
                                     for="proposed_approval_documents"
                                     class="col-sm-3 col-form-label text-nowrap"
@@ -425,25 +425,16 @@
                                 >
                                 <div class="col-sm-9">
                                     <FileField
-                                        :id="
-                                            proposal.proposed_decline_status
-                                                ? 'proposed_decline_documents'
-                                                : 'proposed_approval_documents'
-                                        "
-                                        :ref="
-                                            proposal.proposed_decline_status
-                                                ? 'proposed_decline_documents'
-                                                : 'proposed_approval_documents'
-                                        "
-                                        :name="
-                                            proposal.proposed_decline_status
-                                                ? 'proposed_decline_documents'
-                                                : 'proposed_approval_documents'
-                                        "
+                                        id="proposal_approve_decline_documents"
+                                        ref="proposal_approve_decline_documents"
+                                        name="proposal_approve_decline_documents"
                                         :is-repeatable="true"
                                         :document-action-url="fileUrl"
                                         :replace_button_by_text="true"
-                                        :readonly="readonly"
+                                        :readonly="
+                                            !selectedApprovalTypeId || readonly
+                                        "
+                                        :approval_type="selectedApprovalTypeId"
                                     />
                                 </div>
                             </div>
@@ -678,18 +669,6 @@ export default {
                 return true;
             }
             return false;
-        },
-        leaseLicenceApprovalDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_lease_licence_approval_document/'
-            );
-        },
-        proposedApprovalDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_proposed_approval_document/'
-            );
         },
         fileUrl: function () {
             let endPoint = '/process_lease_licence_approval_document/';
