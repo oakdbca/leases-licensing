@@ -500,7 +500,7 @@ export default {
                 render: function (row, type, full) {
                     return full.holder;
                 },
-                name: 'current_proposal__proposalapplicant__first_name, current_proposal__proposalapplicant__last_name',
+                name: 'current_proposal__proposalapplicant__first_name, current_proposal__proposalapplicant__last_name, current_proposal__org_applicant__ledger_organisation_name',
             };
         },
         columnLinkedApplications: function () {
