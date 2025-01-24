@@ -854,6 +854,13 @@ export default {
             if (['1', '2'].includes(event.target.value)) {
                 this.invoicingDetailsComputed.invoicing_once_every = 1;
             }
+            let invoicingRepetitionTypeKey = this.repetition_types.find(
+                (x) => x.id == event.target.value
+            ).key;
+            this.invoicingDetailsComputed = {
+                ...this.invoicingDetailsComputed,
+                invoicing_repetition_type_key: invoicingRepetitionTypeKey,
+            };
             this.updatePreviewInvoices();
         },
         updateYearsArray: function (incrementType, years_array) {
