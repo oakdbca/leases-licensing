@@ -3455,7 +3455,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         self.save()
 
     def generate_invoicing_details(self):
-        if self.invoicing_details:
+        if hasattr(self, "invoicing_details") and self.invoicing_details:
             logger.warning(
                 "Couldn't generate an invoicing details. "
                 f"Proposal {self} already has an associated Invoicing Details: {self.invoicing_details}"
