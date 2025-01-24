@@ -128,7 +128,9 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             request, queryset, view, ledger_lookup_fields=["ind_applicant"]
         )
 
+        setattr(view, "_datatables_filtered_count", queryset.count())
         setattr(view, "_datatables_total_count", total_count)
+
         return queryset
 
 

@@ -763,7 +763,9 @@ class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
             request, queryset, view, ledger_lookup_fields=["requester"]
         )
 
+        setattr(view, "_datatables_filtered_count", queryset.count())
         setattr(view, "_datatables_total_count", total_count)
+
         return queryset
 
 
@@ -1083,7 +1085,9 @@ class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
             admin_user_count=Value(admin_user_count, output_field=IntegerField())
         )
 
+        setattr(view, "_datatables_filtered_count", queryset.count())
         setattr(view, "_datatables_total_count", total_count)
+
         return queryset
 
 
