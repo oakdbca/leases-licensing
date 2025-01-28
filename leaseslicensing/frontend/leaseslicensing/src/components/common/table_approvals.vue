@@ -634,7 +634,7 @@ export default {
                             links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                             if (full.can_action || vm.debug) {
                                 if (full.can_amend || vm.debug) {
-                                    links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal}'>Amend</a><br/>`;
+                                    links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal.id}'>Amend</a><br/>`;
                                 } else if (
                                     full.has_draft_amendment &&
                                     full.active_amendment.processing_status ==
@@ -643,7 +643,7 @@ export default {
                                     links += `<a href='/external/proposal/${full.active_amendment.id}'>Continue Amendment Application</a><br/>`;
                                 } else if (full.has_pending_renewal) {
                                     if (!full.has_draft_renewal) {
-                                        links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal}'>Renew</a><br/>`;
+                                        links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal.id}'>Renew</a><br/>`;
                                     } else if (
                                         full.active_amendment
                                             .processing_status ==
@@ -670,7 +670,7 @@ export default {
                             full.can_reissue &&
                             full.current_proposal
                         ) {
-                            links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal}'>Reissue</a><br/>`;
+                            links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal.id}'>Reissue</a><br/>`;
                         }
                         if (full.is_assessor) {
                             if (full.can_reissue && full.can_action) {
