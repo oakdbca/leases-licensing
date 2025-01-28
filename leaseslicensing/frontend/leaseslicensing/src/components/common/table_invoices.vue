@@ -370,6 +370,7 @@ export default {
                     if ('void' == full.status) {
                         return `<span class="badge bg-secondary">${full.status_display}</span>`;
                     }
+                    return `<span class="badge bg-secondary">${full.status_display}</span>`;
                 },
             };
         },
