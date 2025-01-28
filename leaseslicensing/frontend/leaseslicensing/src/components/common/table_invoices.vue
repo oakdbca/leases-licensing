@@ -456,6 +456,10 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     let links = '';
+                    if (full.status == 'discarded') {
+                        return links;
+                    }
+
                     if (full.transaction_count > 0) {
                         links += `<a href="#${full.id}" data-view-transactions="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-invoice-amount="${full.amount}">View Transactions</a><br />`;
                     }
