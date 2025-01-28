@@ -940,7 +940,7 @@ class Approval(LicensingModelVersioned):
                 "You cannot reinstate an approval unless it has been cancelled, surrended or suspended"
             )
 
-        if self.expiry_date >= timezone.now().date():
+        if self.expiry_date <= timezone.now().date():
             raise ValidationError("You cannot reinstate an expired approval")
 
         if self.status == Approval.APPROVAL_STATUS_CANCELLED:
