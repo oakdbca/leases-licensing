@@ -786,7 +786,7 @@ class Approval(LicensingModelVersioned):
         for invoice in self.invoices.filter(
             status=Invoice.INVOICE_STATUS_DISCARDED,
         ):
-            if not invoice.due_date:
+            if not invoice.date_due:
                 invoice.status = Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE
                 invoice.save()
             else:
