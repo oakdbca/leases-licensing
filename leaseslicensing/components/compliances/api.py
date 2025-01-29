@@ -125,7 +125,13 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             queryset = queryset.filter(approval__approval_type__id=filter_approval_type)
 
         queryset = self.apply_request(
-            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+            request,
+            queryset,
+            view,
+            ledger_lookup_fields=[
+                "approval__current_proposal__ind_applicant",
+                "assigned_to",
+            ],
         )
 
         setattr(view, "_datatables_filtered_count", queryset.count())

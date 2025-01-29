@@ -289,8 +289,9 @@ export default {
             return {
                 data: 'holder',
                 orderable: false,
-                searchable: false,
+                searchable: true,
                 visible: true,
+                name: 'approval__current_proposal__ind_applicant__first_name, approval__current_proposal__ind_applicant__last_name, approval__current_proposal__org_applicant__ledger_organisation_name',
                 render: function (row, type, full) {
                     //return full.approval_submitter;
                     return full.holder;
@@ -438,7 +439,7 @@ export default {
                 render: function (row, type, full) {
                     return full.assigned_to_name;
                 },
-                name: 'assigned_to',
+                name: 'assigned_to__first_name, assigned_to__last_name',
             };
         },
         applicableColumns: function () {
