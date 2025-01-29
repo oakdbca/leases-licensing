@@ -412,7 +412,6 @@ export default {
         });
     },
     data() {
-        let vm = this;
         return {
             title: '',
             form: null,
