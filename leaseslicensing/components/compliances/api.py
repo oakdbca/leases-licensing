@@ -50,6 +50,7 @@ from leaseslicensing.components.main.models import (
     ApplicationType,
     upload_protected_files_storage,
 )
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.serializers import SendReferralSerializer
 from leaseslicensing.helpers import is_compliance_referee, is_customer, is_internal
@@ -160,9 +161,13 @@ class CompliancePaginatedViewSet(viewsets.ReadOnlyModelViewSet):
             ).filter(referrals__referral=self.request.user.id)
 
         if is_customer(self.request):
+            organisation_ids = get_organisation_ids_for_user(self.request.user.id)
             queryset = queryset.exclude(
                 processing_status=Compliance.PROCESSING_STATUS_DISCARDED
-            ).filter(proposal__submitter=self.request.user.id)
+            ).filter(
+                Q(proposal__submitter=self.request.user.id)
+                | Q(proposal__org_applicant_id__in=organisation_ids)
+            )
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
