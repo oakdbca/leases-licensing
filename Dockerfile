@@ -19,7 +19,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SITE_DOMAIN='dbca.wa.gov.au' \
     OSCAR_SHOP_NAME='Parks & Wildlife' \
     BPAY_ALLOWED=False \
-    POETRY_VERSION=2.1.2 \
+    POETRY_VERSION=2.1.3 \
     NODE_MAJOR=20
 
 FROM builder_base_oim_leaseslicensing AS apt_packages_leaseslicensing
