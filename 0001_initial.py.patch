@@ -1,0 +1,6 @@
+57,59c57
+<                     models.ForeignKey(
+<                         to=settings.AUTH_USER_MODEL,
+<                         on_delete=models.CASCADE,
+---
+>                     models.IntegerField(
