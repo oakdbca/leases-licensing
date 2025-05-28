@@ -482,13 +482,13 @@ name = "django-cron"
 version = "0.6.0"
 description = "Running python crons in a Django project"
 optional = false
-python-versions = "^3.8"
+python-versions = "*"
 groups = ["main"]
 files = []
 develop = false
 
 [package.dependencies]
-django = ">=4.2,<6.0"
+Django = ">=3.2"
 
 [package.source]
 type = "git"
@@ -2494,4 +2494,4 @@ brotli = ["brotli"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "3e601df3e8a2271721f27ec54fd8c071e4646563d2845b5dd7d3fb1a8dc9b44f"
+content-hash = "1335b49d58e4bf3b609944d9450484dc98aaf3ef93e0c3b7ad894021452cb28f"
