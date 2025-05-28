@@ -20,7 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     OSCAR_SHOP_NAME='Parks & Wildlife' \
     BPAY_ALLOWED=False \
     POETRY_VERSION=2.1.3 \
-    NODE_MAJOR=20
+    NODE_MAJOR=22
 
 FROM builder_base_oim_leaseslicensing AS apt_packages_leaseslicensing
 
@@ -74,7 +74,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
 
 FROM apt_packages_leaseslicensing AS node_leaseslicensing
 
-# install node 20
+# install node 22
 RUN mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
@@ -114,25 +114,6 @@ RUN $POETRY_HOME/bin/pip install poetry==$POETRY_VERSION
 RUN poetry completions bash > ~/.bash_completion && \
     poetry run pip install --upgrade pip
 RUN --mount=type=cache,target=~/.cache/pypoetry/cache poetry install --only main --no-interaction --no-ansi
-
-# The following patches must be applied for seggregated systems when setting up a new environment (i.e. local, dev, uat, prod)
-#
-# COPY --chown=oim:oim admin.patch.additional
-# (local) patch <path of leaseslicensing project>/.venv/lib/<python version>/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
-# RUN export virtual_env_path=$(poetry env info -p); \
-#     export python_version=$(python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'); \
-#     patch $virtual_env_path/lib/python$python_version/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
-
-# COPY --chown=oim:oim 0001_squashed_0004_auto_20160611_1202.patch
-# (local) patch <path of leaseslicensing project>/.venv/lib/<python version>/site-packages/reversion/migrations/0001_initial.py 0001_squashed_0004_auto_20160611_1202.patch
-# RUN export virtual_env_path=$(poetry env info -p); \
-#     export python_version=$(python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'); \
-#     patch $virtual_env_path/lib/python$python_version/site-packages/reversion/migrations/0001_squashed_0004_auto_20160611_1202.py 0001_squashed_0004_auto_20160611_1202.patch
-#
-# RUN poetry run python manage.py migrate
-#
-# after running django migrations the patch can be reversed with:
-# RUN patch -r $virtual_env_path/lib/python$python_version/site-packages/reversion/migrations/0001_squashed_0004_auto_20160611_1202.py 0001_squashed_0004_auto_20160611_1202.patch
 
 FROM python_dependencies_leaseslicensing AS install_build_vue3_leaseslicensing
 
