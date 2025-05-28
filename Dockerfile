@@ -86,7 +86,6 @@ FROM node_leaseslicensing AS configure_leaseslicensing
 
 COPY startup.sh  /
 
-COPY ./timezone /etc/timezone
 RUN chmod 755 /startup.sh && \
     chmod +s /startup.sh && \
     groupadd -g 5000 oim && \
