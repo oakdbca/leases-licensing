@@ -110,7 +110,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SITE_PREFIX='lals-dev' \
     SITE_DOMAIN='dbca.wa.gov.au' \
     OSCAR_SHOP_NAME='Parks & Wildlife' \
-    BPAY_ALLOWED=False
+    BPAY_ALLOWED=False \
+    ENABLE_SRI_CHECK=True
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -153,6 +154,8 @@ COPY --from=builder --chown=oim:oim /app/staticfiles_ll /app/staticfiles_ll
 COPY --from=builder --chown=oim:oim /app/manage.py /app/manage.py
 COPY --from=builder --chown=oim:oim /app/manage.sh /app/manage.sh
 COPY --from=builder --chown=oim:oim /app/.env /app/.env
+COPY --from=builder --chown=oim:oim /app/sri-manifest.json /app/sri-manifest.json
+COPY --from=builder --chown=oim:oim /app/sri-files /app/sri-files
 COPY --chown=oim:oim gunicorn.ini.py python-cron ./
 
 EXPOSE 8080
