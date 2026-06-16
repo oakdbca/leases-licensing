@@ -2,7 +2,7 @@
 
 [[package]]
 name = "appmonitor_client"
-version = "1.8"
+version = "1.9"
 description = "App Monitor Client"
 optional = false
 python-versions = "*"
@@ -1055,7 +1055,7 @@ docs = ["Jinja2 (==3.1.6)", "MarkupSafe (==3.0.3)", "Pygments (==2.20.0)", "Sphi
 
 [[package]]
 name = "ledger_api_client"
-version = "1.81"
+version = "1.84"
 description = "Ledger API Client"
 optional = false
 python-versions = "*"
@@ -2702,7 +2702,7 @@ python-discovery = ">=1.4.2"
 
 [[package]]
 name = "wagov_utils"
-version = "1.16"
+version = "1.20"
 description = "DBCA WA GOV utils"
 optional = false
 python-versions = "*"
@@ -2730,7 +2730,7 @@ files = [
 
 [[package]]
 name = "webtemplate-dbca"
-version = "2.0.23"
+version = "2.0.25"
 description = "Base HTML templates for DBCA Django projects"
 optional = false
 python-versions = "*"
